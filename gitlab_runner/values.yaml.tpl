@@ -1,4 +1,4 @@
-concurrent: 1
+concurrent: 10
 checkInterval: 30
 runnerToken: "${registration_token}"
 rbac:
