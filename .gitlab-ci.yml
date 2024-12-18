@@ -1,14 +1,32 @@
 stages:
-  - test
+  # - test
+  - build
 
-test-vault-secret:
-  stage: test
-  image: alpine/git
+# test-vault-secret:
+#   stage: test
+#   image: alpine/git
+#   tags:
+#     - k8s-gitlab-runner # Ensure this matches your runner's tag
+#   script:
+#     - echo "Testing Vault secret access"
+#     - echo "Reading secret from /vault/secrets/dummy-test"
+#     - cat /vault/secrets/dummy-test
+#   only:
+#     - main
+
+build-docker-image:
+  stage: build
   tags:
     - k8s-gitlab-runner # Ensure this matches your runner's tag
+  image: docker:latest  # Use Docker-in-Docker image
+  services:
+    - name: docker:dind  # Docker-in-Docker service
+      alias: dind
+  variables:
+    DOCKER_HOST: tcp://dind:2375  # Configure Docker-in-Docker
+    DOCKER_TLS_CERTDIR: "/certs"
+    #DOCKER_TLS_CERTDIR: ""         # Disable TLS for simplicity
   script:
-    - echo "Testing Vault secret access"
-    - echo "Reading secret from /vault/secrets/dummy-test"
-    - cat /vault/secrets/dummy-test
-  only:
-    - main
+    - echo "Building the Docker image..."
+    - sleep 300
+    - docker build -t testing:latest ./github_runner/docker_image
