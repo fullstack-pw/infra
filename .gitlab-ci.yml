@@ -1,0 +1,14 @@
+stages:
+  - test
+
+test-vault-secret:
+  stage: test
+  image: alpine/git
+  tags:
+    - k8s-gitlab-runner # Ensure this matches your runner's tag
+  script:
+    - echo "Testing Vault secret access"
+    - echo "Reading secret from /vault/secrets/dummy-test"
+    - cat /vault/secrets/dummy-test
+  only:
+    - main
