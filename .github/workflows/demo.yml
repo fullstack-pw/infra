@@ -18,3 +18,4 @@ jobs:
           SECRET=$(vault kv get kv/dummy-test)
           echo "The secret is $SECRET"
     
+# TESTING
