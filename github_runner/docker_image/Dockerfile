@@ -1,5 +1,5 @@
 # Use Ubuntu as the base image
-FROM ubuntu:22.04
+FROM ubuntu
 
 # Set environment variables
 ENV RUNNER_VERSION=2.321.0 \

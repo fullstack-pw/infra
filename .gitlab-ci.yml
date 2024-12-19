@@ -1,6 +1,6 @@
-stages:
+# stages:
   # - test
-  - build
+  # - build
 
 # test-vault-secret:
 #   stage: test
@@ -14,19 +14,19 @@ stages:
 #   only:
 #     - main
 
-build-docker-image:
-  stage: build
-  tags:
-    - k8s-gitlab-runner # Ensure this matches your runner's tag
-  image: docker:latest  # Use Docker-in-Docker image
-  services:
-    - name: docker:dind  # Docker-in-Docker service
-      alias: dind
-  variables:
-    DOCKER_HOST: tcp://dind:2375  # Configure Docker-in-Docker
-    DOCKER_TLS_CERTDIR: "/certs"
-    #DOCKER_TLS_CERTDIR: ""         # Disable TLS for simplicity
-  script:
-    - echo "Building the Docker image..."
-    - sleep 300
-    - docker build -t testing:latest ./github_runner/docker_image
+# build-docker-image:
+#   stage: build
+#   tags:
+#     - k8s-gitlab-runner # Ensure this matches your runner's tag
+#   image: docker:latest  # Use Docker-in-Docker image
+#   services:
+#     - name: docker:dind-rootless  # Docker-in-Docker service
+#       alias: dind
+#   variables:
+#     DOCKER_HOST: tcp://dind:2375  # Configure Docker-in-Docker
+#     #DOCKER_TLS_CERTDIR: "/certs"
+#     DOCKER_TLS_CERTDIR: ""         # Disable TLS for simplicity
+#   script:
+#     - echo "Building the Docker image..."
+#     - sleep 30
+#     - docker build -t testing:latest ./github_runner/docker_image

@@ -62,10 +62,13 @@ resource "kubernetes_deployment" "github_runner" {
 
       spec {
         service_account_name = kubernetes_service_account.github_runner.metadata[0].name
+
+        # Main GitHub Runner Container
         container {
           name              = "github-runner"
           image             = docker_image.custom_github_runner.image_id
           image_pull_policy = "Never"
+
           env {
             name  = "GITHUB_URL"
             value = "https://github.com/${var.github_owner}"
@@ -93,7 +96,7 @@ resource "kubernetes_deployment" "github_runner" {
 
           env {
             name  = "GITHUB_API_URL"
-            value = "https://api.github.com/orgs/${var.github_owner}" # Adjust for repo if needed
+            value = "https://api.github.com/orgs/${var.github_owner}"
           }
 
           env {
@@ -106,14 +109,56 @@ resource "kubernetes_deployment" "github_runner" {
             }
           }
 
+          env {
+            name  = "DOCKER_HOST"
+            value = "tcp://localhost:2375"
+          }
+
           volume_mount {
             name       = "runner-workdir"
             mount_path = "/tmp/github-runner"
           }
+
+          # Share DinD socket with the runner container
+          volume_mount {
+            name       = "dind-socket"
+            mount_path = "/var/run/docker.sock"
+          }
+        }
+
+        # DinD Rootless Container
+        container {
+          name  = "dind"
+          image = "docker:dind-rootless"
+
+          security_context {
+            privileged = true
+          }
+
+          env {
+            name  = "DOCKER_TLS_CERTDIR"
+            value = ""
+          }
+
+          env {
+            name  = "DOCKER_HOST"
+            value = "unix:///var/run/docker.sock"
+          }
+
+          volume_mount {
+            name       = "dind-socket"
+            mount_path = "/var/run/docker.sock"
+          }
+        }
+
+        # Volumes for Runner and DinD
+        volume {
+          name = "runner-workdir"
+          empty_dir {}
         }
 
         volume {
-          name = "runner-workdir"
+          name = "dind-socket"
           empty_dir {}
         }
       }
