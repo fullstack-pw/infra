@@ -40,6 +40,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: "{{defaultContext}}:github_runner/sample"
-          push: false
-          tags: custom-github-runner:builtOnCi
+          push: true
+          tags: localhost:5000/test/ubuntu:latest
 
