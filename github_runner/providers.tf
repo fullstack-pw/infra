@@ -7,15 +7,25 @@ provider "vault" {
   token   = var.vault_token
 }
 
+provider "helm" {
+  kubernetes {
+    config_path = "~/.kube/config"
+  }
+}
 terraform {
   required_providers {
     docker = {
       source  = "kreuzwerker/docker"
       version = "3.0.2"
     }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.15"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.8"
+    }
   }
-}
-
-provider "docker" {
-  # Configuration options
+  required_version = ">= 1.3.0"
 }

@@ -1,18 +1,3 @@
-provider "kubernetes" {
-  config_path = "~/.kube/config"
-}
-
-provider "helm" {
-  kubernetes {
-    config_path = "~/.kube/config"
-  }
-}
-
-provider "vault" {
-  address = "http://127.0.0.1:30080"
-  token   = var.vault_token
-}
-
 data "vault_generic_secret" "gitlab_runner_token" {
   path = "kv/gitlab-runner"
 }
@@ -21,38 +6,6 @@ data "vault_generic_secret" "gitlab_runner_token" {
 resource "kubernetes_namespace" "gitlab" {
   metadata {
     name = "gitlab"
-  }
-}
-resource "kubernetes_role" "gitlab_runner" {
-  metadata {
-    name      = "gitlab-runner-role"
-    namespace = kubernetes_namespace.gitlab.metadata[0].name
-  }
-
-  rule {
-    api_groups = [""]
-    resources  = ["pods", "pods/exec", "pods/exec", "secrets", "namespaces"]
-    verbs      = ["create", "get", "list", "watch", "delete", "update"] # Added "update" for secrets
-  }
-}
-
-
-resource "kubernetes_role_binding" "gitlab_runner" {
-  metadata {
-    name      = "gitlab-runner-rolebinding"
-    namespace = kubernetes_namespace.gitlab.metadata[0].name
-  }
-
-  role_ref {
-    api_group = "rbac.authorization.k8s.io"
-    kind      = "Role"
-    name      = kubernetes_role.gitlab_runner.metadata[0].name
-  }
-
-  subject {
-    kind      = "ServiceAccount"
-    name      = kubernetes_service_account.gitlab_runner.metadata[0].name
-    namespace = kubernetes_namespace.gitlab.metadata[0].name
   }
 }
 

@@ -39,8 +39,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: "{{defaultContext}}:github_runner/docker_image"
+          context: "{{defaultContext}}:github_runner/sample"
           push: false
-          load: true
           tags: custom-github-runner:builtOnCi
 
