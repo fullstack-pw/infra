@@ -1,6 +1,6 @@
-# stages:
-  # - test
-  # - build
+stages:
+#  - test
+  - build
 
 # test-vault-secret:
 #   stage: test
@@ -14,19 +14,29 @@
 #   only:
 #     - main
 
-# build-docker-image:
-#   stage: build
-#   tags:
-#     - k8s-gitlab-runner # Ensure this matches your runner's tag
-#   image: docker:latest  # Use Docker-in-Docker image
-#   services:
-#     - name: docker:dind-rootless  # Docker-in-Docker service
-#       alias: dind
-#   variables:
-#     DOCKER_HOST: tcp://dind:2375  # Configure Docker-in-Docker
-#     #DOCKER_TLS_CERTDIR: "/certs"
-#     DOCKER_TLS_CERTDIR: ""         # Disable TLS for simplicity
-#   script:
-#     - echo "Building the Docker image..."
-#     - sleep 30
-#     - docker build -t testing:latest ./github_runner/docker_image
+build-docker-image:
+  stage: build
+  tags:
+    - k8s-gitlab-runner # Ensure this matches your runner's tag
+  image: docker:latest  # Use Docker-in-Docker image
+  services:
+    - name: docker:dind-rootless  # Docker-in-Docker service
+      alias: dind
+      entrypoint: ["/bin/sh"]
+      command:
+        - -c
+        - >
+          cp /usr/local/bin/dockerd-entrypoint.sh /tmp/dockerd-entrypoint.sh &&
+          sed -i '/--host=tcp:\/\/0.0.0.0:2376/ s|\(.*--host=tcp://0.0.0.0:2376\)|\1 --insecure-registry docker-registry.docker-registry.svc.cluster.local:5000|' /tmp/dockerd-entrypoint.sh &&
+          sed -i '/--host=tcp:\/\/0.0.0.0:2375/ s|\(.*--host=tcp://0.0.0.0:2375\)|\1 --insecure-registry docker-registry.docker-registry.svc.cluster.local:5000|' /tmp/dockerd-entrypoint.sh &&
+          grep -A3 -B3  "docker-registry.docker-registry.svc.cluster.local:5000" /tmp/dockerd-entrypoint.sh &&
+          /tmp/dockerd-entrypoint.sh
+  variables:
+    DOCKER_HOST: tcp://dind:2375  # Configure Docker-in-Docker
+    DOCKER_TLS_CERTDIR: ""       # Disable TLS for simplicity
+    DOCKER_OPTS: "--insecure-registry docker-registry.docker-registry.svc.cluster.local:5000"
+  script:
+    - echo "Building the Docker image..."
+    - sleep 30
+    - docker build -t docker-registry.docker-registry.svc.cluster.local:5000/test/ubuntu:latest ./github_runner/sample
+    - docker push docker-registry.docker-registry.svc.cluster.local:5000/test/ubuntu:latest
