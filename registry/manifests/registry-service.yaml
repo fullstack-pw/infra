@@ -9,4 +9,4 @@ spec:
     targetPort: 5000
   selector:
     app: docker-registry
-  type: NodePort
+  type: ClusterIP
