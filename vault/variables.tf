@@ -3,3 +3,7 @@ variable "kubeconfig_path" {
   type        = string
   default     = "~/.kube/config"
 }
+
+variable "vault_token" {}
+variable "kubernetes_ca_cert" {}
+variable "token_reviewer_jwt" {}
