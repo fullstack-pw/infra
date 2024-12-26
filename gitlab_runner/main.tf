@@ -1,51 +1,56 @@
-data "vault_generic_secret" "gitlab_runner_token" {
-  path = "kv/gitlab-runner"
+data "vault_kv_secret_v2" "gitlab_runner_token" {
+  mount = "kv"
+  name  = "gitlab-runner"
 }
-
-# Kubernetes Namespace for GitLab Runner
 resource "kubernetes_namespace" "gitlab" {
   metadata {
     name = "gitlab"
   }
 }
 
-# Kubernetes Service Account for GitLab Runner
 resource "kubernetes_service_account" "gitlab_runner" {
   metadata {
     name      = "gitlab-runner-sa"
     namespace = kubernetes_namespace.gitlab.metadata[0].name
-    annotations = {
-      "vault.hashicorp.com/agent-inject"                   = "true"
-      "vault.hashicorp.com/role"                           = "gitlab-role"
-      "vault.hashicorp.com/agent-inject-secret-dummy-test" = "kv/data/dummy-test"
-    }
   }
 }
 
-# Vault Role for GitLab Runner
-resource "vault_kubernetes_auth_backend_role" "gitlab_runner" {
-  backend                          = "kubernetes"
-  role_name                        = "gitlab-role"
-  token_policies                   = [vault_policy.gitlab_secrets.name]
-  bound_service_account_names      = [kubernetes_service_account.gitlab_runner.metadata[0].name]
-  bound_service_account_namespaces = [kubernetes_namespace.gitlab.metadata[0].name]
+resource "kubernetes_secret" "kubeconfig" {
+  metadata {
+    name      = "kubeconfig"
+    namespace = kubernetes_namespace.gitlab.metadata[0].name
+  }
+
+  data = {
+    KUBECONFIG = data.vault_kv_secret_v2.gitlab_runner_token.data["KUBECONFIG"]
+  }
 }
 
+# resource "vault_kubernetes_auth_backend_role" "gitlab_runner" {
+#   backend                          = "kubernetes"
+#   role_name                        = "gitlab-role"
+#   token_policies                   = [vault_policy.gitlab_secrets.name]
+#   bound_service_account_names      = [kubernetes_service_account.gitlab_runner.metadata[0].name]
+#   bound_service_account_namespaces = [kubernetes_namespace.gitlab.metadata[0].name]
+# }
 
-resource "vault_policy" "gitlab_secrets" {
-  name = "gitlab-secrets"
 
-  policy = <<EOT
-  path "kv/data/dummy-test" {
-    capabilities = ["read"]
-  }
-  path "kv/data/gitlab-runner" {
-    capabilities = ["read"]
-  }
-  EOT
-}
+# resource "vault_policy" "gitlab_secrets" {
+#   name = "gitlab-secrets"
 
-# Helm Chart for GitLab Runner
+#   policy = <<EOT
+#   path "kv/data/dummy-test" {
+#     capabilities = ["read"]
+#   }
+#   path "kv/data/gitlab-runner" {
+#     capabilities = ["read"]
+#   }
+#   path "kv/data/k8s" {
+#     capabilities = ["read"]
+#   }
+#   EOT
+# }
+
 resource "helm_release" "gitlab_runner" {
   name       = "gitlab-runner"
   namespace  = kubernetes_namespace.gitlab.metadata[0].name
@@ -57,9 +62,10 @@ resource "helm_release" "gitlab_runner" {
     templatefile("${path.module}/values.yaml.tpl", {
       service_account_name = kubernetes_service_account.gitlab_runner.metadata[0].name
       namespace            = kubernetes_namespace.gitlab.metadata[0].name
-      registration_token   = data.vault_generic_secret.gitlab_runner_token.data.token
+      registration_token   = data.vault_kv_secret_v2.gitlab_runner_token.data["GITLAB_TOKEN"]
     })
   ]
+  timeout = 120
 }
 
 
