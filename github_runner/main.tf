@@ -1,28 +1,33 @@
-# Fetch the GitHub token from Vault
 data "vault_kv_secret_v2" "github_token" {
-  mount = "kv"            # Adjust to your Vault KV mount name
-  name  = "github-runner" # Path to the secret in Vault
+  mount = "kv"
+  name  = "github-runner"
 }
 
-# Create a namespace for the GitHub runner
-resource "kubernetes_namespace" "github_runner" {
+resource "kubernetes_namespace" "arc_namespace" {
   metadata {
-    name = "github-runner"
+    name = var.namespace
   }
 }
 
-# Store the GitHub token in a Kubernetes secret
-resource "kubernetes_secret" "github_runner_secret" {
+resource "kubernetes_secret" "kubeconfig" {
   metadata {
-    name      = "github-runner-secret"
-    namespace = kubernetes_namespace.github_runner.metadata[0].name
+    name      = "kubeconfig"
+    namespace = kubernetes_namespace.arc_namespace.metadata[0].name
   }
 
   data = {
-    GITHUB_OWNER = var.github_owner
-    GITHUB_REPO  = var.github_repo
-    GITHUB_TOKEN = data.vault_kv_secret_v2.github_token.data["token"]
-    GITHUB_PAT   = data.vault_kv_secret_v2.github_token.data["GITHUB_PAT"]
+    KUBECONFIG = data.vault_kv_secret_v2.github_token.data["KUBECONFIG"]
+  }
+}
+
+resource "kubernetes_secret" "github_pat" {
+  metadata {
+    name      = "github-pat"
+    namespace = kubernetes_namespace.arc_namespace.metadata[0].name
+  }
+
+  data = {
+    GITHUB_PAT = data.vault_kv_secret_v2.github_token.data["GITHUB_PAT"]
   }
 }
 
@@ -30,111 +35,75 @@ resource "kubernetes_secret" "github_runner_secret" {
 resource "kubernetes_service_account" "github_runner" {
   metadata {
     name      = "github-runner"
-    namespace = kubernetes_namespace.github_runner.metadata[0].name
+    namespace = kubernetes_namespace.arc_namespace.metadata[0].name
   }
 }
+
+# Vault Role for github Runner
+# resource "vault_kubernetes_auth_backend_role" "github_runner" {
+#   backend                          = "kubernetes"
+#   role_name                        = "github-role"
+#   token_policies                   = [vault_policy.github_secrets.name]
+#   bound_service_account_names      = [kubernetes_service_account.github_runner.metadata[0].name]
+#   bound_service_account_namespaces = [kubernetes_namespace.arc_namespace.metadata[0].name]
+# }
+
+
+# resource "vault_policy" "github_secrets" {
+#   name = "github-secrets"
+
+#   policy = <<EOT
+#   path "kv/data/dummy-test" {
+#     capabilities = ["read"]
+#   }
+#   path "kv/data/github-runner" {
+#     capabilities = ["read"]
+#   }
+#   path "kv/data/k8s" {
+#     capabilities = ["read"]
+#   }
+#   EOT
+# }
 
 # Deploy the GitHub Actions runner pod
-resource "kubernetes_deployment" "github_runner" {
-  metadata {
-    name      = "github-runner"
-    namespace = kubernetes_namespace.github_runner.metadata[0].name
-    labels = {
-      app = "github-runner"
-    }
+resource "helm_release" "arc" {
+  name       = "actions-runner-controller"
+  namespace  = kubernetes_namespace.arc_namespace.metadata[0].name
+  chart      = "actions-runner-controller"
+  repository = "https://actions-runner-controller.github.io/actions-runner-controller"
+  version    = "0.23.7"
+
+  set {
+    name  = "authSecret.create"
+    value = true
   }
 
-  spec {
-    replicas = 1
-
-    selector {
-      match_labels = {
-        app = "github-runner"
-      }
-    }
-
-    template {
-      metadata {
-        labels = {
-          app = "github-runner"
-        }
-      }
-
-      spec {
-        service_account_name = kubernetes_service_account.github_runner.metadata[0].name
-        container {
-          name              = "github-runner"
-          image             = docker_image.custom_github_runner.image_id
-          image_pull_policy = "Never"
-          env {
-            name  = "GITHUB_URL"
-            value = "https://github.com/${var.github_owner}"
-          }
-
-          env {
-            name = "RUNNER_TOKEN"
-            value_from {
-              secret_key_ref {
-                name = kubernetes_secret.github_runner_secret.metadata[0].name
-                key  = "GITHUB_TOKEN"
-              }
-            }
-          }
-
-          env {
-            name  = "RUNNER_NAME"
-            value = var.runner_name
-          }
-
-          env {
-            name  = "RUNNER_WORKDIR"
-            value = "/tmp/github-runner"
-          }
-
-          env {
-            name  = "GITHUB_API_URL"
-            value = "https://api.github.com/orgs/${var.github_owner}" # Adjust for repo if needed
-          }
-
-          env {
-            name = "GITHUB_PAT"
-            value_from {
-              secret_key_ref {
-                name = kubernetes_secret.github_runner_secret.metadata[0].name
-                key  = "GITHUB_PAT"
-              }
-            }
-          }
-
-          volume_mount {
-            name       = "runner-workdir"
-            mount_path = "/tmp/github-runner"
-          }
-        }
-
-        volume {
-          name = "runner-workdir"
-          empty_dir {}
-        }
-      }
-    }
+  set {
+    name  = "authSecret.github_token"
+    value = data.vault_kv_secret_v2.github_token.data["GITHUB_PAT"]
   }
-  depends_on = [docker_image.custom_github_runner]
+
+  set {
+    name  = "installCRDs"
+    value = "true"
+  }
+  set {
+    name = "image.actionsRunnerRepositoryAndTag"
+    value = "registry.fullstack.pw/github-runner:latest"
+  }
 }
 
-# Build Docker image locally
-resource "docker_image" "custom_github_runner" {
-  name = "custom-github-runner:${sha1(join("", [for f in fileset(path.module, "docker_image/*") : filesha1(f)]))}"
-
-  build {
-    context    = "./docker_image" # Path to the Dockerfile directory
-    dockerfile = "Dockerfile"
-  }
-  triggers = {
-    dir_sha1 = sha1(join("", [for f in fileset(path.module, "docker_image/*") : filesha1(f)]))
-  }
-  lifecycle {
-    create_before_destroy = true
-  }
-
+resource "kubernetes_manifest" "runner_deployment" {
+  manifest = yamldecode(templatefile("${path.module}/runner_deployment.yaml.tpl", {
+    github_owner = var.github_owner,
+  }))
+  depends_on = [helm_release.arc]
 }
+
+# resource "kubernetes_manifest" "runner_autoscaler" {
+#   manifest = yamldecode(templatefile("${path.module}/runner_autoscaler.yaml.tpl", {
+#     github_owner = var.github_owner,
+#   }))
+#   depends_on = [helm_release.arc]
+# }
+
