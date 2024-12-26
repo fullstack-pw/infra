@@ -10,11 +10,4 @@ variable "github_owner" {
   default     = "fullstack-pw"
 }
 
-
-variable "runner_replicas" {
-  description = "Number of runner replicas to start with"
-  type        = number
-  default     = 2
-}
-
 variable "vault_token" {}
