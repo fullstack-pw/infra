@@ -4,7 +4,20 @@ metadata:
   name: github-runner
   namespace: actions-runner-system
 spec:
-  replicas: ${runner_replicas}
   template:
     spec:
       organization: ${github_owner}
+      serviceAccountName: github-runner
+      containers:
+        - name: runner
+          env:
+            - name: KUBECONFIG
+              value: "/etc/kubeconfig"
+          volumeMounts:
+            - name: kubeconfig-volume
+              mountPath: "/etc/kubeconfig"
+              subPath: KUBECONFIG
+      volumes:
+        - name: kubeconfig-volume
+          secret:
+            secretName: kubeconfig

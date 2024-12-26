@@ -5,8 +5,8 @@ resource "kubernetes_persistent_volume_claim" "registry_storage" {
   }
 
   spec {
-    access_modes = ["ReadWriteOnce"]
-
+    access_modes       = ["ReadWriteOnce"]
+    storage_class_name = "local-path"
     resources {
       requests = {
         storage = "10Gi"

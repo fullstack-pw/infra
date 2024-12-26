@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: docker-registry
-  namespace: docker-registry
+  name: registry
+  namespace: registry
   labels:
-    app: docker-registry
+    app: registry
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: docker-registry
+      app: registry
   template:
     metadata:
       labels:
-        app: docker-registry
+        app: registry
     spec:
       containers:
       - name: registry

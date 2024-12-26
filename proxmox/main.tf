@@ -53,20 +53,28 @@ resource "proxmox_vm_qemu" "vm" {
   full_clone = false
   scsihw     = "virtio-scsi-single"
 
-  disks {
-    scsi {
+  # Dynamic disks block
+  # Dynamic scsi disks
+  dynamic "scsi" {
+    for_each = [for disk in each.value.disks : disk if disk.type == "scsi"]
+    content {
       scsi0 {
         disk {
-          size    = each.value.disk_size
-          storage = "local-lvm"
-          format  = "raw"
+          size    = lookup(scsi.value, "size", null)
+          storage = lookup(scsi.value, "storage", null)
+          format  = lookup(scsi.value, "format", null)
         }
       }
     }
-    ide {
+  }
+
+  # Dynamic ide disks
+  dynamic "ide" {
+    for_each = [for disk in each.value.disks : disk if disk.type == "ide"]
+    content {
       ide2 {
         cdrom {
-          iso = each.value.iso_path
+          iso = lookup(ide.value, "iso", null)
         }
       }
     }
