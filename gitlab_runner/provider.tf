@@ -1,14 +1,16 @@
 provider "kubernetes" {
   config_path = "~/.kube/config"
+  config_context = "rancher-desktop"
 }
 
 provider "helm" {
   kubernetes {
     config_path = "~/.kube/config"
+    config_context = "rancher-desktop"
   }
 }
 
 provider "vault" {
-  address = "http://127.0.0.1:30080"
+  address = "https://vault.fullstack.pw"
   token   = var.vault_token
 }
