@@ -1,0 +1,11 @@
+name: dns.fullstack.pw
+cores: 1
+memory: 2048
+cpu_type: x86-64-v2-AES
+onboot: true
+disk_size: 50G
+iso_path: local:iso/ubuntu-23.10-live-server-amd64.iso
+network:
+  bridge: vmbr0
+  model: virtio
+  firewall: true

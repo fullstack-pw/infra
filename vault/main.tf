@@ -1,6 +1,7 @@
 resource "helm_release" "vault" {
   name      = "vault"
   namespace = "vault"
+  force_update = true
 
   create_namespace = true
 
@@ -10,12 +11,7 @@ resource "helm_release" "vault" {
   values = [
     <<-EOF
     server:
-      enabled: true
-      standalone:
-        enabled: true
       dataStorage:
-        enabled: true
-        size: 1Gi
         storageClass: hostpath
     ui:
       enabled: true
@@ -23,22 +19,23 @@ resource "helm_release" "vault" {
   ]
 }
 
-# Expose Vault UI
-resource "kubernetes_service" "vault_ui" {
-  metadata {
-    name      = "vault-ui-service"
-    namespace = helm_release.vault.namespace
-  }
-  spec {
-    selector = {
-      "app.kubernetes.io/name" = "vault"
-    }
-    type = "NodePort"
+resource "vault_mount" "kv" {
+  path = "kv"
+  type = "kv-v2"
+  description = "Key-Value store for secrets"
+  depends_on = [ helm_release.vault ]
+}
 
-    port {
-      port        = 8200
-      target_port = 8200
-      node_port   = 30080 # Adjust the port as needed
-    }
-  }
+resource "vault_auth_backend" "kubernetes" {
+  type = "kubernetes"
+  description = "Kubernetes Auth Method"
+  depends_on = [ helm_release.vault ]
+}
+
+resource "vault_kubernetes_auth_backend_config" "auth" {
+  backend      = vault_auth_backend.kubernetes.path
+  kubernetes_host = "https://kubernetes.default.svc"
+  kubernetes_ca_cert  = var.kubernetes_ca_cert
+  token_reviewer_jwt  = var.token_reviewer_jwt
+  depends_on = [ helm_release.vault ]
 }
