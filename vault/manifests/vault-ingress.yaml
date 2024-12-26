@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-vault
+  namespace: vault
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    external-dns.alpha.kubernetes.io/hostname: vault.fullstack.pw
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.org/client-max-body-size: "0"
+spec:
+  tls:
+  - hosts:
+    - vault.fullstack.pw
+    secretName: fullstack-tls
+  rules:
+  - host: vault.fullstack.pw
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: vault
+            port:
+              number: 8200
+  ingressClassName: nginx
