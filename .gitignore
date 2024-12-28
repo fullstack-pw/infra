@@ -4,3 +4,4 @@
 *.lock.hcl
 *.backup
 private*
+backend.hcl
