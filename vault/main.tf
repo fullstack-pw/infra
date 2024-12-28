@@ -13,6 +13,18 @@ resource "helm_release" "vault" {
     server:
       dataStorage:
         storageClass: hostpath
+      ingress:
+        enabled: true
+        ingressClassName: "nginx"
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: vault.fullstack.pw
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+        hosts:
+          - host: vault.fullstack.pw
+        tls:
+        - secretName: vault-tls
+          hosts:
+            - vault.fullstack.pw
     ui:
       enabled: true
     EOF
