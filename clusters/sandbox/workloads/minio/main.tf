@@ -35,6 +35,9 @@ consoleIngress:
   annotations:
     external-dns.alpha.kubernetes.io/hostname: minio.fullstack.pw
     cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.org/location-snippets: |
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
   ingressClassName: nginx
   hosts:
    - minio.fullstack.pw
@@ -45,3 +48,5 @@ consoleIngress:
 EOF
   ] 
 }
+
+

@@ -8,15 +8,10 @@ resource "helm_release" "nginx" {
   values = [
     <<-EOF
 controller:
-  defaultTLS:
-    secret: "default/fullstack-tls"
+  enableCustomResources: true
+  enableSnippets: true
     EOF
   ] 
-
-#   set {
-#     name  = "installCRDs"
-#     value = "true"
-#   }
 }
 
 import {
@@ -24,3 +19,6 @@ import {
   to = helm_release.nginx
 }
 
+
+  # defaultTLS:
+  #   secret: "default/fullstack-tls"
