@@ -88,6 +88,10 @@ resource "helm_release" "arc" {
     value = "true"
   }
   set {
+    name = "certManagerEnabled"
+    value = "false"
+  }
+  set {
     name = "image.actionsRunnerRepositoryAndTag"
     value = "registry.fullstack.pw/github-runner:latest"
   }

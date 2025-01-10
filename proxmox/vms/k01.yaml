@@ -1,11 +1,28 @@
 name: k01.fullstack.pw
-cores: 4
+target_node: node01
+cores: 1
+sockets: 4
 memory: 4096
 cpu_type: x86-64-v2-AES
 onboot: true
-disk_size: 32G
-iso_path: local:iso/ubuntu-23.10-live-server-amd64.iso
+disks:
+- slot: ide2
+  format: null
+  type: cdrom
+  iso: local:iso/ubuntu-23.10-live-server-amd64.iso
+- slot: scsi0
+  type: disk
+  size: 32G
+  storage: local-lvm
+  format: raw
+- slot: scsi1
+  type: disk
+  size: 32G
+  storage: slowdata
+  format: raw
 network:
   bridge: vmbr0
   model: virtio
   firewall: true
+ipconfig0: null
+template: null

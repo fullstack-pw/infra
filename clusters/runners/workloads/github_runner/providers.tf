@@ -1,6 +1,6 @@
 provider "kubernetes" {
   config_path = "~/.kube/config" # Path to your kubeconfig file
-  config_context = "rancher-desktop"
+  config_context = "runners"
 }
 
 provider "vault" {
@@ -11,7 +11,7 @@ provider "vault" {
 provider "helm" {
   kubernetes {
     config_path = "~/.kube/config"
-    config_context = "rancher-desktop"
+    config_context = "runners"
   }
 }
 terraform {
@@ -32,7 +32,7 @@ terraform {
   required_version = ">= 1.3.0"
   backend "s3" {
     bucket         = "terraform"
-    key            = "github-runner.tfstate"
+    key            = "runners/github-runner.tfstate"
     endpoints = {
       s3 = "https://s3.fullstack.pw"
     }

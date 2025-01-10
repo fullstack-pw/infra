@@ -1,12 +1,12 @@
 provider "kubernetes" {
   config_path = "~/.kube/config"
-  config_context = "rancher-desktop"
+  config_context = "runners"
 }
 
 provider "helm" {
   kubernetes {
     config_path = "~/.kube/config"
-    config_context = "rancher-desktop"
+    config_context = "runners"
   }
 }
 
@@ -18,7 +18,7 @@ provider "vault" {
 terraform {
   backend "s3" {
     bucket         = "terraform"
-    key            = "gitlab-runner.tfstate"
+    key            = "runners/external-secrets.tfstate"
     endpoints = {
       s3 = "https://s3.fullstack.pw"
     }

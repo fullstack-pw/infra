@@ -1,0 +1,238 @@
+---
+- name: Configure PXE Server
+  hosts: pxe-server
+  become: true
+  vars:
+    tftp_root: /var/lib/tftpboot
+    apache_root: /var/www/html
+    proxmox_version: "8.3-1"
+    proxmox_iso_url: "https://enterprise.proxmox.com/iso/proxmox-ve_8.3-1.iso"
+    proxmox_iso_file: "/tmp/proxmox-ve_8.3-1-unmod.iso"
+    modified_iso_file: "/tmp/proxmox-ve_8.3-1.iso"
+    answer_file_url: "http://192.168.1.10/get_answer/answer.toml"
+
+  tasks:
+    - name: Add Proxmox GPG key
+      ansible.builtin.command:
+        cmd: >
+          wget https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg
+          -O /etc/apt/trusted.gpg.d/proxmox-release-bookworm.gpg
+      args:
+        creates: /etc/apt/trusted.gpg.d/proxmox-release-bookworm.gpg
+
+    - name: Ensure Proxmox repository is added
+      apt_repository:
+        repo: "deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription"
+        state: present
+        filename: proxmox
+
+    - name: Install required tools for PXE and ISO modification
+      apt:
+        name:
+          - dnsmasq
+          - syslinux
+          - tftp-hpa
+          - apache2
+          - cpio
+          - file
+          - zstd
+          - gzip
+          - genisoimage
+          - proxmox-auto-install-assistant
+        state: present
+        update_cache: true
+# SETUP PXE BOOT SERVER
+    - name: Create TFTP root directory
+      file:
+        path: "{{ tftp_root }}"
+        state: directory
+        mode: '0755'
+
+    - name: Create pxelinux.cfg directory
+      file:
+        path: "{{ tftp_root }}/pxelinux.cfg"
+        state: directory
+        mode: '0755'
+
+    - name: Configure dnsmasq
+      copy:
+        dest: /etc/dnsmasq.conf
+        content: |
+          port=0
+          interface=eth0
+          dhcp-range=192.168.1.0,proxy
+          pxe-service=x86PC, "PXE Boot", pxelinux
+          dhcp-boot=pxelinux.0
+          enable-tftp
+          tftp-root={{ tftp_root }}
+
+    - name: Restart dnsmasq
+      service:
+        name: dnsmasq
+        state: restarted
+
+    - name: Create temp directory for syslinux
+      file:
+        path: /tmp/syslinux
+        state: directory
+        mode: '0755'
+
+    - name: Create proxmox answers directory
+      file:
+        path: /var/www/html/get_answer
+        state: directory
+        mode: '0755'
+
+    - name: Download syslinux package
+      get_url:
+        url: "https://mirrors.kernel.org/pub/linux/utils/boot/syslinux/syslinux-6.03.tar.gz"
+        dest: /tmp/syslinux.tar.gz
+        mode: '0644'
+
+    - name: Extract syslinux package
+      unarchive:
+        src: /tmp/syslinux.tar.gz
+        dest: /tmp/syslinux
+        remote_src: yes
+
+    - name: Copy pxelinux.0 to TFTP root
+      copy:
+        src: /tmp/syslinux/syslinux-6.03/bios/core/pxelinux.0
+        dest: "{{ tftp_root }}/"
+        remote_src: yes
+
+    - name: Copy ldlinux.c32 to TFTP root
+      copy:
+        src: /tmp/syslinux/syslinux-6.03/bios/com32/elflink/ldlinux/ldlinux.c32
+        dest: "{{ tftp_root }}/"
+        remote_src: yes
+# DOWNLOAD AND MODIFY PROXMOX ISO TO AUTO INSTALL
+    - name: Check if Proxmox ISO is already downloaded
+      stat:
+        path: "{{ proxmox_iso_file }}"
+      register: iso_stat
+
+    - name: Download Proxmox ISO if not present
+      get_url:
+        url: "{{ proxmox_iso_url }}"
+        dest: "{{ proxmox_iso_file }}"
+        mode: '0644'
+      when: not iso_stat.stat.exists
+
+    - name: Modify ISO with Proxmox Auto Install Assistant
+      command: >
+        proxmox-auto-install-assistant prepare-iso
+        "{{ proxmox_iso_file }}"
+        --fetch-from http
+        --url "{{ answer_file_url }}"
+        --output "{{ modified_iso_file }}"
+      args:
+        creates: "{{ modified_iso_file }}"
+
+    - name: Delete unmodded ISO
+      ansible.builtin.file:
+        state: absent
+        path: "{{ proxmox_iso_file }}"
+
+    - name: Create a folder for pve-iso-2-pxe
+      file:
+        path: /tmp/pve-iso-2-pxe
+        state: directory
+        mode: '0755'
+
+    - name: Copy pve-iso-2-pxe.sh to the server
+      copy:
+        src: pve-iso-2-pxe.sh
+        dest: /tmp/pve-iso-2-pxe/pve-iso-2-pxe.sh
+        mode: '0755'
+
+    # - name: Download pve-iso-2-pxe.sh from GitHub
+    #   get_url:
+    #     url: "https://raw.githubusercontent.com/morph027/pve-iso-2-pxe/master/pve-iso-2-pxe.sh"
+    #     dest: /tmp/pve-iso-2-pxe/pve-iso-2-pxe.sh
+    #     mode: '0755'
+
+    - name: Run pve-iso-2-pxe script against the Proxmox ISO
+      shell: |
+        cd /tmp/pve-iso-2-pxe
+        ./pve-iso-2-pxe.sh "{{ modified_iso_file }}"
+      args:
+        chdir: /tmp/pve-iso-2-pxe
+      register: pve_pxe_script
+
+    - name: Create Proxmox versioned directory in TFTP root
+      file:
+        path: "{{ tftp_root }}/proxmox/{{ proxmox_version }}"
+        state: directory
+        mode: '0755'
+        recurse: true
+
+    - name: Copy linux26 to TFTP
+      copy:
+        src: "/tmp/pxeboot/linux26"
+        dest: "{{ tftp_root }}/proxmox/{{ proxmox_version }}/linux26"
+        remote_src: yes
+      when: pve_pxe_script is succeeded
+
+    - name: Copy initrd to TFTP
+      copy:
+        src: "/tmp/pxeboot/initrd"
+        dest: "{{ tftp_root }}/proxmox/{{ proxmox_version }}/initrd"
+        remote_src: yes
+      when: pve_pxe_script is succeeded
+
+    - name: Copy all required Syslinux .c32 modules to TFTP root
+      copy:
+        src: "/tmp/syslinux/syslinux-6.03/bios/com32/{{ item }}"
+        dest: "{{ tftp_root }}/"
+        remote_src: yes
+      loop:
+        - menu/menu.c32
+        - cmenu/libmenu/libmenu.c32
+        - libutil/libutil.c32
+        - lib/libcom32.c32
+        - chain/chain.c32
+        - mboot/mboot.c32
+
+    - name: Create/update PXE boot menu
+      copy:
+        dest: "{{ tftp_root }}/pxelinux.cfg/default"
+        content: |
+          DEFAULT proxmox-install
+          PROMPT 0
+          TIMEOUT 0
+          MENU TITLE PXE Boot Menu
+
+          LABEL proxmox-install
+              MENU LABEL Install Proxmox ({{ proxmox_version }})
+              KERNEL proxmox/{{ proxmox_version }}/linux26
+              APPEND initrd=proxmox/{{ proxmox_version }}/initrd vga=791 video=vesafb:ywrap,mtrr ramdisk_size=16777216 rw quiet splash=silent boot=install auto=true proxmox-start-auto-installer
+
+    - name: Configure Apache to serve the answer file
+      copy:
+        dest: "{{ apache_root }}/get_answer/answer.toml"
+        content: |
+          [global]
+          keyboard = "pt"
+          country = "us"
+          fqdn = "node02.fullstack.pw"
+          mailto = "admin@fullstack.pw"
+          timezone = "UTC"
+          root_password = "supersecurepassword"
+          root_ssh_keys = [
+              "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP+mJj63c+7o+Bu40wNnXwTpXkPTpGJA9OIprmNoljKI pedro@pedro-Legion-5-16IRX9"
+          ]
+
+          [network]
+          source = "from-dhcp"
+
+          [disk-setup]
+          filesystem = "ext4"
+          disk_list = ["sda"]
+      notify: Restart Apache
+
+  handlers:
+    - name: Restart Apache
+      service:
+        name: apache2
+        state: restarted
