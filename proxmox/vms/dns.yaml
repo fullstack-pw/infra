@@ -1,11 +1,23 @@
 name: dns.fullstack.pw
+target_node: node01
 cores: 1
+sockets: 1
 memory: 2048
 cpu_type: x86-64-v2-AES
 onboot: true
-disk_size: 50G
-iso_path: local:iso/ubuntu-23.10-live-server-amd64.iso
+disks:
+- slot: ide2
+  format: null
+  type: cdrom
+  iso: local:iso/ubuntu-23.10-live-server-amd64.iso
+- slot: scsi0
+  format: raw
+  type: disk
+  size: 50G
+  storage: local-lvm
 network:
   bridge: vmbr0
   model: virtio
   firewall: true
+ipconfig0: null
+template: null

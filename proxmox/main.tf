@@ -10,36 +10,28 @@ resource "proxmox_vm_qemu" "vm" {
 
   name       = each.value.name
   cores      = each.value.cores
+  sockets = each.value.sockets
   memory     = each.value.memory
+  target_node = each.value.target_node
   cpu_type   = each.value.cpu_type
   onboot     = each.value.onboot
   full_clone = false
   scsihw     = "virtio-scsi-single"
+  define_connection_info = false
 
-  # Dynamic disks block
-  # Dynamic scsi disks
-  dynamic "scsi" {
-    for_each = [for disk in each.value.disks : disk if disk.type == "scsi"]
+  # Generate one "disk {...}" block per disk in the YAML
+  dynamic "disk" {
+    # for_each = each.value.disks
+    for_each = [for d in each.value.disks : d]
     content {
-      scsi0 {
-        disk {
-          size    = lookup(scsi.value, "size", null)
-          storage = lookup(scsi.value, "storage", null)
-          format  = lookup(scsi.value, "format", null)
-        }
-      }
-    }
-  }
+      slot      = disk.value.slot
+      type    = disk.value.type
+      size    = strcontains(disk.value.slot, "scsi") ? disk.value.size : null
+      storage = strcontains(disk.value.slot, "scsi") ? disk.value.storage : null
+      iso     = strcontains(disk.value.slot, "ide")  ? lookup(disk.value, "iso", null) : null
 
-  # Dynamic ide disks
-  dynamic "ide" {
-    for_each = [for disk in each.value.disks : disk if disk.type == "ide"]
-    content {
-      ide2 {
-        cdrom {
-          iso = lookup(ide.value, "iso", null)
-        }
-      }
+      # If the user might specify format
+      format  = disk.value.format
     }
   }
 
@@ -49,4 +41,7 @@ resource "proxmox_vm_qemu" "vm" {
     model    = each.value.network.model
     id       = 0
   }
+
+  ipconfig0 = each.value.ipconfig0
+  clone = each.value.template
 }
