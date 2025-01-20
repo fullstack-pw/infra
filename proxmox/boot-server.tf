@@ -8,7 +8,7 @@ resource "proxmox_vm_qemu" "boot_server" {
   boot        = "order=scsi0" # has to be the same as the OS disk of the template
   clone       = "ubuntu24-cloudinit" # The name of the template
   scsihw      = "virtio-scsi-single"
-  vm_state    = "running"
+  vm_state    = "stopped"
   automatic_reboot = true
 
   nameserver = "192.168.1.3"

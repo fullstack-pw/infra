@@ -4,6 +4,7 @@ metadata:
   name: github-runner
   namespace: actions-runner-system
 spec:
+  replicas: 2
   template:
     spec:
       organization: ${github_owner}

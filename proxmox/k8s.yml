@@ -1,0 +1,35 @@
+---
+- name: Install Single-Node K3s
+  hosts: k3s-clusters
+  become: true
+  gather_facts: yes
+
+  tasks:
+    - name: Install dependencies (if needed)
+      apt:
+        name:
+          - curl
+          - apt-transport-https
+          - ca-certificates
+        state: present
+        update_cache: yes
+
+    - name: Install K3s
+      shell: |
+        curl -sfL https://get.k3s.io | sh -s - 
+      args:
+        executable: /bin/bash
+
+    - name: Wait for K3s service
+      service:
+        name: k3s
+        state: started
+        enabled: true
+
+    - name: Display node token
+      shell: cat /var/lib/rancher/k3s/server/node-token
+      register: node_token
+      changed_when: false
+
+    - debug:
+        msg: "Node token for {{ inventory_hostname }}: {{ node_token.stdout }}"
