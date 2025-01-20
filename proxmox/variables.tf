@@ -23,3 +23,39 @@ locals {
     file => yamldecode(content.content)
   }
 }
+
+variable "vm_count" {
+  type        = number
+  description = "Number of VM replicas per cluster environment"
+  default     = 1
+}
+
+variable "vm_storage" {
+  type        = string
+  description = "Name of the Proxmox storage pool to use"
+  default     = "local-lvm"
+}
+
+variable "vm_image" {
+  type        = string
+  description = "Name or ID of the VM template or ISO"
+  default     = "ubuntu-2204-template"
+}
+
+variable "network_bridge" {
+  type        = string
+  description = "Proxmox network bridge to use"
+  default     = "vmbr0"
+}
+
+variable "vcpus" {
+  type        = number
+  description = "Number of vCPUs per VM"
+  default     = 2
+}
+
+variable "memory" {
+  type        = number
+  description = "RAM in MB per VM"
+  default     = 4096
+}
