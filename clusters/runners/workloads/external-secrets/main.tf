@@ -12,7 +12,7 @@ resource "helm_release" "external-secrets" {
   chart      = "external-secrets"
 
 values = [ <<-EOF
-installCRDs: false
+installCRDs: true
 EOF 
 ]
 }
