@@ -13,7 +13,7 @@ provider "helm" {
 terraform {
   backend "s3" {
     bucket         = "terraform"
-    key            = "minio.tfstate"
+    key            = "prometheus.tfstate"
     endpoints = {
       s3 = "https://s3.fullstack.pw"
     }

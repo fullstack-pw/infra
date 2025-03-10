@@ -17,7 +17,7 @@ persistence:
   size: 10Gi
 resources:
   requests:
-    memory: 512Mi
+    memory: 256Mi
 ingress:
   enabled: true
   annotations:
