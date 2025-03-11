@@ -1,0 +1,27 @@
+# In the sandbox cluster
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: otel-collector-ingress
+  namespace: observability
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    external-dns.alpha.kubernetes.io/hostname: "otel-collector.fullstack.pw"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: "nginx"
+  tls:
+  - hosts:
+    - "otel-collector.fullstack.pw"
+    secretName: otel-collector-tls
+  rules:
+  - host: "otel-collector.fullstack.pw"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: otel-collector
+            port:
+              number: 4317  # This should be the HTTP port, not gRPC
