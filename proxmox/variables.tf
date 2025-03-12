@@ -1,13 +1,16 @@
+// proxmox/variables.tf
 
-
-variable "vm_configs" {
-  default = []
+# Required variables
+variable "proxmox_password" {
+  description = "Password for Proxmox API authentication"
+  type        = string
+  sensitive   = true
 }
 
-variable "proxmox_password" {}
-
-# Define the network configuration
+# Network configuration
 variable "network_config" {
+  description = "Map of network configurations for VMs"
+  type        = map(string)
   default = {
     dns = "192.168.1.3"
     k01 = "192.168.1.101"
@@ -17,45 +20,80 @@ variable "network_config" {
   }
 }
 
-locals {
-  vm_configs = {
-    for file, content in data.local_file.yaml_files :
-    file => yamldecode(content.content)
+# Default resource allocations
+variable "vm_defaults" {
+  description = "Default values for VM resources"
+  type = object({
+    cpu_type         = string
+    sockets          = number
+    cores            = number
+    memory           = number
+    disk_size        = string
+    storage_location = string
+    network_bridge   = string
+  })
+  default = {
+    cpu_type         = "host"
+    sockets          = 1
+    cores            = 1
+    memory           = 1024
+    disk_size        = "20G"
+    storage_location = "local-lvm"
+    network_bridge   = "vmbr0"
   }
 }
 
-variable "vm_count" {
-  type        = number
-  description = "Number of VM replicas per cluster environment"
-  default     = 1
+# SSH Keys for Cloud-Init VMs
+variable "ssh_keys" {
+  description = "SSH public keys to add to cloud-init VMs"
+  type        = list(string)
+  default     = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP+mJj63c+7o+Bu40wNnXwTpXkPTpGJA9OIprmNoljKI pedro@pedro-Legion-5-16IRX9"
+  ]
 }
 
-variable "vm_storage" {
-  type        = string
-  description = "Name of the Proxmox storage pool to use"
-  default     = "local-lvm"
+# Cloud-Init Credentials
+variable "cloud_init_credentials" {
+  description = "Default credentials for cloud-init VMs"
+  type = object({
+    username = string
+    password = string
+  })
+  default = {
+    username = "suporte"
+    password = "sistema"
+  }
 }
 
-variable "vm_image" {
-  type        = string
-  description = "Name or ID of the VM template or ISO"
-  default     = "ubuntu-2204-template"
+# Proxmox ISO Configuration
+variable "proxmox_isos" {
+  description = "Details about available Proxmox ISOs"
+  type = map(object({
+    path    = string
+    version = string
+  }))
+  default = {
+    ubuntu_23_10 = {
+      path    = "local:iso/ubuntu-23.10-live-server-amd64.iso"
+      version = "23.10"
+    }
+    ubuntu_24_04 = {
+      path    = "local:iso/ubuntu-24.04.1-live-server-amd64.iso"
+      version = "24.04"
+    }
+    proxmox_8_3 = {
+      path    = "local:iso/proxmox-ve_8.3-1.iso"
+      version = "8.3-1"
+    }
+  }
 }
 
-variable "network_bridge" {
-  type        = string
-  description = "Proxmox network bridge to use"
-  default     = "vmbr0"
-}
-
-variable "vcpus" {
-  type        = number
-  description = "Number of vCPUs per VM"
-  default     = 2
-}
-
-variable "memory" {
-  type        = number
-  description = "RAM in MB per VM"
-  default     = 4096
+# Templates
+variable "vm_templates" {
+  description = "Available VM templates for cloning"
+  type = map(string)
+  default = {
+    ubuntu24_cloudinit = "ubuntu24-cloudinit"
+    ubuntu24_standard  = "ubuntu24-template"
+  }
 }
