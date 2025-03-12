@@ -1,20 +1,20 @@
-concurrent: 10
-checkInterval: 30
+concurrent: ${concurrent}
+checkInterval: ${check_interval}
 runnerToken: "${registration_token}"
 rbac:
   create: true
 runners:
   config: |
     [[runners]]
-      tags = ["k8s-gitlab-runner"]
-      name = "k8s-gitlab-runner"
-      url = "https://gitlab.com/"
+      tags = ["${runner_tags}"]
+      name = "${runner_tags}"
+      url = "${gitlab_url}"
       executor = "kubernetes"
       environment = ["FF_USE_ADVANCED_POD_SPEC_CONFIGURATION=true"]
       [runners.kubernetes]
         namespace = "${namespace}"
-        privileged = true
-        poll_timeout = 600
+        privileged = ${privileged}
+        poll_timeout = ${poll_timeout}
         service_account = "${service_account_name}"
         [[runners.kubernetes.pod_spec]]
           name = "build envvars"

@@ -49,7 +49,7 @@ variable "workload" {
     stg     = ["externaldns", "cert_manager", "external_secrets"]
     prod    = ["externaldns", "cert_manager", "external_secrets"]
     sandbox = ["externaldns", "cert_manager", "ingress-nginx", "minio", "observability", "registry", "vault"]
-    runners = ["externaldns", "gitlab_runner", "github_runner"]
+    runners = ["external_secrets", "gitlab_runner", "github_runner"]
   }
 }
 
