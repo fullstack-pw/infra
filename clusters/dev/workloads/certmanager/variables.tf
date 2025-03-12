@@ -1,1 +1,0 @@
-variable vault_token {}
