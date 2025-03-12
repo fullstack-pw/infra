@@ -157,7 +157,7 @@ config:
           endpoint: 0.0.0.0:4317
         http:
           endpoint: 0.0.0.0:4318
-  
+
   processors:
     batch:
       timeout: 1s
@@ -166,7 +166,7 @@ config:
       check_interval: 1s
       limit_percentage: 80
       spike_limit_percentage: 25
-  
+
   exporters:
     otlp:
       endpoint: "otel-collector.fullstack.pw:443"
@@ -174,7 +174,7 @@ config:
         insecure: false
     logging:
       loglevel: info
-  
+
   service:
     pipelines:
       traces:
