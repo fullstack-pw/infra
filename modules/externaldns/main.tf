@@ -2,9 +2,10 @@ resource "kubernetes_service_account" "externaldns" {
   automount_service_account_token = false
   metadata {
     name      = "external-dns"
-    namespace = "default"
+    namespace = var.namespace
   }
 }
+
 resource "kubernetes_cluster_role" "externaldns" {
   metadata {
     name = "external-dns"
@@ -28,6 +29,7 @@ resource "kubernetes_cluster_role" "externaldns" {
     verbs      = ["list", "watch"]
   }
 }
+
 resource "kubernetes_cluster_role_binding" "externaldns" {
   metadata {
     name = "external-dns-viewer"
@@ -42,17 +44,18 @@ resource "kubernetes_cluster_role_binding" "externaldns" {
   subject {
     kind      = "ServiceAccount"
     name      = "external-dns"
-    namespace = "default"
+    namespace = var.namespace
   }
 }
+
 resource "kubernetes_deployment" "externaldns" {
   metadata {
     name      = "external-dns"
-    namespace = "default"
+    namespace = var.namespace
   }
 
   spec {
-    replicas = 1
+    replicas = var.replicas
 
     selector {
       match_labels = {
@@ -69,37 +72,30 @@ resource "kubernetes_deployment" "externaldns" {
 
       spec {
         automount_service_account_token = true
-        enable_service_links = false
-        service_account_name = "external-dns"
+        enable_service_links            = false
+        service_account_name            = "external-dns"
 
         container {
           name  = "external-dns"
-          image = "registry.k8s.io/external-dns/external-dns:v0.14.1"
-            env_from {
-                prefix = null
-                secret_ref {
-                    name     = "pihole-password"
-                    optional = false
-                }
+          image = var.image
+
+          env_from {
+            prefix = null
+            secret_ref {
+              name     = var.pihole_secret_name
+              optional = false
             }
-          args = [
-            "--pihole-tls-skip-verify",
-            "--source=ingress",
-            "--registry=noop",
-            "--policy=upsert-only",
-            "--provider=pihole",
-            "--pihole-server=http://192.168.1.3",
-          ]
+          }
+
+          args = var.container_args
         }
-                  security_context {
-                      fs_group               = "65534"
-                        fs_group_change_policy = null
-                        run_as_group           = null
-                      run_as_non_root        = false
-                        run_as_user            = null
-                      supplemental_groups    = []
-                    }
+
+        security_context {
+          fs_group        = "65534"
+          run_as_non_root = false
+        }
       }
     }
   }
 }
+
