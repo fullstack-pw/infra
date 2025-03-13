@@ -39,6 +39,11 @@ exporters:
     endpoint: 0.0.0.0:8889
     namespace: observability
 
+# Added extensions section for health checks
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
 service:
   pipelines:
     traces:
@@ -49,3 +54,5 @@ service:
       receivers: [otlp, prometheus]
       processors: [memory_limiter, batch]
       exporters: [prometheus, logging]
+  # Added extensions to service section
+  extensions: [health_check]

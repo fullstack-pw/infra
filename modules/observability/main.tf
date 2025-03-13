@@ -110,7 +110,7 @@ resource "kubernetes_ingress_v1" "otel_collector_ingress" {
           path_type = "Prefix"
           backend {
             service {
-              name = var.otel_collector_name
+              name = "${var.otel_collector_name}-collector"
               port {
                 number = 4317
               }
