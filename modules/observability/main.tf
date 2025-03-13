@@ -83,15 +83,62 @@ resource "kubernetes_manifest" "otel_collector" {
 }
 
 # Create Ingress for OpenTelemetry Collector
-resource "kubernetes_ingress_v1" "otel_collector_ingress" {
+# resource "kubernetes_ingress_v1" "otel_collector_ingress" {
+#   metadata {
+#     name      = "${var.otel_collector_name}-ingress"
+#     namespace = kubernetes_namespace.observability.metadata[0].name
+#     annotations = merge({
+#       "nginx.ingress.kubernetes.io/ssl-redirect"      = "true",
+#       "nginx.ingress.kubernetes.io/backend-protocol"  = "GRPC",
+#       "nginx.ingress.kubernetes.io/grpc-backend"      = "true",
+#       "nginx.ingress.kubernetes.io/proxy-buffer-size" = "128k",
+#       "nginx.ingress.kubernetes.io/proxy-read-timeout" = "3600",
+#       "nginx.ingress.kubernetes.io/proxy-send-timeout" = "3600",
+#       "external-dns.alpha.kubernetes.io/hostname"     = var.otel_collector_domain,
+#       "cert-manager.io/cluster-issuer"                = var.cert_manager_cluster_issuer,
+#       # Force HTTP/2 for gRPC
+#       "nginx.ingress.kubernetes.io/enable-cors"       = "true",
+#       "nginx.ingress.kubernetes.io/cors-allow-methods" = "GET, PUT, POST, DELETE, PATCH, OPTIONS",
+#       "nginx.ingress.kubernetes.io/cors-allow-origin" = "*"
+#     }, var.otel_collector_ingress_annotations)
+#   }
+
+#   spec {
+#     ingress_class_name = var.ingress_class_name
+
+#     tls {
+#       hosts       = [var.otel_collector_domain]
+#       secret_name = "${var.otel_collector_name}-tls"
+#     }
+
+#     rule {
+#       host = var.otel_collector_domain
+#       http {
+#         path {
+#           path      = "/"
+#           path_type = "Prefix"
+#           backend {
+#             service {
+#               name = "${var.otel_collector_name}-collector"
+#               port {
+#                 name = "otlp-grpc"  # Use named port
+#               }
+#             }
+#           }
+#         }
+#       }
+#     }
+#   }
+# }
+resource "kubernetes_ingress_v1" "otel_collector_http_ingress" {
   metadata {
-    name      = "${var.otel_collector_name}-ingress"
+    name      = "${var.otel_collector_name}-http-ingress"
     namespace = kubernetes_namespace.observability.metadata[0].name
-    annotations = merge({
-      "nginx.ingress.kubernetes.io/ssl-redirect"  = "true"
-      "external-dns.alpha.kubernetes.io/hostname" = var.otel_collector_domain
-      "cert-manager.io/cluster-issuer"            = var.cert_manager_cluster_issuer
-    }, var.otel_collector_ingress_annotations)
+    annotations = {
+      "nginx.ingress.kubernetes.io/ssl-redirect"  = "true",
+      "external-dns.alpha.kubernetes.io/hostname" = var.otel_collector_domain,
+      "cert-manager.io/cluster-issuer"            = var.cert_manager_cluster_issuer,
+    }
   }
 
   spec {
@@ -106,13 +153,25 @@ resource "kubernetes_ingress_v1" "otel_collector_ingress" {
       host = var.otel_collector_domain
       http {
         path {
-          path      = "/"
+          path      = "/v1/traces"
           path_type = "Prefix"
           backend {
             service {
               name = "${var.otel_collector_name}-collector"
               port {
-                number = 4317
+                name = "otlp-http"  # Use the HTTP port
+              }
+            }
+          }
+        }
+        path {
+          path      = "/v1/metrics"
+          path_type = "Prefix"
+          backend {
+            service {
+              name = "${var.otel_collector_name}-collector"
+              port {
+                name = "otlp-http"  # Use the HTTP port
               }
             }
           }
@@ -120,8 +179,6 @@ resource "kubernetes_ingress_v1" "otel_collector_ingress" {
       }
     }
   }
-
-  depends_on = [kubernetes_manifest.otel_collector]
 }
 
 # Create Ingress for Jaeger UI

@@ -98,23 +98,23 @@ config:
       spike_limit_percentage: 25
 
   exporters:
-    otlp:
-      endpoint: "otel-collector.fullstack.pw:443"
+    otlphttp/sandbox:
+      endpoint: "https://otel-collector.fullstack.pw"
       tls:
         insecure: false
     logging:
-      loglevel: info
+      loglevel: debug
 
   service:
     pipelines:
       traces:
         receivers: [otlp]
         processors: [memory_limiter, batch]
-        exporters: [otlp, logging]
+        exporters: [otlphttp/sandbox, logging]
       metrics:
         receivers: [otlp]
         processors: [memory_limiter, batch]
-        exporters: [otlp, logging]
+        exporters: [otlphttp/sandbox, logging]
 
 resources:
   limits:
