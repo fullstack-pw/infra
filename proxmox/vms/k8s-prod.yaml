@@ -2,7 +2,7 @@ name: k8s-prod
 target_node: node02
 cores: 4
 sockets: 1
-memory: 8192
+memory: 4096
 cpu_type: host
 onboot: false
 clone: ubuntu24-template
@@ -11,7 +11,7 @@ nested_disks:
   scsi:
     scsi0:
       disk:
-        storage: local-lvm
+        storage: slowdata
         size: 30G
         format: raw
   ide:

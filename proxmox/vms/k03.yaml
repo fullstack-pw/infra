@@ -2,24 +2,19 @@ name: k03.fullstack.pw
 target_node: node01
 cores: 1
 sockets: 4
-memory: 4096
+memory: 8192
 cpu_type: x86-64-v2-AES
 onboot: true
 disks:
-- slot: ide2
-  format: null
-  type: cdrom
-  iso: local:iso/ubuntu-23.10-live-server-amd64.iso
-- slot: scsi0
-  type: disk
-  size: 32G
-  storage: local-lvm
-  format: raw
-- slot: scsi1
-  type: disk
-  size: 32G
-  storage: slowdata
-  format: raw
+  - slot: ide2
+    format: null
+    type: cdrom
+    iso: null
+  - slot: scsi0
+    type: disk
+    size: 32G
+    storage: local-lvm
+    format: raw
 network:
   bridge: vmbr0
   model: virtio
