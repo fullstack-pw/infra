@@ -108,3 +108,45 @@ variable "cert_manager_cluster_issuer" {
   type        = string
   default     = "letsencrypt-prod"
 }
+
+variable "prometheus_enabled" {
+  description = "Enable Prometheus stack deployment"
+  type        = bool
+  default     = true
+}
+
+variable "prometheus_chart_version" {
+  description = "Version of the kube-prometheus-stack Helm chart"
+  type        = string
+  default     = "69.8.2"
+}
+
+variable "prometheus_values_file" {
+  description = "Path to custom values file for Prometheus"
+  type        = string
+  default     = ""
+}
+
+variable "prometheus_domain" {
+  description = "Domain name for Prometheus UI ingress"
+  type        = string
+  default     = "prometheus.fullstack.pw"
+}
+
+variable "prometheus_ingress_annotations" {
+  description = "Additional annotations for Prometheus ingress"
+  type        = map(string)
+  default     = {}
+}
+
+variable "grafana_domain" {
+  description = "Domain name for Grafana UI ingress"
+  type        = string
+  default     = "grafana.fullstack.pw"
+}
+
+variable "grafana_ingress_annotations" {
+  description = "Additional annotations for Grafana ingress"
+  type        = map(string)
+  default     = {}
+}

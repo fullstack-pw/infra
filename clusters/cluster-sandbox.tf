@@ -56,4 +56,7 @@ module "observability" {
   otel_collector_replicas = 2
   jaeger_domain           = "jaeger.fullstack.pw"
   otel_collector_domain   = "otel-collector.fullstack.pw"
+  prometheus_enabled      = true
+  prometheus_domain       = "prometheus.fullstack.pw"
+  grafana_domain          = "grafana.fullstack.pw"
 }
