@@ -27,3 +27,13 @@ output "jaeger_collector_endpoint" {
   description = "Jaeger Collector endpoint for direct trace submission"
   value       = "${var.jaeger_instance_name}-collector.${kubernetes_namespace.observability.metadata[0].name}.svc.cluster.local:14268"
 }
+
+output "prometheus_url" {
+  description = "URL for the Prometheus UI"
+  value       = var.prometheus_enabled ? "https://${var.prometheus_domain}" : null
+}
+
+output "grafana_url" {
+  description = "URL for the Grafana UI"
+  value       = var.prometheus_enabled ? "https://${var.grafana_domain}" : null
+}

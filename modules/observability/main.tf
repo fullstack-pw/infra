@@ -82,54 +82,6 @@ resource "kubernetes_manifest" "otel_collector" {
   depends_on = [helm_release.opentelemetry_operator]
 }
 
-# Create Ingress for OpenTelemetry Collector
-# resource "kubernetes_ingress_v1" "otel_collector_ingress" {
-#   metadata {
-#     name      = "${var.otel_collector_name}-ingress"
-#     namespace = kubernetes_namespace.observability.metadata[0].name
-#     annotations = merge({
-#       "nginx.ingress.kubernetes.io/ssl-redirect"      = "true",
-#       "nginx.ingress.kubernetes.io/backend-protocol"  = "GRPC",
-#       "nginx.ingress.kubernetes.io/grpc-backend"      = "true",
-#       "nginx.ingress.kubernetes.io/proxy-buffer-size" = "128k",
-#       "nginx.ingress.kubernetes.io/proxy-read-timeout" = "3600",
-#       "nginx.ingress.kubernetes.io/proxy-send-timeout" = "3600",
-#       "external-dns.alpha.kubernetes.io/hostname"     = var.otel_collector_domain,
-#       "cert-manager.io/cluster-issuer"                = var.cert_manager_cluster_issuer,
-#       # Force HTTP/2 for gRPC
-#       "nginx.ingress.kubernetes.io/enable-cors"       = "true",
-#       "nginx.ingress.kubernetes.io/cors-allow-methods" = "GET, PUT, POST, DELETE, PATCH, OPTIONS",
-#       "nginx.ingress.kubernetes.io/cors-allow-origin" = "*"
-#     }, var.otel_collector_ingress_annotations)
-#   }
-
-#   spec {
-#     ingress_class_name = var.ingress_class_name
-
-#     tls {
-#       hosts       = [var.otel_collector_domain]
-#       secret_name = "${var.otel_collector_name}-tls"
-#     }
-
-#     rule {
-#       host = var.otel_collector_domain
-#       http {
-#         path {
-#           path      = "/"
-#           path_type = "Prefix"
-#           backend {
-#             service {
-#               name = "${var.otel_collector_name}-collector"
-#               port {
-#                 name = "otlp-grpc"  # Use named port
-#               }
-#             }
-#           }
-#         }
-#       }
-#     }
-#   }
-# }
 resource "kubernetes_ingress_v1" "otel_collector_http_ingress" {
   metadata {
     name      = "${var.otel_collector_name}-http-ingress"
@@ -159,7 +111,7 @@ resource "kubernetes_ingress_v1" "otel_collector_http_ingress" {
             service {
               name = "${var.otel_collector_name}-collector"
               port {
-                name = "otlp-http"  # Use the HTTP port
+                name = "otlp-http" # Use the HTTP port
               }
             }
           }
@@ -171,7 +123,7 @@ resource "kubernetes_ingress_v1" "otel_collector_http_ingress" {
             service {
               name = "${var.otel_collector_name}-collector"
               port {
-                name = "otlp-http"  # Use the HTTP port
+                name = "otlp-http" # Use the HTTP port
               }
             }
           }
@@ -222,4 +174,60 @@ resource "kubernetes_ingress_v1" "jaeger_ingress" {
   }
 
   depends_on = [kubernetes_manifest.jaeger_instance]
+}
+
+resource "helm_release" "prometheus" {
+  count      = var.prometheus_enabled ? 1 : 0
+  name       = "prometheus"
+  repository = "https://prometheus-community.github.io/helm-charts"
+  chart      = "kube-prometheus-stack"
+  namespace  = kubernetes_namespace.observability.metadata[0].name
+  version    = var.prometheus_chart_version
+
+  # If a custom values file is provided, use it; otherwise use our default values
+  values = var.prometheus_values_file != "" ? [file(var.prometheus_values_file)] : [
+    templatefile("${path.module}/templates/prometheus-values.yaml.tpl", {
+      prometheus_domain           = var.prometheus_domain
+      grafana_domain              = var.grafana_domain
+      ingress_class_name          = var.ingress_class_name
+      cert_manager_cluster_issuer = var.cert_manager_cluster_issuer
+    })
+  ]
+
+  # Integration with OpenTelemetry - these settings are added regardless of values file
+  set {
+    name  = "prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues"
+    value = "false"
+  }
+
+  set {
+    name  = "prometheus.prometheusSpec.serviceMonitorSelector"
+    value = "{}"
+  }
+
+  # Add Grafana datasource for Prometheus if not in custom values
+  set {
+    name  = "grafana.additionalDataSources[0].name"
+    value = "Prometheus"
+  }
+
+  set {
+    name  = "grafana.additionalDataSources[0].type"
+    value = "prometheus"
+  }
+
+  set {
+    name  = "grafana.additionalDataSources[0].url"
+    value = "http://prometheus-operated:9090"
+  }
+
+  set {
+    name  = "grafana.additionalDataSources[0].access"
+    value = "proxy"
+  }
+
+  depends_on = [
+    kubernetes_namespace.observability,
+    kubernetes_manifest.otel_collector
+  ]
 }
