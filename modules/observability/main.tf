@@ -183,8 +183,9 @@ resource "helm_release" "prometheus" {
   chart      = "kube-prometheus-stack"
   namespace  = kubernetes_namespace.observability.metadata[0].name
   version    = var.prometheus_chart_version
+  timeout    = 900 # Increase timeout for complex installation
 
-  # If a custom values file is provided, use it; otherwise use our default values
+  # If a custom values file is provided, use it; otherwise use our template
   values = var.prometheus_values_file != "" ? [file(var.prometheus_values_file)] : [
     templatefile("${path.module}/templates/prometheus-values.yaml.tpl", {
       prometheus_domain           = var.prometheus_domain
@@ -194,40 +195,10 @@ resource "helm_release" "prometheus" {
     })
   ]
 
-  # Integration with OpenTelemetry - these settings are added regardless of values file
-  set {
-    name  = "prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues"
-    value = "false"
-  }
-
-  set {
-    name  = "prometheus.prometheusSpec.serviceMonitorSelector"
-    value = "{}"
-  }
-
-  # Add Grafana datasource for Prometheus if not in custom values
-  set {
-    name  = "grafana.additionalDataSources[0].name"
-    value = "Prometheus"
-  }
-
-  set {
-    name  = "grafana.additionalDataSources[0].type"
-    value = "prometheus"
-  }
-
-  set {
-    name  = "grafana.additionalDataSources[0].url"
-    value = "http://prometheus-operated:9090"
-  }
-
-  set {
-    name  = "grafana.additionalDataSources[0].access"
-    value = "proxy"
-  }
+  # Don't use set blocks for complex objects like serviceMonitorSelector
+  # Everything is included in the values template
 
   depends_on = [
-    kubernetes_namespace.observability,
-    kubernetes_manifest.otel_collector
+    kubernetes_namespace.observability
   ]
 }

@@ -1,30 +1,40 @@
 grafana:
   ingress:
     enabled: true
-    ingressClassName: nginx
+    ingressClassName: ${ingress_class_name}
     annotations:
-      cert-manager.io/cluster-issuer: letsencrypt-prod
-      external-dns.alpha.kubernetes.io/hostname: grafana.fullstack.pw
+      cert-manager.io/cluster-issuer: ${cert_manager_cluster_issuer}
+      external-dns.alpha.kubernetes.io/hostname: ${grafana_domain}
     labels: {}
     hosts:
-      - grafana.fullstack.pw
+      - ${grafana_domain}
     path: /
     tls:
     - secretName: prometheus-grafana-tls
       hosts:
-      - grafana.fullstack.pw
+      - ${grafana_domain}
+  additionalDataSources:
+    - name: Prometheus
+      type: prometheus
+      url: http://prometheus-operated:9090
+      access: proxy
+
 prometheus:
+  prometheusSpec:
+    serviceMonitorSelector: {}
+    serviceMonitorNamespaceSelector: {}
+    serviceMonitorSelectorNilUsesHelmValues: false
   ingress:
     enabled: true
-    ingressClassName: nginx
+    ingressClassName: ${ingress_class_name}
     annotations:
-      cert-manager.io/cluster-issuer: letsencrypt-prod
-      external-dns.alpha.kubernetes.io/hostname: prometheus.fullstack.pw
+      cert-manager.io/cluster-issuer: ${cert_manager_cluster_issuer}
+      external-dns.alpha.kubernetes.io/hostname: ${prometheus_domain}
     labels: {}
     hosts:
-      - prometheus.fullstack.pw
+      - ${prometheus_domain}
     path: /
     tls:
     - secretName: prometheus-prometheus-tls
       hosts:
-      - prometheus.fullstack.pw
+      - ${prometheus_domain}
