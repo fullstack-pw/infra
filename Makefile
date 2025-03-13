@@ -112,9 +112,9 @@ apply:
 				echo -e "\n${YELLOW}Applying changes to $${env} environment...${NC}"; \
 				cd $(TERRAFORM_DIR) && terraform workspace select $${env}; \
 				if [ -f "$${env}.tfplan" ]; then \
-					terraform apply $${env}.tfplan; \
+					terraform apply $${env}.tfplan && cd ..; \
 				else \
-					terraform apply -auto-approve; \
+					terraform apply -auto-approve && cd ..; \
 				fi; \
 			done; \
 		else \
