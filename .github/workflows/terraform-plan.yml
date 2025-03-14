@@ -35,22 +35,23 @@ jobs:
     if: needs.detect-changes.outputs.proxmox == 'true'
     runs-on: self-hosted
     environment: terraform
-    env:
-      TF_VAR_proxmox_password: ${{ secrets.PROXMOX_PASSWORD }}
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.5.7
+          terraform_version: 1.10.5
 
       - name: Terraform Init
         working-directory: ./proxmox
         run: |
-          export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-          export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
           terraform init
 
       - name: Terraform Plan
@@ -96,18 +97,18 @@ jobs:
     if: needs.detect-changes.outputs.clusters == 'true'
     runs-on: self-hosted
     environment: terraform
-    env:
-      TF_VAR_vault_token: ${{ secrets.VAULT_TOKEN }}
-      TF_VAR_kubernetes_ca_cert: ${{ secrets.KUBERNETES_CA_CERT }}
-      TF_VAR_token_reviewer_jwt: ${{ secrets.TOKEN_REVIEWER_JWT }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.5.7
+          terraform_version: 1.10.5
 
       - name: Terraform Init
         working-directory: ./clusters

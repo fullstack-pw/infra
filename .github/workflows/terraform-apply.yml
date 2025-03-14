@@ -32,22 +32,32 @@ jobs:
     if: needs.detect-changes.outputs.proxmox == 'true'
     runs-on: self-hosted
     environment: terraform
-    env:
-      TF_VAR_proxmox_password: ${{ secrets.PROXMOX_PASSWORD }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.RUNNER }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.5.7
+          terraform_version: 1.10.5
+
+      - name: Install jq
+        run: |
+          if ! command -v jq &> /dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y jq
+          fi
 
       - name: Terraform Init
         working-directory: ./proxmox
         run: |
-          export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-          export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
           terraform init
 
       - name: Terraform Apply
@@ -62,6 +72,7 @@ jobs:
         run: |
           PR_TITLE="${{ github.event.pull_request.title }}"
           COMMIT_MSG="${{ github.event.pull_request.head.label }} ${{ github.event.pull_request.body }}"
+          #COMBINED="TESTING COMMIT FROM PIPELINE [ansible k8s-tools]"
           COMBINED="$PR_TITLE $COMMIT_MSG"
 
           # Look for [ansible playbook-name] pattern in title or body
@@ -80,62 +91,83 @@ jobs:
       - name: Update Ansible Inventory
         if: steps.apply.outcome == 'success'
         run: |
-          chmod +x proxmox/update_inventory.sh
-          ./proxmox/update_inventory.sh
+          # Use the improved inventory script with better error handling
+          chmod +x proxmox/update-inventory.sh
+          ./proxmox/update-inventory.sh || echo "Warning: Inventory update script encountered issues but workflow will continue"
+          # Make sure new_hosts.txt exists even if the script failed
+          touch proxmox/new_hosts.txt
 
-      - name: Commit Inventory Changes
+      - name: Commit and Push Changes
         if: steps.apply.outcome == 'success'
         id: commit-changes
         run: |
+          OWNER_REPO="${GITHUB_REPOSITORY}"
+          OWNER=$(echo $OWNER_REPO | cut -d '/' -f 1)
+          REPO=$(echo $OWNER_REPO | cut -d '/' -f 2)
+
+          # Configure git
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
-          git add proxmox/k8s.ini
+          # git checkout main
+          # git remote remove origin
+          # git remote add origin https://$GITHUB_PAT@github.com/${OWNER}/${REPO}.git
+          # git push --set-upstream origin main
 
+          # Add the updated files
+          git add proxmox/k8s.ini proxmox/new_hosts.txt || true
+
+          # Check if there are changes to commit
           if git diff --quiet && git diff --staged --quiet; then
             echo "No changes to commit"
             echo "changes_made=false" >> $GITHUB_OUTPUT
-          else
-            # Include ansible tag in commit message if available
-            if [ -n "$ANSIBLE_TAG" ]; then
-              git commit -m "Auto-update Ansible inventory $ANSIBLE_TAG"
-            else
-              git commit -m "Auto-update Ansible inventory"
-            fi
-            git push
-            echo "changes_made=true" >> $GITHUB_OUTPUT
+            exit 0
           fi
+
+          # Prepare commit message
+          COMMIT_MSG="Auto-update Ansible inventory"
+          if [ -n "$ANSIBLE_TAG" ]; then
+            COMMIT_MSG="$COMMIT_MSG $ANSIBLE_TAG"
+          fi
+
+          TOKEN_START=${GITHUB_PAT:0:4}
+          echo "Token starts with: $TOKEN_START"
+
+          echo "git commit"
+          git commit -m "$COMMIT_MSG"
+
+          echo "git push"
+          git push
+
+          echo "::notice::Successfully pushed inventory changes"
+          echo "changes_made=true" >> $GITHUB_OUTPUT
 
   apply-clusters:
     needs: detect-changes
     if: needs.detect-changes.outputs.clusters == 'true'
     runs-on: self-hosted
     environment: terraform
-    env:
-      TF_VAR_vault_token: ${{ secrets.VAULT_TOKEN }}
-      TF_VAR_kubernetes_ca_cert: ${{ secrets.KUBERNETES_CA_CERT }}
-      TF_VAR_token_reviewer_jwt: ${{ secrets.TOKEN_REVIEWER_JWT }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.5.7
+          terraform_version: 1.10.5
 
       - name: Terraform Init
         working-directory: ./clusters
         run: |
-          export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-          export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
           terraform init
 
       - name: Terraform Apply
-        working-directory: ./clusters
         id: apply
         run: |
-          terraform workspace select sandbox || terraform workspace new sandbox
-          terraform apply -auto-approve
+          make apply
 
       - name: Add Apply Comment
         uses: actions/github-script@v7

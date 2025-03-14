@@ -59,14 +59,40 @@ variable "secret_data" {
   type = list(object({
     secretKey = string
     remoteRef = object({
-      key = string
+      key      = string
+      property = optional(string)
     })
   }))
   default = [
     {
-      secretKey = "kubeconfig"
+      secretKey = "KUBECONFIG"
       remoteRef = {
-        key = "kubeconfig"
+        key      = "KUBECONFIG"
+        property = "data.KUBECONFIG"
+      }
+      }, {
+      secretKey = "SSH_PRIVATE_KEY"
+      remoteRef = {
+        key      = "SSH_PRIVATE_KEY"
+        property = "data.SSH_PRIVATE_KEY"
+      }
+      }, {
+      secretKey = "TF_VAR_PROXMOX_PASSWORD"
+      remoteRef = {
+        key      = "TF_VAR_PROXMOX_PASSWORD"
+        property = "data.TF_VAR_PROXMOX_PASSWORD"
+      }
+      }, {
+      secretKey = "AWS_ACCESS_KEY_ID"
+      remoteRef = {
+        key      = "AWS_ACCESS_KEY_ID"
+        property = "data.AWS_ACCESS_KEY_ID"
+      }
+      }, {
+      secretKey = "AWS_SECRET_ACCESS_KEY"
+      remoteRef = {
+        key      = "AWS_SECRET_ACCESS_KEY"
+        property = "data.AWS_SECRET_ACCESS_KEY"
       }
     }
   ]
