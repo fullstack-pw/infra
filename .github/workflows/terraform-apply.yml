@@ -44,7 +44,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          token: ${{ env.GITHUB_PAT }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -131,10 +130,18 @@ jobs:
           # Commit changes
           git commit -m "$COMMIT_MSG"
 
-          # Set the authenticated remote URL using the PAT
-          git remote set-url origin "https://$GITHUB_PAT@github.com/$GITHUB_REPOSITORY.git"
+          # Set the authenticated remote URL using the PAT directly
+          # Print commands for debugging but hide the token
+          echo "Setting authenticated remote URL..."
+          PAT_MASKED=${GITHUB_PAT:0:4}****${GITHUB_PAT:${#GITHUB_PAT}-4}
+          echo "Using token: $PAT_MASKED"
+
+          # Use different formats to maximize chance of success
+          # Format 1: Plain token in URL
+          git remote set-url origin "https://${GITHUB_PAT}@github.com/${GITHUB_REPOSITORY}.git"
 
           # Push changes
+          echo "Pushing changes..."
           git push
 
           echo "::notice::Successfully pushed inventory changes"
