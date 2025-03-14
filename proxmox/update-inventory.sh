@@ -21,7 +21,7 @@ cp "$INVENTORY_FILE" "${INVENTORY_FILE}.old"
 # Parse Terraform output
 echo "Getting Terraform outputs..."
 cd proxmox
-terraform output -json > tf_output.json
+terraform output -json > ../tf_output.json
 cd ..
 
 # Extract VM information - Fix JQ syntax issues
