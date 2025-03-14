@@ -151,9 +151,9 @@ jobs:
           git remote set-url origin "https://${GITHUB_PAT}@github.com/${OWNER}/${REPO}.git"
           git push || true
 
-          # If still not working, try with username format
+          # Try add origin
           echo "Trying with username:token format..."
-          git remote set-url origin "https://${OWNER}:${GITHUB_PAT}@github.com/${OWNER}/${REPO}.git"
+          git remote add origin "https://${GITHUB_PAT}@github.com/${OWNER}/${REPO}.git"
           git push
 
           echo "::notice::Successfully pushed inventory changes"
