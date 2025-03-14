@@ -1,6 +1,6 @@
 ---
 - name: Install Single-Node K3s
-  hosts: k3s-clusters
+  hosts: "{{ target_hosts | default('tools') }}"
   become: true
   gather_facts: yes
 
@@ -16,7 +16,7 @@
 
     - name: Install K3s
       shell: |
-        curl -sfL https://get.k3s.io | sh -s - 
+        curl -sfL https://get.k3s.io | sh -s -
       args:
         executable: /bin/bash
 

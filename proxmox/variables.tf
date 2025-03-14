@@ -1,7 +1,7 @@
 // proxmox/variables.tf
 
 # Required variables
-variable "proxmox_password" {
+variable "PROXMOX_PASSWORD" {
   description = "Password for Proxmox API authentication"
   type        = string
   sensitive   = true
@@ -47,7 +47,7 @@ variable "vm_defaults" {
 variable "ssh_keys" {
   description = "SSH public keys to add to cloud-init VMs"
   type        = list(string)
-  default     = [
+  default = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP+mJj63c+7o+Bu40wNnXwTpXkPTpGJA9OIprmNoljKI pedro@pedro-Legion-5-16IRX9"
   ]
 }
@@ -91,7 +91,7 @@ variable "proxmox_isos" {
 # Templates
 variable "vm_templates" {
   description = "Available VM templates for cloning"
-  type = map(string)
+  type        = map(string)
   default = {
     ubuntu24_cloudinit = "ubuntu24-cloudinit"
     ubuntu24_standard  = "ubuntu24-template"
