@@ -1,0 +1,80 @@
+---
+- name: Install Single-Node K3s for Tools Cluster
+  hosts: tools
+  become: true
+  gather_facts: yes
+
+  tasks:
+    - name: Install dependencies
+      apt:
+        name:
+          - curl
+          - apt-transport-https
+          - ca-certificates
+          - software-properties-common
+        state: present
+        update_cache: yes
+
+    - name: Install K3s with specific configuration for tools cluster
+      shell: |
+        curl -sfL https://get.k3s.io | sh -s - \
+          --disable traefik \
+          --write-kubeconfig-mode 644 \
+          --node-name tools \
+          --cluster-cidr "10.244.0.0/16" \
+          --service-cidr "10.245.0.0/16" \
+          --kube-apiserver-arg="feature-gates=MixedProtocolLBService=true"
+      args:
+        executable: /bin/bash
+      register: k3s_install
+      changed_when: k3s_install.rc == 0
+
+    - name: Wait for K3s service
+      service:
+        name: k3s
+        state: started
+        enabled: true
+
+    - name: Wait for kubeconfig file to be created
+      wait_for:
+        path: /etc/rancher/k3s/k3s.yaml
+        state: present
+        delay: 5
+        timeout: 300
+
+    - name: Create .kube directory in suporte home
+      file:
+        path: /home/suporte/.kube
+        state: directory
+        owner: suporte
+        group: suporte
+        mode: "0755"
+
+    - name: Copy kubeconfig to user home directory
+      copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: /home/suporte/.kube/config
+        remote_src: yes
+        owner: suporte
+        group: suporte
+        mode: "0600"
+
+    - name: Update kubeconfig server address
+      replace:
+        path: /home/suporte/.kube/config
+        regexp: "https://127.0.0.1:6443"
+        replace: "https://192.168.1.15:6443"
+      become: yes
+      become_user: suporte
+
+    - name: Display node token
+      shell: cat /var/lib/rancher/k3s/server/node-token
+      register: node_token
+      changed_when: false
+
+    - name: Display cluster info
+      debug:
+        msg:
+          - "K3s Tools Cluster installed successfully"
+          - "Node token for {{ inventory_hostname }}: {{ node_token.stdout }}"
+          - "Use kubeconfig from /home/suporte/.kube/config to access the cluster"
