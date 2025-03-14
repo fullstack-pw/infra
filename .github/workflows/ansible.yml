@@ -1,10 +1,6 @@
 name: Ansible Provisioning
 
 on:
-  pull_request:
-    types: [closed]
-    branches:
-      - main
   push:
     branches:
       - main
@@ -64,17 +60,9 @@ jobs:
           PLAYBOOK="${{ needs.detect-ansible-command.outputs.playbook }}"
 
           # Check playbooks directory first
-          if [ -f "playbooks/${PLAYBOOK}.yml" ]; then
-            echo "Found playbook file: playbooks/${PLAYBOOK}.yml"
-            echo "PLAYBOOK_PATH=playbooks/${PLAYBOOK}.yml" >> $GITHUB_ENV
-          # Check proxmox directory next
-          elif [ -f "proxmox/${PLAYBOOK}.yml" ]; then
-            echo "Found playbook file: proxmox/${PLAYBOOK}.yml"
-            echo "PLAYBOOK_PATH=proxmox/${PLAYBOOK}.yml" >> $GITHUB_ENV
-          # Finally check root directory
-          elif [ -f "${PLAYBOOK}.yml" ]; then
-            echo "Found playbook file: ${PLAYBOOK}.yml"
-            echo "PLAYBOOK_PATH=${PLAYBOOK}.yml" >> $GITHUB_ENV
+          if [ -f "proxmox/playbooks/${PLAYBOOK}.yml" ]; then
+            echo "Found playbook file: proxmox/playbooks/${PLAYBOOK}.yml"
+            echo "PLAYBOOK_PATH=proxmox/playbooks/${PLAYBOOK}.yml" >> $GITHUB_ENV
           else
             echo "Playbook file not found for: ${PLAYBOOK}"
             echo "Searched in playbooks/, proxmox/, and root directories"
@@ -84,15 +72,57 @@ jobs:
       - name: Prepare Environment
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H 192.168.1.* >> ~/.ssh/known_hosts
+
+          # Check if we have new hosts to limit execution to
+          if [ -f "proxmox/new_hosts.txt" ] && [ -s "proxmox/new_hosts.txt" ]; then
+            echo "Found new hosts, adding them to known_hosts:"
+            
+            # Loop through new hosts file
+            while IFS=, read -r IP ENV; do
+              if [ -n "$IP" ] && [[ $IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+                echo "Adding new host $IP to known_hosts..."
+                ssh-keyscan -H $IP >> ~/.ssh/known_hosts 2>/dev/null || echo "Warning: Could not scan $IP"
+              fi
+            done < proxmox/new_hosts.txt
+          else
+            echo "No new hosts found, not scanning any hosts"
+          fi
         if: env.PLAYBOOK_PATH != ''
 
       - name: Run Ansible Playbook
         run: |
           echo "Running playbook: $PLAYBOOK_PATH"
-          ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i proxmox/k8s.ini $PLAYBOOK_PATH
+
+          # Check if we have new hosts to limit execution to
+          if [ -f "proxmox/new_hosts.txt" ] && [ -s "proxmox/new_hosts.txt" ]; then
+            echo "Found new hosts, running playbook only on them:"
+            cat proxmox/new_hosts.txt
+            
+            # Run the playbook for each new host directly
+            while IFS=, read -r IP ENV; do
+              if [ -n "$IP" ] && [ -n "$ENV" ]; then
+                # Create a temporary inventory file for this host
+                TEMP_INVENTORY=$(mktemp)
+                echo "[all]" > $TEMP_INVENTORY
+                echo "$IP ansible_user=suporte" >> $TEMP_INVENTORY
+                
+                echo "Running playbook for new host $IP"
+                # In the run step
+                ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i "$TEMP_INVENTORY" $PLAYBOOK_PATH \
+                  -e "ansible_user=suporte" \
+                  -e "target_hosts=all" \
+                  -e "vault_token=${VAULT_TOKEN}" \
+                  -e "vault_addr=https://vault.fullstack.pw"
+                
+                # Clean up
+                rm $TEMP_INVENTORY
+              fi
+            done < proxmox/new_hosts.txt
+          else
+            echo "No new hosts found"
+          fi
         if: env.PLAYBOOK_PATH != ''
 
       - name: Notify Completion
