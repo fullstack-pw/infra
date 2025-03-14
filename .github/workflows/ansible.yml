@@ -1,10 +1,6 @@
 name: Ansible Provisioning
 
 on:
-  pull_request:
-    types: [closed]
-    branches:
-      - main
   push:
     branches:
       - main
@@ -92,7 +88,23 @@ jobs:
       - name: Run Ansible Playbook
         run: |
           echo "Running playbook: $PLAYBOOK_PATH"
-          ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i proxmox/k8s.ini $PLAYBOOK_PATH
+
+          # Check if we have new hosts to limit execution to
+          if [ -f "proxmox/new_hosts.txt" ] && [ -s "proxmox/new_hosts.txt" ]; then
+            echo "Found new hosts, running playbook only on them:"
+            cat proxmox/new_hosts.txt
+            
+            # Run the playbook for each new host in its group
+            while IFS=, read -r IP ENV; do
+              if [ -n "$IP" ] && [ -n "$ENV" ]; then
+                echo "Running playbook for new host $IP in group $ENV"
+                ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i proxmox/k8s.ini $PLAYBOOK_PATH --limit $IP
+              fi
+            done < proxmox/new_hosts.txt
+          else
+            echo "No new hosts found, running playbook on all matching hosts"
+            ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i proxmox/k8s.ini $PLAYBOOK_PATH
+          fi
         if: env.PLAYBOOK_PATH != ''
 
       - name: Notify Completion
