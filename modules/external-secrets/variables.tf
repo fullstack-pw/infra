@@ -94,6 +94,12 @@ variable "secret_data" {
         key      = "AWS_SECRET_ACCESS_KEY"
         property = "data.AWS_SECRET_ACCESS_KEY"
       }
+      }, {
+      secretKey = "VAULT_TOKEN"
+      remoteRef = {
+        key      = "VAULT_TOKEN"
+        property = "data.VAULT_TOKEN"
+      }
     }
   ]
 }

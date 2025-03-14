@@ -111,16 +111,25 @@ jobs:
                 
                 echo "Running playbook for new host $IP"
                 # In the run step
-                ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i "$IP," $PLAYBOOK_PATH -e "ansible_user=suporte" -e "target_hosts=all"                
+                ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i "$TEMP_INVENTORY" $PLAYBOOK_PATH \
+                  -e "ansible_user=suporte" \
+                  -e "target_hosts=all" \
+                  -e "vault_token=$VAULT_TOKEN" \
+                  -e "vault_addr=https://vault.fullstack.pw"
+                
                 # Clean up
                 rm $TEMP_INVENTORY
               fi
             done < proxmox/new_hosts.txt
           else
             echo "No new hosts found, running playbook on all matching hosts"
-            ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i proxmox/k8s.ini $PLAYBOOK_PATH
+            ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i proxmox/k8s.ini $PLAYBOOK_PATH \
+              -e "vault_token=$VAULT_TOKEN" \
+              -e "vault_addr=https://vault.fullstack.pw"
           fi
         if: env.PLAYBOOK_PATH != ''
+        env:
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
 
       - name: Notify Completion
         run: |
