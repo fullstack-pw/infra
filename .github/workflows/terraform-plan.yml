@@ -1,0 +1,156 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "proxmox/**"
+      - "clusters/**"
+      - ".github/workflows/terraform-*.yml"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  detect-changes:
+    runs-on: self-hosted
+    outputs:
+      proxmox: ${{ steps.filter.outputs.proxmox }}
+      clusters: ${{ steps.filter.outputs.clusters }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            proxmox:
+              - 'proxmox/**'
+            clusters:
+              - 'clusters/**'
+
+  plan-proxmox:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.proxmox == 'true'
+    runs-on: self-hosted
+    environment: terraform
+    env:
+      TF_VAR_proxmox_password: ${{ secrets.PROXMOX_PASSWORD }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.7
+
+      - name: Terraform Init
+        working-directory: ./proxmox
+        run: |
+          export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+          export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          terraform init
+
+      - name: Terraform Plan
+        working-directory: ./proxmox
+        id: plan
+        run: |
+          terraform plan -no-color -out=tfplan
+          terraform show -no-color tfplan > plan.txt
+        continue-on-error: true
+
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: proxmox-plan
+          path: proxmox/plan.txt
+
+      - name: Add Plan Comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const planOutput = fs.readFileSync('./proxmox/plan.txt', 'utf8');
+            const truncatedOutput = planOutput.length > 65000 
+              ? planOutput.substring(0, 65000) + "\n\n... Output truncated due to size. See artifacts for full plan."
+              : planOutput;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Proxmox Terraform Plan
+              \`\`\`terraform
+              ${truncatedOutput}
+              \`\`\`
+              
+              Plan exit code: ${{ steps.plan.outcome == 'success' && '0' || '1' }}
+              `
+            })
+
+  plan-clusters:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.clusters == 'true'
+    runs-on: self-hosted
+    environment: terraform
+    env:
+      TF_VAR_vault_token: ${{ secrets.VAULT_TOKEN }}
+      TF_VAR_kubernetes_ca_cert: ${{ secrets.KUBERNETES_CA_CERT }}
+      TF_VAR_token_reviewer_jwt: ${{ secrets.TOKEN_REVIEWER_JWT }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.7
+
+      - name: Terraform Init
+        working-directory: ./clusters
+        run: |
+          export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+          export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          terraform init
+
+      - name: Terraform Plan
+        working-directory: ./clusters
+        id: plan
+        run: |
+          terraform workspace select sandbox || terraform workspace new sandbox
+          terraform plan -no-color -out=tfplan
+          terraform show -no-color tfplan > plan.txt
+        continue-on-error: true
+
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clusters-plan
+          path: clusters/plan.txt
+
+      - name: Add Plan Comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const planOutput = fs.readFileSync('./clusters/plan.txt', 'utf8');
+            const truncatedOutput = planOutput.length > 65000 
+              ? planOutput.substring(0, 65000) + "\n\n... Output truncated due to size. See artifacts for full plan."
+              : planOutput;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Clusters Terraform Plan
+              \`\`\`terraform
+              ${truncatedOutput}
+              \`\`\`
+              
+              Plan exit code: ${{ steps.plan.outcome == 'success' && '0' || '1' }}
+              `
+            })
