@@ -81,6 +81,8 @@ jobs:
         if: steps.apply.outcome == 'success'
         run: |
           pwd
+          ls -lha
+          ls -lha proxmox
           chmod +x proxmox/update_inventory.sh
           proxmox/update_inventory.sh
 
