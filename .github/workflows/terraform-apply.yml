@@ -44,6 +44,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
+          token: ${{ secrets.RUNNER }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -79,6 +80,7 @@ jobs:
         run: |
           PR_TITLE="${{ github.event.pull_request.title }}"
           COMMIT_MSG="${{ github.event.pull_request.head.label }} ${{ github.event.pull_request.body }}"
+          #COMBINED="TESTING COMMIT FROM PIPELINE [ansible k8s-tools]"
           COMBINED="$PR_TITLE $COMMIT_MSG"
 
           # Look for [ansible playbook-name] pattern in title or body
@@ -114,10 +116,10 @@ jobs:
           # Configure git
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
-          git checkout main
-          git remote remove origin
-          git remote add origin https://${GITHUB_PAT}@github.com/${OWNER}/${REPO}.git
-          git push --set-upstream origin main
+          # git checkout main
+          # git remote remove origin
+          # git remote add origin https://$GITHUB_PAT@github.com/${OWNER}/${REPO}.git
+          # git push --set-upstream origin main
 
           # Add the updated files
           git add proxmox/k8s.ini proxmox/new_hosts.txt || true
