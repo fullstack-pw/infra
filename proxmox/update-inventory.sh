@@ -7,12 +7,16 @@ set -e
 
 # Directory where the inventory file is located
 INVENTORY_FILE="proxmox/k8s.ini"
+NEW_HOSTS_FILE="proxmox/new_hosts.txt"
 
 # Check if INVENTORY_FILE exists
 if [ ! -f "$INVENTORY_FILE" ]; then
     echo "Error: Inventory file $INVENTORY_FILE not found"
     exit 1
 fi
+
+# Save the old inventory for comparison
+cp "$INVENTORY_FILE" "${INVENTORY_FILE}.old"
 
 # Parse Terraform output
 echo "Getting Terraform outputs..."
@@ -28,6 +32,9 @@ VM_NAMES=$(jq -r '.vm_ips.value | to_entries | map(select(.key | match("k8s-")))
 # Create arrays from JSON outputs
 readarray -t IPS < <(echo $VM_IPS | jq -r '.[]')
 readarray -t NAMES < <(echo $VM_NAMES | jq -r '.[]')
+
+# Track new hosts
+> "$NEW_HOSTS_FILE"
 
 # Temporary file for new inventory
 TMP_INVENTORY=$(mktemp)
@@ -64,6 +71,12 @@ for i in "${!NAMES[@]}"; do
         echo "" >> "$TMP_INVENTORY"
         echo "[$ENV]" >> "$TMP_INVENTORY"
     fi
+
+    # Check if this host is already in the old inventory
+    if ! grep -q "$IP ansible_user=suporte" "${INVENTORY_FILE}.old"; then
+        echo "New host detected: $NAME at $IP"
+        echo "$IP,$ENV" >> "$NEW_HOSTS_FILE"
+    fi
     
     # Add the host to the section
     echo "$IP ansible_user=suporte" >> "$TMP_INVENTORY"
@@ -84,5 +97,13 @@ fi
 # Replace the original inventory with the new one
 mv "$TMP_INVENTORY" "$INVENTORY_FILE"
 
+# Cleanup
+rm "${INVENTORY_FILE}.old"
+
 echo "Inventory file updated: $INVENTORY_FILE"
-cat "$INVENTORY_FILE"
+if [ -s "$NEW_HOSTS_FILE" ]; then
+    echo "New hosts detected:"
+    cat "$NEW_HOSTS_FILE"
+else
+    echo "No new hosts detected"
+fi
