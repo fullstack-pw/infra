@@ -80,8 +80,8 @@ jobs:
       - name: Update Ansible Inventory
         if: steps.apply.outcome == 'success'
         run: |
-          chmod +x ./proxmox/update_inventory.sh
-          ./proxmox/update_inventory.sh
+          chmod +x proxmox/update-inventory.sh
+          proxmox/update-inventory.sh
 
       - name: Commit Inventory Changes
         if: steps.apply.outcome == 'success'
@@ -89,7 +89,7 @@ jobs:
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
-          git add k8s.ini new_hosts.txt
+          git add proxmox/k8s.ini proxmox/new_hosts.txt
 
           if git diff --quiet && git diff --staged --quiet; then
             echo "No changes to commit"
