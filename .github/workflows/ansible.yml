@@ -60,17 +60,9 @@ jobs:
           PLAYBOOK="${{ needs.detect-ansible-command.outputs.playbook }}"
 
           # Check playbooks directory first
-          if [ -f "playbooks/${PLAYBOOK}.yml" ]; then
-            echo "Found playbook file: playbooks/${PLAYBOOK}.yml"
-            echo "PLAYBOOK_PATH=playbooks/${PLAYBOOK}.yml" >> $GITHUB_ENV
-          # Check proxmox directory next
-          elif [ -f "proxmox/${PLAYBOOK}.yml" ]; then
-            echo "Found playbook file: proxmox/${PLAYBOOK}.yml"
-            echo "PLAYBOOK_PATH=proxmox/${PLAYBOOK}.yml" >> $GITHUB_ENV
-          # Finally check root directory
-          elif [ -f "${PLAYBOOK}.yml" ]; then
-            echo "Found playbook file: ${PLAYBOOK}.yml"
-            echo "PLAYBOOK_PATH=${PLAYBOOK}.yml" >> $GITHUB_ENV
+          if [ -f "proxmox/playbooks/${PLAYBOOK}.yml" ]; then
+            echo "Found playbook file: proxmox/playbooks/${PLAYBOOK}.yml"
+            echo "PLAYBOOK_PATH=proxmox/playbooks/${PLAYBOOK}.yml" >> $GITHUB_ENV
           else
             echo "Playbook file not found for: ${PLAYBOOK}"
             echo "Searched in playbooks/, proxmox/, and root directories"
@@ -80,9 +72,24 @@ jobs:
       - name: Prepare Environment
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H 192.168.1.* >> ~/.ssh/known_hosts
+
+          # Extract IPs from the inventory file
+          if [ -f "proxmox/k8s.ini" ]; then
+            # Get all IPs from the inventory file (ignoring section headers and comments)
+            HOSTS=$(grep -v '^\[' proxmox/k8s.ini | grep -v '^#' | grep -v '^\s*$' | awk '{print $1}')
+            
+            # Add each host to known_hosts
+            for HOST in $HOSTS; do
+              # Extract just the IP part if there are other components
+              IP=$(echo $HOST | cut -d' ' -f1)
+              echo "Adding $IP to known_hosts..."
+              ssh-keyscan -H $IP >> ~/.ssh/known_hosts 2>/dev/null || echo "Warning: Could not scan $IP"
+            done
+          else
+            echo "Warning: proxmox/k8s.ini not found, cannot scan hosts"
+          fi
         if: env.PLAYBOOK_PATH != ''
 
       - name: Run Ansible Playbook
@@ -94,11 +101,19 @@ jobs:
             echo "Found new hosts, running playbook only on them:"
             cat proxmox/new_hosts.txt
             
-            # Run the playbook for each new host in its group
+            # Run the playbook for each new host directly
             while IFS=, read -r IP ENV; do
               if [ -n "$IP" ] && [ -n "$ENV" ]; then
-                echo "Running playbook for new host $IP in group $ENV"
-                ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i proxmox/k8s.ini $PLAYBOOK_PATH --limit $IP
+                # Create a temporary inventory file for this host
+                TEMP_INVENTORY=$(mktemp)
+                echo "[all]" > $TEMP_INVENTORY
+                echo "$IP ansible_user=suporte" >> $TEMP_INVENTORY
+                
+                echo "Running playbook for new host $IP"
+                # In the run step
+                ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i "$IP," $PLAYBOOK_PATH -e "ansible_user=suporte" -e "target_hosts=all"                
+                # Clean up
+                rm $TEMP_INVENTORY
               fi
             done < proxmox/new_hosts.txt
           else

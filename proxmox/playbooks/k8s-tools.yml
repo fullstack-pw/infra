@@ -1,6 +1,6 @@
 ---
 - name: Install Single-Node K3s for Tools Cluster
-  hosts: tools
+  hosts: "{{ target_hosts | default('tools') }}"
   become: true
   gather_facts: yes
 

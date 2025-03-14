@@ -71,10 +71,10 @@ variable "secret_data" {
         property = "data.KUBECONFIG"
       }
       }, {
-      secretKey = "GITHUB_PAT"
+      secretKey = "SSH_PRIVATE_KEY"
       remoteRef = {
-        key      = "GITHUB_PAT"
-        property = "data.GITHUB_PAT"
+        key      = "SSH_PRIVATE_KEY"
+        property = "data.SSH_PRIVATE_KEY"
       }
       }, {
       secretKey = "TF_VAR_PROXMOX_PASSWORD"
