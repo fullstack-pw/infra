@@ -3,18 +3,27 @@ variable "config" {
   default = {
     dev = {
       kubernetes_context = "dev"
+      externalsecret     = "default"
     }
     stg = {
       kubernetes_context = "stg"
+      externalsecret     = "default"
     }
     prod = {
       kubernetes_context = "prod"
+      externalsecret     = "default"
     }
     runners = {
       kubernetes_context = "runners"
+      externalsecret     = "actions-runner-system"
     }
     sandbox = {
       kubernetes_context = "sandbox"
+      externalsecret     = "default"
+    }
+    tools = {
+      kubernetes_context = "tools"
+      externalsecret     = "default"
     }
   }
 }

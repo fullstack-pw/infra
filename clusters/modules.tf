@@ -40,7 +40,7 @@ module "external_secrets" {
   vault_addr    = var.vault_addr
 
   namespace_selectors = {
-    "kubernetes.io/metadata.name" = "github-runner"
+    "kubernetes.io/metadata.name" = var.config[terraform.workspace].externalsecret
   }
 }
 
@@ -125,4 +125,91 @@ resources:
     memory: 128Mi
 EOF
   ]
+}
+
+module "github_runner" {
+  count  = contains(local.workload, "github_runner") ? 1 : 0
+  source = "../modules/github-runner"
+
+  namespace          = "actions-runner-system"
+  github_owner       = "fullstack-pw"
+  arc_chart_version  = "0.23.7"
+  runner_image       = "registry.fullstack.pw/github-runner:latest"
+  runner_replicas    = 2
+  enable_autoscaling = false
+}
+
+module "gitlab_runner" {
+  count  = contains(local.workload, "gitlab_runner") ? 1 : 0
+  source = "../modules/gitlab-runner"
+
+  namespace            = "gitlab"
+  service_account_name = "gitlab-runner-sa"
+  release_name         = "gitlab-runner"
+  chart_version        = "0.71.0"
+  concurrent_runners   = 10
+  runner_tags          = "k8s-gitlab-runner"
+}
+
+module "ingress_nginx" {
+  count  = contains(local.workload, "ingress_nginx") ? 1 : 0
+  source = "../modules/ingress-nginx"
+
+  namespace          = "default"
+  chart_version      = "1.2.0"
+  enable_snippets    = true
+  default_tls_secret = "default/fullstack-tls"
+}
+
+module "minio" {
+  count  = contains(local.workload, "minio") ? 1 : 0
+  source = "../modules/minio"
+
+  namespace                 = "default"
+  persistence_storage_class = "local-path"
+  persistence_size          = "10Gi"
+  ingress_host              = "s3.fullstack.pw"
+  console_ingress_host      = "minio.fullstack.pw"
+  ingress_annotations = {
+    "external-dns.alpha.kubernetes.io/hostname" = "s3.fullstack.pw"
+    "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
+  }
+  console_ingress_annotations = {
+    "external-dns.alpha.kubernetes.io/hostname" = "minio.fullstack.pw"
+    "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
+  }
+}
+
+module "registry" {
+  count  = contains(local.workload, "registry") ? 1 : 0
+  source = "../modules/registry"
+
+  namespace    = "registry"
+  storage_size = "10Gi"
+  ingress_host = "registry.fullstack.pw"
+}
+
+module "vault" {
+  count  = contains(local.workload, "vault") ? 1 : 0
+  source = "../modules/vault"
+
+  namespace          = "vault"
+  ingress_host       = "vault.fullstack.pw"
+  initialize_vault   = true
+  kubernetes_ca_cert = var.kubernetes_ca_cert
+  token_reviewer_jwt = var.token_reviewer_jwt
+}
+
+module "observability" {
+  count  = contains(local.workload, "observability") ? 1 : 0
+  source = "../modules/observability"
+
+  namespace               = "observability"
+  jaeger_storage_type     = "memory"
+  otel_collector_replicas = 2
+  jaeger_domain           = "jaeger.fullstack.pw"
+  otel_collector_domain   = "otel-collector.fullstack.pw"
+  prometheus_enabled      = true
+  prometheus_domain       = "prometheus.fullstack.pw"
+  grafana_domain          = "grafana.fullstack.pw"
 }
