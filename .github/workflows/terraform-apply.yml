@@ -107,6 +107,10 @@ jobs:
         if: steps.apply.outcome == 'success'
         id: commit-changes
         run: |
+          OWNER_REPO="${GITHUB_REPOSITORY}"
+          OWNER=$(echo $OWNER_REPO | cut -d '/' -f 1)
+          REPO=$(echo $OWNER_REPO | cut -d '/' -f 2)
+
           # Configure git
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
@@ -131,9 +135,6 @@ jobs:
             COMMIT_MSG="$COMMIT_MSG $ANSIBLE_TAG"
           fi
 
-          OWNER_REPO="${GITHUB_REPOSITORY}"
-          OWNER=$(echo $OWNER_REPO | cut -d '/' -f 1)
-          REPO=$(echo $OWNER_REPO | cut -d '/' -f 2)
           TOKEN_START=${GITHUB_PAT:0:4}
           echo "Token starts with: $TOKEN_START"
 
