@@ -141,6 +141,7 @@ jobs:
 
           # Try add origin
           echo "Try remove and add origin"
+          git checkout main
           git remote remove origin
           git remote add origin "https://${GITHUB_PAT}@github.com/${OWNER}/${REPO}.git"
           git push
