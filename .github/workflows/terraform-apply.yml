@@ -110,6 +110,10 @@ jobs:
           # Configure git
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
+          git checkout main
+          git remote remove origin
+          git remote add origin "https://${GITHUB_PAT}@github.com/${OWNER}/${REPO}.git"
+          git push --set-upstream origin main
 
           # Add the updated files
           git add proxmox/k8s.ini proxmox/new_hosts.txt || true
@@ -127,23 +131,16 @@ jobs:
             COMMIT_MSG="$COMMIT_MSG $ANSIBLE_TAG"
           fi
 
-          # Commit changes
-          git commit -m "$COMMIT_MSG"
-
-          # Extract owner and repo name separately
           OWNER_REPO="${GITHUB_REPOSITORY}"
           OWNER=$(echo $OWNER_REPO | cut -d '/' -f 1)
           REPO=$(echo $OWNER_REPO | cut -d '/' -f 2)
-
-          # Show token type (but not value) for debugging
           TOKEN_START=${GITHUB_PAT:0:4}
           echo "Token starts with: $TOKEN_START"
 
-          # Try add origin
-          echo "Try remove and add origin"
-          git checkout main
-          git remote remove origin
-          git remote add origin "https://${GITHUB_PAT}@github.com/${OWNER}/${REPO}.git"
+          echo "git commit"
+          git commit -m "$COMMIT_MSG"
+
+          echo "git push"
           git push
 
           echo "::notice::Successfully pushed inventory changes"
