@@ -21,7 +21,7 @@ cp "$INVENTORY_FILE" "${INVENTORY_FILE}.old"
 # Parse Terraform output
 echo "Getting Terraform outputs..."
 cd proxmox
-terraform output -json > /tmp/tf_output.json
+terraform output -json > tf_output.json
 cd ..
 
 # Extract VM information - Fix JQ syntax issues
@@ -29,12 +29,6 @@ echo "Extracting VM information..."
 # Fixed JQ commands to avoid string interpolation issues
 VM_IPS=$(jq -r '.vm_ips.value | to_entries | map(select(.key | contains("k8s-"))) | map(if .value.ip == "" then "Unknown" else (.value.ip | split("/")[0]) end)' /tmp/tf_output.json)
 VM_NAMES=$(jq -r '.vm_ips.value | to_entries | map(select(.key | contains("k8s-"))) | map(.key | gsub("proxmox/vms/"; "") | gsub(".yaml"; ""))' /tmp/tf_output.json)
-
-# Debug output
-echo "Debug - VM IPs:"
-echo "$VM_IPS"
-echo "Debug - VM Names:"
-echo "$VM_NAMES"
 
 # Create arrays from JSON outputs
 readarray -t IPS < <(echo $VM_IPS | jq -r '.[]')
