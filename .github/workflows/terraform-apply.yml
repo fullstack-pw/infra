@@ -130,18 +130,30 @@ jobs:
           # Commit changes
           git commit -m "$COMMIT_MSG"
 
-          # Set the authenticated remote URL using the PAT directly
-          # Print commands for debugging but hide the token
-          echo "Setting authenticated remote URL..."
-          PAT_MASKED=${GITHUB_PAT:0:4}****${GITHUB_PAT:${#GITHUB_PAT}-4}
-          echo "Using token: $PAT_MASKED"
+          # Extract owner and repo name separately
+          OWNER_REPO="${GITHUB_REPOSITORY}"
+          OWNER=$(echo $OWNER_REPO | cut -d '/' -f 1)
+          REPO=$(echo $OWNER_REPO | cut -d '/' -f 2)
 
-          # Use different formats to maximize chance of success
-          # Format 1: Plain token in URL
-          git remote set-url origin "https://${GITHUB_PAT}@github.com/${GITHUB_REPOSITORY}.git"
+          # Show token type (but not value) for debugging
+          TOKEN_START=${GITHUB_PAT:0:4}
+          echo "Token starts with: $TOKEN_START"
 
-          # Push changes
-          echo "Pushing changes..."
+          # Try pushing without modifying remote first (use git credentials)
+          echo "Trying to push with git credentials..."
+          git config credential.helper store
+          echo "https://${GITHUB_PAT}:x-oauth-basic@github.com" > ~/.git-credentials
+          git push || true
+          rm ~/.git-credentials
+
+          # If that didn't work, try with token in URL
+          echo "Trying with token in URL..."
+          git remote set-url origin "https://${GITHUB_PAT}@github.com/${OWNER}/${REPO}.git"
+          git push || true
+
+          # If still not working, try with username format
+          echo "Trying with username:token format..."
+          git remote set-url origin "https://${OWNER}:${GITHUB_PAT}@github.com/${OWNER}/${REPO}.git"
           git push
 
           echo "::notice::Successfully pushed inventory changes"
