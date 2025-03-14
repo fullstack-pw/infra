@@ -86,24 +86,47 @@ jobs:
       - name: Commit Inventory Changes
         if: steps.apply.outcome == 'success'
         id: commit-changes
-        run: |
-          git config --local user.email "actions@github.com"
-          git config --local user.name "GitHub Actions"
-          git add proxmox/k8s.ini proxmox/new_hosts.txt
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const { execSync } = require('child_process');
 
-          if git diff --quiet && git diff --staged --quiet; then
-            echo "No changes to commit"
-            echo "changes_made=false" >> $GITHUB_OUTPUT
-          else
-            # Include ansible tag in commit message if available
-            if [ -n "$ANSIBLE_TAG" ]; then
-              git commit -m "Auto-update Ansible inventory $ANSIBLE_TAG"
-            else
-              git commit -m "Auto-update Ansible inventory"
-            fi
-            git push
-            echo "changes_made=true" >> $GITHUB_OUTPUT
-          fi
+            // Configure git
+            execSync('git config --local user.email "actions@github.com"');
+            execSync('git config --local user.name "GitHub Actions"');
+
+            // Add the changes
+            try {
+              execSync('git add proxmox/k8s.ini proxmox/new_hosts.txt');
+            } catch (error) {
+              console.log('Error adding files, but continuing: ', error);
+            }
+
+            // Check if there are changes to commit
+            let hasChanges = false;
+            try {
+              execSync('git diff --quiet && git diff --staged --quiet');
+            } catch (error) {
+              // If the command exits with non-zero, there are changes
+              hasChanges = true;
+            }
+
+            if (!hasChanges) {
+              console.log('No changes to commit');
+              return;
+            }
+
+            // Commit with ansible tag if available
+            const ansibleTag = process.env.ANSIBLE_TAG || '';
+            const commitMessage = ansibleTag 
+              ? `Auto-update Ansible inventory ${ansibleTag}`
+              : 'Auto-update Ansible inventory';
+
+            // Push the changes back to the repo
+            await exec.exec('git', ['commit', '-m', commitMessage]);
+            await exec.exec('git', ['push']);
 
   apply-clusters:
     needs: detect-changes
