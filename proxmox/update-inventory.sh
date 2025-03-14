@@ -24,14 +24,27 @@ cd proxmox
 terraform output -json > /tmp/tf_output.json
 cd ..
 
-# Extract VM information
+# Extract VM information - Fix JQ syntax issues
 echo "Extracting VM information..."
-VM_IPS=$(jq -r '.vm_ips.value | to_entries | map(select(.key | match("k8s-"))) | map("\(.value.ip=="" ? "Unknown" : (.value.ip | split("/")[0]))")' /tmp/tf_output.json)
-VM_NAMES=$(jq -r '.vm_ips.value | to_entries | map(select(.key | match("k8s-"))) | map(.key | gsub("proxmox/vms/"; "") | gsub(".yaml"; ""))' /tmp/tf_output.json)
+# Fixed JQ commands to avoid string interpolation issues
+VM_IPS=$(jq -r '.vm_ips.value | to_entries | map(select(.key | contains("k8s-"))) | map(if .value.ip == "" then "Unknown" else (.value.ip | split("/")[0]) end)' /tmp/tf_output.json)
+VM_NAMES=$(jq -r '.vm_ips.value | to_entries | map(select(.key | contains("k8s-"))) | map(.key | gsub("proxmox/vms/"; "") | gsub(".yaml"; ""))' /tmp/tf_output.json)
+
+# Debug output
+echo "Debug - VM IPs:"
+echo "$VM_IPS"
+echo "Debug - VM Names:"
+echo "$VM_NAMES"
 
 # Create arrays from JSON outputs
 readarray -t IPS < <(echo $VM_IPS | jq -r '.[]')
 readarray -t NAMES < <(echo $VM_NAMES | jq -r '.[]')
+
+# Debug array contents
+echo "Debug - IPS array contents:"
+printf '%s\n' "${IPS[@]}"
+echo "Debug - NAMES array contents:"
+printf '%s\n' "${NAMES[@]}"
 
 # Track new hosts
 > "$NEW_HOSTS_FILE"
