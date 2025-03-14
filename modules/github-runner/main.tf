@@ -1,33 +1,10 @@
-data "vault_kv_secret_v2" "github_token" {
-  mount = "kv"
-  name  = "github-runner"
-}
-
 resource "kubernetes_namespace" "arc_namespace" {
   metadata {
     name = var.namespace
-  }
-}
-
-resource "kubernetes_secret" "kubeconfig" {
-  metadata {
-    name      = "kubeconfig"
-    namespace = kubernetes_namespace.arc_namespace.metadata[0].name
-  }
-
-  data = {
-    KUBECONFIG = data.vault_kv_secret_v2.github_token.data["KUBECONFIG"]
-  }
-}
-
-resource "kubernetes_secret" "github_pat" {
-  metadata {
-    name      = "github-pat"
-    namespace = kubernetes_namespace.arc_namespace.metadata[0].name
-  }
-
-  data = {
-    GITHUB_PAT = data.vault_kv_secret_v2.github_token.data["GITHUB_PAT"]
+    labels = {
+      # Add label to ensure ClusterExternalSecret targets this namespace
+      "kubernetes.io/metadata.name" = var.namespace
+    }
   }
 }
 
@@ -47,106 +24,52 @@ resource "helm_release" "arc" {
   repository = "https://actions-runner-controller.github.io/actions-runner-controller"
   version    = var.arc_chart_version
 
-  set {
-    name  = "authSecret.create"
-    value = true
-  }
+  # Wait for the external secret to be created
+  depends_on = [kubernetes_namespace.arc_namespace]
 
-  set {
-    name  = "authSecret.github_token"
-    value = data.vault_kv_secret_v2.github_token.data["GITHUB_PAT"]
-  }
-
-  set {
-    name  = "installCRDs"
-    value = "true"
-  }
-
-  set {
-    name  = "certManagerEnabled"
-    value = var.cert_manager_enabled
-  }
-
-  set {
-    name  = "image.actionsRunnerRepositoryAndTag"
-    value = var.runner_image
-  }
+  values = [
+    <<-EOF
+    authSecret:
+      create: false
+      github_token: ${var.use_existing_secret ? "" : null}
+      existingSecret: "cluster-secrets-es"
+    installCRDs: true
+    certManagerEnabled: ${var.cert_manager_enabled}
+    image:
+      actionsRunnerRepositoryAndTag: "${var.runner_image}"
+    EOF
+  ]
 }
 
 resource "kubernetes_manifest" "runner_deployment" {
-  manifest = {
-    "apiVersion" = "actions.summerwind.dev/v1alpha1"
-    "kind"       = "RunnerDeployment"
-    "metadata" = {
-      "name"      = "github-runner"
-      "namespace" = kubernetes_namespace.arc_namespace.metadata[0].name
-    }
-    "spec" = {
-      "replicas" = var.runner_replicas
-      "template" = {
-        "spec" = {
-          "organization"       = var.github_owner
-          "serviceAccountName" = kubernetes_service_account.github_runner.metadata[0].name
-          "containers" = [
-            {
-              "name" = "runner"
-              "env" = [
-                {
-                  "name"  = "KUBECONFIG"
-                  "value" = "/etc/kubeconfig"
-                }
-              ]
-              "volumeMounts" = [
-                {
-                  "name"      = "kubeconfig-volume"
-                  "mountPath" = "/etc/kubeconfig"
-                  "subPath"   = "KUBECONFIG"
-                }
-              ]
-            }
-          ]
-          "volumes" = [
-            {
-              "name" = "kubeconfig-volume"
-              "secret" = {
-                "secretName" = "kubeconfig"
-              }
-            }
-          ]
-        }
-      }
-    }
-  }
+  manifest = yamldecode(templatefile("${path.module}/templates/runner-deployment.yaml.tpl", {
+    runner_name          = "github-runner"
+    namespace            = kubernetes_namespace.arc_namespace.metadata[0].name
+    replicas             = var.runner_replicas
+    organization         = var.github_owner
+    service_account_name = kubernetes_service_account.github_runner.metadata[0].name
+    runner_labels        = var.runner_labels
+    image                = var.runner_image_override != "" ? var.runner_image_override : ""
+    working_directory    = var.working_directory
+  }))
+
   depends_on = [helm_release.arc]
 }
 
 resource "kubernetes_manifest" "runner_autoscaler" {
   count = var.enable_autoscaling ? 1 : 0
 
-  manifest = {
-    "apiVersion" = "actions.summerwind.dev/v1alpha1"
-    "kind"       = "HorizontalRunnerAutoscaler"
-    "metadata" = {
-      "name"      = "github-runner-autoscaler"
-      "namespace" = kubernetes_namespace.arc_namespace.metadata[0].name
-    }
-    "spec" = {
-      "scaleTargetRef" = {
-        "kind" = "RunnerDeployment"
-        "name" = "github-runner"
-      }
-      "minReplicas" = var.min_runners
-      "maxReplicas" = var.max_runners
-      "metrics" = [
-        {
-          "type"               = "PercentageRunnersBusy"
-          "scaleUpThreshold"   = var.scale_up_threshold
-          "scaleDownThreshold" = var.scale_down_threshold
-          "scaleUpFactor"      = var.scale_up_factor
-          "scaleDownFactor"    = var.scale_down_factor
-        }
-      ]
-    }
-  }
+  manifest = yamldecode(templatefile("${path.module}/templates/runner-autoscaler.yaml.tpl", {
+    autoscaler_name        = "github-runner-autoscaler"
+    namespace              = kubernetes_namespace.arc_namespace.metadata[0].name
+    runner_deployment_name = "github-runner"
+    min_replicas           = var.min_runners
+    max_replicas           = var.max_runners
+    scale_up_threshold     = var.scale_up_threshold
+    scale_down_threshold   = var.scale_down_threshold
+    scale_up_factor        = var.scale_up_factor
+    scale_down_factor      = var.scale_down_factor
+  }))
+
   depends_on = [kubernetes_manifest.runner_deployment]
 }
