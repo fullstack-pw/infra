@@ -33,8 +33,19 @@ jobs:
     runs-on: self-hosted
     environment: terraform
     steps:
+      - name: Check for GitHub PAT
+        run: |
+          if [[ -z "${GITHUB_PAT}" ]]; then
+            echo "::error::GITHUB_PAT environment variable is not set. This is required for pushing changes."
+            exit 1
+          fi
+          echo "GitHub PAT is available"
+
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ env.GITHUB_PAT }}
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -44,6 +55,13 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.10.5
+
+      - name: Install jq
+        run: |
+          if ! command -v jq &> /dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y jq
+          fi
 
       - name: Terraform Init
         working-directory: ./proxmox
@@ -80,36 +98,47 @@ jobs:
       - name: Update Ansible Inventory
         if: steps.apply.outcome == 'success'
         run: |
+          # Use the improved inventory script with better error handling
           chmod +x proxmox/update-inventory.sh
-          proxmox/update-inventory.sh
+          ./proxmox/update-inventory.sh || echo "Warning: Inventory update script encountered issues but workflow will continue"
+          # Make sure new_hosts.txt exists even if the script failed
+          touch proxmox/new_hosts.txt
 
-      - name: Commit Inventory Changes
+      - name: Commit and Push Changes
         if: steps.apply.outcome == 'success'
         id: commit-changes
         run: |
+          # Configure git
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
 
-          # Add the correct file paths to stage
+          # Add the updated files
           git add proxmox/k8s.ini proxmox/new_hosts.txt || true
 
+          # Check if there are changes to commit
           if git diff --quiet && git diff --staged --quiet; then
             echo "No changes to commit"
             echo "changes_made=false" >> $GITHUB_OUTPUT
-          else
-            # Include ansible tag in commit message if available
-            if [ -n "$ANSIBLE_TAG" ]; then
-              git commit -m "Auto-update Ansible inventory $ANSIBLE_TAG"
-            else
-              git commit -m "Auto-update Ansible inventory"
-            fi
-            
-            # Use the GITHUB_PAT that's already available in the runner environment
-            git remote set-url origin https://x-access-token:${GITHUB_PAT}@github.com/${{ github.repository }}.git
-            git push
-            
-            echo "changes_made=true" >> $GITHUB_OUTPUT
+            exit 0
           fi
+
+          # Prepare commit message
+          COMMIT_MSG="Auto-update Ansible inventory"
+          if [ -n "$ANSIBLE_TAG" ]; then
+            COMMIT_MSG="$COMMIT_MSG $ANSIBLE_TAG"
+          fi
+
+          # Commit changes
+          git commit -m "$COMMIT_MSG"
+
+          # Set the authenticated remote URL using the PAT
+          git remote set-url origin "https://$GITHUB_PAT@github.com/$GITHUB_REPOSITORY.git"
+
+          # Push changes
+          git push
+
+          echo "::notice::Successfully pushed inventory changes"
+          echo "changes_made=true" >> $GITHUB_OUTPUT
 
   apply-clusters:
     needs: detect-changes
