@@ -178,17 +178,17 @@ proxmox-init:
 .PHONY: proxmox-plan
 proxmox-plan:
 	@echo -e "${CYAN}Planning Proxmox VM changes...${NC}"
-	@cd $(PROXMOX_DIR) && terraform plan -var="proxmox_password=${PROXMOX_PASSWORD}" -out=proxmox.tfplan
+	@cd $(PROXMOX_DIR) && terraform plan -var="PROXMOX_PASSWORD=${PROXMOX_PASSWORD}" -out=proxmox.tfplan
 
 .PHONY: proxmox-apply
 proxmox-apply:
 	@echo -e "${CYAN}Applying Proxmox VM changes...${NC}"
-	@cd $(PROXMOX_DIR) && terraform apply -var="proxmox_password=${PROXMOX_PASSWORD}" proxmox.tfplan
+	@cd $(PROXMOX_DIR) && terraform apply -var="PROXMOX_PASSWORD=${PROXMOX_PASSWORD}" proxmox.tfplan
 
 .PHONY: proxmox-import
 proxmox-import:
 	@echo -e "${CYAN}Importing existing Proxmox VMs...${NC}"
-	@cd $(PROXMOX_DIR) && terraform import -var="proxmox_password=${PROXMOX_PASSWORD}"
+	@cd $(PROXMOX_DIR) && terraform import -var="PROXMOX_PASSWORD=${PROXMOX_PASSWORD}"
 
 # Kubernetes management
 .PHONY: k8s-init
