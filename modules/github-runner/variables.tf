@@ -4,6 +4,12 @@ variable "namespace" {
   default     = "actions-runner-system"
 }
 
+variable "use_existing_secret" {
+  description = "Use existing secret for GitHub PAT token from cluster-secrets-es"
+  type        = bool
+  default     = true
+}
+
 variable "github_owner" {
   description = "GitHub organization or user"
   type        = string
@@ -22,6 +28,12 @@ variable "runner_image" {
   default     = "registry.fullstack.pw/github-runner:latest"
 }
 
+variable "runner_image_override" {
+  description = "Override for the runner image in the deployment (if different from controller config)"
+  type        = string
+  default     = ""
+}
+
 variable "cert_manager_enabled" {
   description = "Enable cert-manager integration for ARC"
   type        = bool
@@ -32,6 +44,18 @@ variable "runner_replicas" {
   description = "Number of GitHub runner replicas"
   type        = number
   default     = 2
+}
+
+variable "runner_labels" {
+  description = "Labels to assign to the GitHub runner"
+  type        = string
+  default     = ""
+}
+
+variable "working_directory" {
+  description = "Working directory for the runner"
+  type        = string
+  default     = ""
 }
 
 variable "enable_autoscaling" {
