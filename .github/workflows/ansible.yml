@@ -75,20 +75,19 @@ jobs:
           echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-          # Extract IPs from the inventory file
-          if [ -f "proxmox/k8s.ini" ]; then
-            # Get all IPs from the inventory file (ignoring section headers and comments)
-            HOSTS=$(grep -v '^\[' proxmox/k8s.ini | grep -v '^#' | grep -v '^\s*$' | awk '{print $1}')
+          # Check if we have new hosts to limit execution to
+          if [ -f "proxmox/new_hosts.txt" ] && [ -s "proxmox/new_hosts.txt" ]; then
+            echo "Found new hosts, adding them to known_hosts:"
             
-            # Add each host to known_hosts
-            for HOST in $HOSTS; do
-              # Extract just the IP part if there are other components
-              IP=$(echo $HOST | cut -d' ' -f1)
-              echo "Adding $IP to known_hosts..."
-              ssh-keyscan -H $IP >> ~/.ssh/known_hosts 2>/dev/null || echo "Warning: Could not scan $IP"
-            done
+            # Loop through new hosts file
+            while IFS=, read -r IP ENV; do
+              if [ -n "$IP" ] && [[ $IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+                echo "Adding new host $IP to known_hosts..."
+                ssh-keyscan -H $IP >> ~/.ssh/known_hosts 2>/dev/null || echo "Warning: Could not scan $IP"
+              fi
+            done < proxmox/new_hosts.txt
           else
-            echo "Warning: proxmox/k8s.ini not found, cannot scan hosts"
+            echo "No new hosts found, not scanning any hosts"
           fi
         if: env.PLAYBOOK_PATH != ''
 
