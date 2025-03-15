@@ -121,10 +121,7 @@ jobs:
               fi
             done < proxmox/new_hosts.txt
           else
-            echo "No new hosts found, running playbook on all matching hosts"
-            ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i proxmox/k8s.ini $PLAYBOOK_PATH \
-              -e "vault_token=$VAULT_TOKEN" \
-              -e "vault_addr=https://vault.fullstack.pw"
+            echo "No new hosts found"
           fi
         if: env.PLAYBOOK_PATH != ''
         env:
