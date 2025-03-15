@@ -91,12 +91,20 @@
         VAULT_ADDR: "{{ vault_addr }}"
         VAULT_TOKEN: "{{ vault_token }}"
       shell: |
+        # Create a script to retrieve kubeconfig
+        cat > /tmp/get_kubeconfig.sh << 'EOF'
+        #!/bin/bash
         # Create an empty kubeconfig if it doesn't exist in Vault
         vault kv get -format=json kv/gitlab_runner | jq -r '.data.data.KUBECONFIG // empty' > ./tmp/existing-kubeconfig
         if [ ! -s ./tmp/existing-kubeconfig ]; then
           echo "No existing kubeconfig found. Creating a new one."
           cat ./tmp/{{ cluster_name }}-kubeconfig > ./tmp/existing-kubeconfig
         fi
+        EOF
+
+        # Make the script executable and run it
+        chmod +x /tmp/get_kubeconfig.sh
+        /bin/bash /tmp/get_kubeconfig.sh
       run_once: true
       args:
         executable: /bin/bash
@@ -106,6 +114,9 @@
       delegate_to: localhost
       become: false
       shell: |
+        # Create a script to merge kubeconfig files
+        cat > /tmp/merge_kubeconfig.sh << 'EOF'
+        #!/bin/bash
         # Process the new kubeconfig to use the cluster name in context
         yq eval '.clusters[0].name = "{{ cluster_name }}"' -i ./tmp/{{ cluster_name }}-kubeconfig
         yq eval '.contexts[0].name = "{{ cluster_name }}"' -i ./tmp/{{ cluster_name }}-kubeconfig
@@ -121,14 +132,19 @@
           NEW_USER=$(yq eval '.users[0]' ./tmp/{{ cluster_name }}-kubeconfig)
           
           # Add new components to existing kubeconfig
-          yq eval '.clusters += ['"$NEW_CLUSTER"']' -i ./tmp/existing-kubeconfig
-          yq eval '.contexts += ['"$NEW_CONTEXT"']' -i ./tmp/existing-kubeconfig
-          yq eval '.users += ['"$NEW_USER"']' -i ./tmp/existing-kubeconfig
+          yq eval '.clusters += ['"\$NEW_CLUSTER"']' -i ./tmp/existing-kubeconfig
+          yq eval '.contexts += ['"\$NEW_CONTEXT"']' -i ./tmp/existing-kubeconfig
+          yq eval '.users += ['"\$NEW_USER"']' -i ./tmp/existing-kubeconfig
         fi
 
         # Display the merged kubeconfig for debugging
         echo "Merged kubeconfig:"
         cat ./tmp/existing-kubeconfig
+        EOF
+
+        # Make the script executable and run it
+        chmod +x /tmp/merge_kubeconfig.sh
+        /bin/bash /tmp/merge_kubeconfig.sh
       run_once: true
       args:
         executable: /bin/bash
@@ -140,22 +156,27 @@
         VAULT_ADDR: "{{ vault_addr }}"
         VAULT_TOKEN: "{{ vault_token }}"
       shell: |
+        # Create a script to update Vault
+        cat > /tmp/update_vault.sh << 'EOF'
+        #!/bin/bash
         # Update the gitlab_runner secret
-        vault kv put kv/gitlab_runner KUBECONFIG="$(cat ./tmp/existing-kubeconfig)" GITLAB_TOKEN="$(vault kv get -format=json kv/gitlab_runner | jq -r '.data.data.GITLAB_TOKEN // empty')"
+        EXISTING_TOKEN=$(vault kv get -format=json kv/gitlab_runner | jq -r '.data.data.GITLAB_TOKEN // empty')
+        if [ -n "$EXISTING_TOKEN" ]; then
+          vault kv put kv/gitlab_runner KUBECONFIG="$(cat ./tmp/existing-kubeconfig)" GITLAB_TOKEN="$EXISTING_TOKEN"
+        else
+          vault kv put kv/gitlab_runner KUBECONFIG="$(cat ./tmp/existing-kubeconfig)"
+        fi
 
         # Update the cluster-secrets-es secret
         vault kv put kv/cluster-secret-store/secrets/KUBECONFIG KUBECONFIG="$(cat ./tmp/existing-kubeconfig)"
 
         echo "Kubeconfig updated in Vault successfully"
+        EOF
+
+        # Make the script executable and run it
+        chmod +x /tmp/update_vault.sh
+        /bin/bash /tmp/update_vault.sh
       run_once: true
       args:
         executable: /bin/bash
       when: vault_token is defined
-
-    - name: Clean up temporary files
-      delegate_to: localhost
-      become: false
-      file:
-        path: ./tmp
-        state: absent
-      run_once: true
