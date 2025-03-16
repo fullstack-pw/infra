@@ -94,11 +94,11 @@ plan:
 		echo -e "${CYAN}Planning changes for all environments...${NC}"; \
 		for env in $(ENVIRONMENTS); do \
 			echo -e "\n${YELLOW}Planning changes for $${env} environment...${NC}"; \
-			cd $(TERRAFORM_DIR) && terraform workspace select $${env} && terraform plan -out=$${env}.tfplan && cd ..; \
+			cd $(TERRAFORM_DIR) && terraform workspace select $${env} && terraform plan -no-color -out=$${env}.tfplan && terraform show -no-color $${env}.tfplan >> plan.txt && cd ..; \
 		done; \
 	else \
 		echo -e "${CYAN}Planning changes for $(ENV) environment...${NC}"; \
-		cd $(TERRAFORM_DIR) && terraform workspace select $(ENV) && terraform plan -out=$(ENV).tfplan; \
+		cd $(TERRAFORM_DIR) && terraform workspace select $(ENV) && terraform plan -no-color -out=$(ENV).tfplan && terraform show -no-color $(ENV).tfplan >> plan.txt; \
 	fi
 
 # Apply changes for all environments or a specific one
