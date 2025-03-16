@@ -100,6 +100,12 @@ variable "secret_data" {
         key      = "VAULT_TOKEN"
         property = "data.VAULT_TOKEN"
       }
+      }, {
+      secretKey = "TF_VAR_VAULT_TOKEN"
+      remoteRef = {
+        key      = "TF_VAR_VAULT_TOKEN"
+        property = "data.TF_VAR_VAULT_TOKEN"
+      }
     }
   ]
 }

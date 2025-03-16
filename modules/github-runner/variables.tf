@@ -4,9 +4,9 @@ variable "namespace" {
   default     = "actions-runner-system"
 }
 
-variable "use_existing_secret" {
-  description = "Use existing secret for GitHub PAT token from cluster-secrets-es"
-  type        = bool
+variable "github_token" {
+  description = "GitHub PAT token"
+  type        = string
   default     = true
 }
 

@@ -33,7 +33,7 @@ variable "kubeconfig_path" {
 variable "vault_addr" {
   default = "https://vault.fullstack.pw"
 }
-variable "vault_token" {}
+variable "VAULT_TOKEN" {}
 
 
 variable "kubernetes_ca_cert" {

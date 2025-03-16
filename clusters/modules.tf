@@ -24,7 +24,7 @@ module "cert_manager" {
 
   namespace      = "cert-manager"
   chart_version  = "v1.16.2"
-  vault_token    = var.vault_token
+  vault_token    = var.VAULT_TOKEN
   cluster_issuer = "letsencrypt-prod"
   email          = "pedropilla@gmail.com"
 }
@@ -36,7 +36,7 @@ module "external_secrets" {
 
   namespace     = "external-secrets"
   chart_version = "0.12.1"
-  vault_token   = var.vault_token
+  vault_token   = var.VAULT_TOKEN
   vault_addr    = var.vault_addr
 
   namespace_selectors = {
@@ -137,6 +137,7 @@ module "github_runner" {
   runner_image       = "registry.fullstack.pw/github-runner:latest"
   runner_replicas    = 2
   enable_autoscaling = false
+  github_token       = data.vault_kv_secret_v2.github_token[0].data["GITHUB_PAT"]
 }
 
 module "gitlab_runner" {
