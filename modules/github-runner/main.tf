@@ -23,6 +23,7 @@ resource "helm_release" "arc" {
   chart      = "actions-runner-controller"
   repository = "https://actions-runner-controller.github.io/actions-runner-controller"
   version    = var.arc_chart_version
+  timeout    = 120
 
   # Wait for the external secret to be created
   depends_on = [kubernetes_namespace.arc_namespace]
@@ -30,9 +31,8 @@ resource "helm_release" "arc" {
   values = [
     <<-EOF
     authSecret:
-      create: false
-      github_token: ${var.use_existing_secret ? "" : null}
-      existingSecret: "cluster-secrets-es"
+      create: true
+      github_token: ${var.github_token}
     installCRDs: true
     certManagerEnabled: ${var.cert_manager_enabled}
     image:

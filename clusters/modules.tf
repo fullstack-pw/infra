@@ -137,6 +137,7 @@ module "github_runner" {
   runner_image       = "registry.fullstack.pw/github-runner:latest"
   runner_replicas    = 2
   enable_autoscaling = false
+  github_token       = data.vault_kv_secret_v2.github_token[0].data["GITHUB_PAT"]
 }
 
 module "gitlab_runner" {
