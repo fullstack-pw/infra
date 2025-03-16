@@ -7,14 +7,24 @@ spec:
   replicas: ${replicas}
   template:
     spec:
+      volumes:
+        - name: kubeconfig-volume
+          secret:
+            secretName: cluster-secrets
+            items:
+              - key: KUBECONFIG
+                path: kubeconfig
       organization: ${organization}
       serviceAccountName: ${service_account_name}
-      # Use environment variables from the secrets
       envFrom:
         - secretRef:
             name: cluster-secrets
       containers:
         - name: runner
+          volumeMounts:
+            - name: kubeconfig-volume
+              mountPath: /home/runner/.kube/config
+              subPath: kubeconfig
 %{if runner_labels != ""}
           labels:
             - ${runner_labels}
