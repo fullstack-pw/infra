@@ -93,7 +93,9 @@ plan:
 	@if [ -z "$(ENV)" ]; then \
 		echo -e "${CYAN}Planning changes for all environments...${NC}"; \
 		for env in $(ENVIRONMENTS); do \
-			echo -e "\n${YELLOW}Planning changes for $${env} environment...${NC}"; \
+			echo -e "\n#########################################################" | tee -a plan.txt; \
+			echo -e "##\n##   Planning changes for $${env} environment..." | tee -a plan.txt; \
+			echo -e "##\n#########################################################" | tee -a plan.txt; \
 			cd $(TERRAFORM_DIR) && terraform workspace select $${env} && terraform plan -no-color -out=$${env}.tfplan && terraform show -no-color $${env}.tfplan >> plan.txt && cd ..; \
 		done; \
 	else \
@@ -109,7 +111,9 @@ apply:
 		read answer; \
 		if [ "$${answer}" = "y" ] || [ "$${answer}" = "Y" ]; then \
 			for env in $(ENVIRONMENTS); do \
-				echo -e "\n${YELLOW}Applying changes to $${env} environment...${NC}"; \
+				echo -e "\n#########################################################" | tee -a plan.txt; \
+				echo -e "##\n## Applying changes to $${env} environment..." | tee -a plan.txt; \
+				echo -e "##\n#########################################################" | tee -a plan.txt; \
 				cd $(TERRAFORM_DIR) && terraform workspace select $${env}; \
 				if [ -f "$${env}.tfplan" ]; then \
 					terraform apply $${env}.tfplan && cd ..; \
