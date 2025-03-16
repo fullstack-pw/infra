@@ -24,7 +24,7 @@ module "cert_manager" {
 
   namespace      = "cert-manager"
   chart_version  = "v1.16.2"
-  vault_token    = var.vault_token
+  vault_token    = var.VAULT_TOKEN
   cluster_issuer = "letsencrypt-prod"
   email          = "pedropilla@gmail.com"
 }
@@ -36,7 +36,7 @@ module "external_secrets" {
 
   namespace     = "external-secrets"
   chart_version = "0.12.1"
-  vault_token   = var.vault_token
+  vault_token   = var.VAULT_TOKEN
   vault_addr    = var.vault_addr
 
   namespace_selectors = {
