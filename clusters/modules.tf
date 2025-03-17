@@ -216,3 +216,25 @@ module "observability" {
   prometheus_domain       = "prometheus.fullstack.pw"
   grafana_domain          = "grafana.fullstack.pw"
 }
+
+module "postgres" {
+  count  = contains(local.workload, "postgres") ? 1 : 0
+  source = "../modules/postgres"
+
+  namespace                 = "default"
+  create_namespace          = false
+  release_name              = "postgres"
+  persistence_storage_class = "local-path"
+  persistence_size          = "10Gi"
+  enable_metrics            = false
+
+  # Optional: Enable replication for high availability
+  replication_enabled  = false
+  replication_replicas = 1
+
+  # Set resource limits based on your environment
+  memory_request = "512Mi"
+  cpu_request    = "250m"
+  memory_limit   = "1Gi"
+  cpu_limit      = "500m"
+}
