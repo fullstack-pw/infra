@@ -107,23 +107,17 @@ plan:
 .PHONY: apply
 apply:
 	@if [ -z "$(ENV)" ]; then \
-		echo -e "${YELLOW}Are you sure you want to apply changes to ALL environments? [y/N] ${NC}"; \
-		read answer; \
-		if [ "$${answer}" = "y" ] || [ "$${answer}" = "Y" ]; then \
-			for env in $(ENVIRONMENTS); do \
-				echo -e "\n#########################################################" | tee -a plan.txt; \
-				echo -e "##\n## Applying changes to $${env} environment..." | tee -a plan.txt; \
-				echo -e "##\n#########################################################" | tee -a plan.txt; \
-				cd $(TERRAFORM_DIR) && terraform workspace select $${env} || terraform workspace new $${env}; \
-				if [ -f "$${env}.tfplan" ]; then \
-					terraform apply $${env}.tfplan && cd ..; \
-				else \
-					terraform apply -auto-approve && cd ..; \
-				fi; \
-			done; \
-		else \
-			echo -e "${YELLOW}Operation cancelled.${NC}"; \
-		fi; \
+		for env in $(ENVIRONMENTS); do \
+			echo -e "\n#########################################################" | tee -a plan.txt; \
+			echo -e "##\n## Applying changes to $${env} environment..." | tee -a plan.txt; \
+			echo -e "##\n#########################################################" | tee -a plan.txt; \
+			cd $(TERRAFORM_DIR) && terraform workspace select $${env} || terraform workspace new $${env}; \
+			if [ -f "$${env}.tfplan" ]; then \
+				terraform apply $${env}.tfplan && cd ..; \
+			else \
+				terraform apply -auto-approve && cd ..; \
+			fi; \
+		done; \
 	else \
 		echo -e "${CYAN}Applying changes to $(ENV) environment...${NC}"; \
 		cd $(TERRAFORM_DIR) && terraform workspace select $(ENV); \

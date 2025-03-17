@@ -1,3 +1,19 @@
+variable "workload" {
+  description = "map"
+  type        = map(list(string))
+  default = {
+    dev     = ["externaldns", "cert_manager", "external_secrets", "otel_collector"]
+    stg     = ["externaldns", "cert_manager", "external_secrets"]
+    prod    = ["externaldns", "cert_manager", "external_secrets"]
+    sandbox = ["externaldns", "cert_manager", "ingress_nginx", "minio", "observability", "registry", "vault"]
+    runners = ["external_secrets", "gitlab_runner", "github_runner"]
+    tools   = ["externaldns", "cert_manager", "external_secrets", "postgres"]
+  }
+}
+
+locals {
+  workload = var.workload[terraform.workspace]
+}
 variable "config" {
   description = "Map of providers with configuration per workspace."
   default = {
@@ -60,21 +76,4 @@ variable "token_reviewer_jwt" {
   type        = string
   sensitive   = true
   default     = ""
-}
-
-variable "workload" {
-  description = "map"
-  type        = map(list(string))
-  default = {
-    dev     = ["externaldns", "cert_manager", "external_secrets", "otel_collector"]
-    stg     = ["externaldns", "cert_manager", "external_secrets"]
-    prod    = ["externaldns", "cert_manager", "external_secrets"]
-    sandbox = ["externaldns", "cert_manager", "ingress_nginx", "minio", "observability", "registry", "vault"]
-    runners = ["external_secrets", "gitlab_runner", "github_runner"]
-    tools   = ["externaldns", "cert_manager", "external_secrets"]
-  }
-}
-
-locals {
-  workload = var.workload[terraform.workspace]
 }
