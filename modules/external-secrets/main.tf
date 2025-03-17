@@ -34,6 +34,7 @@ resource "kubernetes_secret" "vault_token" {
 
 // Deploy ClusterSecretStore
 resource "kubernetes_manifest" "vault_secret_store" {
+  count = var.deploy_crd == true ? 1 : 0
   manifest = {
     "apiVersion" = "external-secrets.io/v1beta1"
     "kind"       = "ClusterSecretStore"
@@ -63,6 +64,7 @@ resource "kubernetes_manifest" "vault_secret_store" {
 
 // Deploy ClusterExternalSecret
 resource "kubernetes_manifest" "cluster_secrets" {
+  count = var.deploy_crd == true ? 1 : 0
   manifest = {
     "apiVersion" = "external-secrets.io/v1beta1"
     "kind"       = "ClusterExternalSecret"

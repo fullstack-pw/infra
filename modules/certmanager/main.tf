@@ -11,12 +11,16 @@ resource "helm_release" "cert_manager" {
   repository = "https://charts.jetstack.io"
   version    = var.chart_version
 
-  #   values = [
-  #     <<-EOF
-  #     crds
-  #       enabled: true
-  #     EOF
-  #   ]
+  values = [
+    <<-EOF
+    installCRDs: true
+    EOF
+  ]
+
+  set {
+    name  = "installCRDs"
+    value = "true"
+  }
 }
 
 // Fetch Cloudflare credentials from Vault
@@ -39,6 +43,7 @@ resource "kubernetes_secret" "cloudflare_api_token" {
 
 // Create cluster issuer for Let's Encrypt production
 resource "kubernetes_manifest" "letsencrypt_issuer" {
+  count      = var.deploy_crd == true ? 1 : 0
   depends_on = [helm_release.cert_manager]
 
   manifest = {
