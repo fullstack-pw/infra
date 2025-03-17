@@ -106,7 +106,16 @@ variable "secret_data" {
         key      = "TF_VAR_VAULT_TOKEN"
         property = "data.TF_VAR_VAULT_TOKEN"
       }
+      }, {
+      secretKey = "EXTERNAL_DNS_PIHOLE_PASSWORD"
+      remoteRef = {
+        key      = "EXTERNAL_DNS_PIHOLE_PASSWORD"
+        property = "data.EXTERNAL_DNS_PIHOLE_PASSWORD"
+      }
     }
   ]
 }
 
+variable "deploy_crd" {
+  default = false
+}

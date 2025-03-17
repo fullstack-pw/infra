@@ -5,7 +5,7 @@
 SHELL := /bin/bash
 
 # Configuration
-ENVIRONMENTS := dev stg prod sandbox
+ENVIRONMENTS := dev stg prod sandbox tools
 DEFAULT_ENV := sandbox
 TERRAFORM_DIR := clusters
 PROXMOX_DIR := proxmox
@@ -114,7 +114,7 @@ apply:
 				echo -e "\n#########################################################" | tee -a plan.txt; \
 				echo -e "##\n## Applying changes to $${env} environment..." | tee -a plan.txt; \
 				echo -e "##\n#########################################################" | tee -a plan.txt; \
-				cd $(TERRAFORM_DIR) && terraform workspace select $${env}; \
+				cd $(TERRAFORM_DIR) && terraform workspace select $${env} || terraform workspace new $${env}; \
 				if [ -f "$${env}.tfplan" ]; then \
 					terraform apply $${env}.tfplan && cd ..; \
 				else \

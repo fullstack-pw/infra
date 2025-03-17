@@ -32,3 +32,7 @@ variable "vault_token" {
   type        = string
   sensitive   = true
 }
+
+variable "deploy_crd" {
+  default = false
+}

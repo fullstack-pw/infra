@@ -82,8 +82,8 @@ resource "kubernetes_deployment" "externaldns" {
           env_from {
             prefix = null
             secret_ref {
-              name     = var.pihole_secret_name
-              optional = false
+              name     = "cluster-secrets"
+              optional = true
             }
           }
 
