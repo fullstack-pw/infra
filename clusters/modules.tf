@@ -274,3 +274,47 @@ module "redis" {
   memory_limit   = "512Mi"
   cpu_limit      = "200m"
 }
+
+
+module "nats" {
+  count  = contains(local.workload, "nats") ? 1 : 0
+  source = "../modules/nats"
+
+  namespace        = "default"
+  create_namespace = false
+  release_name     = "nats"
+
+  # Authentication settings
+  auth_enabled      = true
+  generate_password = true
+
+  # JetStream persistence
+  jetstream_enabled         = true
+  persistence_enabled       = true
+  persistence_storage_class = "local-path"
+  persistence_size          = "2Gi"
+
+  # Resources
+  replicas       = 3
+  memory_request = "256Mi"
+  cpu_request    = "100m"
+  memory_limit   = "512Mi"
+  cpu_limit      = "200m"
+
+  service_type = "LoadBalancer"
+
+  # Monitoring and metrics
+  prometheus_enabled = true
+  monitoring_enabled = true
+
+  # Ingress configuration
+  ingress_enabled    = true
+  ingress_host       = "nats.fullstack.pw"
+  ingress_class_name = "traefik"
+  ingress_annotations = {
+    "external-dns.alpha.kubernetes.io/hostname" = "nats.fullstack.pw"
+    "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
+  }
+
+  additional_set_values = []
+}
