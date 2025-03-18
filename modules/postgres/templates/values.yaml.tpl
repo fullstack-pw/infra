@@ -2,13 +2,34 @@
 image:
   tag: ${pg_version}
 
-auth:
-  username: "${postgres_username}"
-  password: "${postgres_password}"
-  database: "${postgres_database}"
-  existingSecret: ""
+global:
+  postgresql:
+    auth:
+      postgresPassword: "${postgres_password}"
+      username: "${postgres_username}"
+      password: "${postgres_password}"
+      database: "${postgres_database}"
+      existingSecret: ""
 
+# Configure PostgreSQL to accept external connections
+postgresql:
+  extraEnvVars:
+    - name: POSTGRESQL_EXTRA_FLAGS
+      value: "-c listen_addresses=* -c max_connections=200"
+
+# Allow connections from all addresses
 primary:
+  service:
+    type: ${service_type}
+    port: ${service_port}
+  extraEnvVars:
+    - name: ALLOW_EMPTY_PASSWORD
+      value: "no"
+    - name: POSTGRESQL_CLIENT_MIN_MESSAGES
+      value: "error"
+    - name: POSTGRESQL_SKIP_INITDB
+      value: "false"
+  
   persistence:
     enabled: ${persistence_enabled}
 %{if persistence_enabled && storage_class != ""}
@@ -36,26 +57,7 @@ replication:
 architecture: standalone
 %{endif}
 
-service:
-  type: ${service_type}
-  port: ${service_port}
-
 metrics:
   enabled: ${enable_metrics}
   serviceMonitor:
     enabled: ${enable_metrics}
-
-%{if ingress_enabled}
-ingress:
-  enabled: ${ingress_enabled}
-%{if ingress_class_name != ""}
-  ingressClassName: "${ingress_class_name}"
-%{endif}
-  hostname: "${ingress_host}"
-%{if ingress_tls_enabled}
-  tls: true
-  selfSigned: false
-  secrets:
-    - name: "${ingress_tls_secret}"
-%{endif}
-%{endif}
