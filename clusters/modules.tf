@@ -238,3 +238,39 @@ module "postgres" {
   memory_limit   = "1Gi"
   cpu_limit      = "500m"
 }
+
+module "redis" {
+  count  = contains(local.workload, "redis") ? 1 : 0
+  source = "../modules/redis"
+
+  namespace                 = "default"
+  create_namespace          = false
+  release_name              = "redis"
+  persistence_storage_class = "local-path"
+  persistence_size          = "8Gi"
+
+  # Configure this as LoadBalancer to expose Redis port
+  service_type = "LoadBalancer"
+
+  # Disable ServiceMonitor since CRDs are not installed
+  enable_metrics = false
+
+  # Ingress configuration
+  ingress_enabled    = true
+  ingress_host       = "redis.fullstack.pw"
+  ingress_class_name = "traefik"
+  ingress_annotations = {
+    "external-dns.alpha.kubernetes.io/hostname" = "redis.fullstack.pw"
+    "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
+  }
+
+  # Optional: Enable Redis Sentinel for high availability
+  sentinel_enabled = false
+  replicas         = 2
+
+  # Resource limits
+  memory_request = "256Mi"
+  cpu_request    = "100m"
+  memory_limit   = "512Mi"
+  cpu_limit      = "200m"
+}
