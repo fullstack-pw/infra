@@ -44,7 +44,7 @@ variable "generate_credentials" {
 variable "postgres_username" {
   description = "PostgreSQL admin username"
   type        = string
-  default     = "postgres"
+  default     = "admin"
 }
 
 variable "postgres_password" {
@@ -121,7 +121,7 @@ variable "enable_metrics" {
 variable "service_type" {
   description = "Kubernetes service type"
   type        = string
-  default     = "ClusterIP"
+  default     = "LoadBalancer"
 }
 
 variable "service_port" {
@@ -134,13 +134,13 @@ variable "service_port" {
 variable "ingress_enabled" {
   description = "Enable ingress for PostgreSQL"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "ingress_class_name" {
   description = "Ingress class name"
   type        = string
-  default     = "nginx"
+  default     = "traefik"
 }
 
 variable "ingress_host" {
@@ -159,6 +159,18 @@ variable "ingress_tls_secret_name" {
   description = "TLS secret name for PostgreSQL ingress"
   type        = string
   default     = "postgres-tls"
+}
+
+variable "ingress_annotations" {
+  description = "Additional annotations for the PostgreSQL ingress"
+  type        = map(string)
+  default     = {}
+}
+
+variable "cert_manager_cluster_issuer" {
+  description = "Name of the cert-manager ClusterIssuer to use for TLS"
+  type        = string
+  default     = "letsencrypt-prod"
 }
 
 # High Availability
