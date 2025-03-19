@@ -131,7 +131,7 @@ EOF
 
 module "github_runner" {
   count  = contains(local.workload, "github_runner") ? 1 : 0
-  source = "../modules/github-runner"
+  source = "../modules/apps/github-runner"
 
   namespace          = "actions-runner-system"
   github_owner       = "fullstack-pw"
