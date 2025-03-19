@@ -152,14 +152,27 @@ module "jaeger_ingress" {
 module "otel_collector_http_ingress" {
   source = "../../base/ingress"
 
-  enabled            = true
-  name               = "${var.otel_collector_name}-http-ingress"
-  namespace          = module.namespace.name
-  host               = var.otel_collector_domain
-  service_name       = "${var.otel_collector_name}-collector"
-  service_port       = 4318 # OTLP HTTP port
-  path               = "/"
-  path_type          = "Prefix"
+  enabled      = true
+  name         = "${var.otel_collector_name}-http-ingress"
+  namespace    = module.namespace.name
+  host         = var.otel_collector_domain
+  service_name = "${var.otel_collector_name}-collector"
+  paths = [
+    {
+      path      = "/v1/traces"
+      path_type = "Prefix"
+      backend = {
+        service_port_name = "otlp-http"
+      }
+    },
+    {
+      path      = "/v1/metrics"
+      path_type = "Prefix"
+      backend = {
+        service_port_name = "otlp-http"
+      }
+    }
+  ]
   tls_enabled        = true
   tls_secret_name    = "${var.otel_collector_name}-tls"
   ingress_class_name = var.ingress_class_name
