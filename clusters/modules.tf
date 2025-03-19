@@ -87,7 +87,7 @@ module "github_runner" {
 
 module "gitlab_runner" {
   count  = contains(local.workload, "gitlab_runner") ? 1 : 0
-  source = "../modules/gitlab-runner"
+  source = "../modules/apps/gitlab-runner"
 
   namespace            = "gitlab"
   service_account_name = "gitlab-runner-sa"

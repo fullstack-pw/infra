@@ -178,3 +178,26 @@ moved {
   from = helm_release.opentelemetry_collector[0]
   to   = module.otel_collector[0].module.helm.helm_release.this
 }
+
+/**
+ * Moved blocks for GitLab Runner module refactoring
+ */
+
+# Moved blocks for namespace
+moved {
+  from = module.gitlab_runner[0].kubernetes_namespace.gitlab
+  to   = module.gitlab_runner[0].module.namespace.kubernetes_namespace.this[0]
+}
+
+
+# Moved blocks for kubeconfig secret
+moved {
+  from = module.gitlab_runner[0].kubernetes_secret.kubeconfig
+  to   = module.gitlab_runner[0].module.kubeconfig_secret.kubernetes_secret.this[0]
+}
+
+# Moved blocks for Helm release
+moved {
+  from = module.gitlab_runner[0].helm_release.gitlab_runner
+  to   = module.gitlab_runner[0].module.helm.helm_release.this
+}
