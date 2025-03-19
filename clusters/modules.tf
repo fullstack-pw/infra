@@ -240,6 +240,7 @@ module "postgres" {
 }
 
 module "redis" {
+  count  = contains(local.workload, "redis") ? 1 : 0
   source = "../modules/apps/redis"
 
   # Basic configuration
