@@ -29,7 +29,7 @@ spec:
           labels:
             - ${runner_labels}
 %{endif}
-%{if image != ""}
+%{if image != "" && if image != null}
           image: ${image}
 %{endif}
 %{if working_directory != ""}
