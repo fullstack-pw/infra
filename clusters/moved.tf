@@ -134,3 +134,32 @@ moved {
   from = module.minio[0].helm_release.minio
   to   = module.minio[0].module.helm.helm_release.this
 }
+
+/**
+ * Moved blocks for GitHub Runner module refactoring
+ */
+
+# Moved blocks for namespace
+moved {
+  from = module.github_runner[0].kubernetes_namespace.arc_namespace
+  to   = module.github_runner[0].module.namespace.kubernetes_namespace.this[0]
+}
+
+# Moved blocks for credentials
+moved {
+  from = module.github_runner[0].kubernetes_secret.github_pat
+  to   = module.github_runner[0].module.credentials.kubernetes_secret.this[0]
+}
+
+moved {
+  from = module.github_runner[0].kubernetes_secret.kubeconfig
+  to   = module.github_runner[0].module.kubeconfig_secret.kubernetes_secret.this[0]
+}
+
+
+# Moved blocks for Helm release
+moved {
+  from = module.github_runner[0].helm_release.arc
+  to   = module.github_runner[0].module.helm.helm_release.this
+}
+

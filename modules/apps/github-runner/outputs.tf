@@ -1,6 +1,6 @@
 output "namespace" {
   description = "Namespace where GitHub runners are deployed"
-  value       = kubernetes_namespace.arc_namespace.metadata[0].name
+  value       = module.namespace.name
 }
 
 output "service_account_name" {
@@ -10,12 +10,12 @@ output "service_account_name" {
 
 output "controller_release_name" {
   description = "Name of the GitHub Actions Runner Controller Helm release"
-  value       = helm_release.arc.name
+  value       = module.helm.name
 }
 
 output "runner_deployment_name" {
   description = "Name of the GitHub runner deployment"
-  value       = "github-runner"
+  value       = var.runner_name
 }
 
 output "autoscaler_enabled" {
@@ -25,5 +25,5 @@ output "autoscaler_enabled" {
 
 output "autoscaler_name" {
   description = "Name of the GitHub runner autoscaler (if enabled)"
-  value       = var.enable_autoscaling ? "github-runner-autoscaler" : null
+  value       = var.enable_autoscaling ? "${var.runner_name}-autoscaler" : null
 }

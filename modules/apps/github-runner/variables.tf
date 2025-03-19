@@ -7,7 +7,7 @@ variable "namespace" {
 variable "github_token" {
   description = "GitHub PAT token"
   type        = string
-  default     = true
+  sensitive   = true
 }
 
 variable "github_owner" {
@@ -20,6 +20,12 @@ variable "arc_chart_version" {
   description = "Version of the actions-runner-controller Helm chart"
   type        = string
   default     = "0.23.7"
+}
+
+variable "runner_name" {
+  description = "Name for the GitHub runner deployment"
+  type        = string
+  default     = "github-runner"
 }
 
 variable "runner_image" {
@@ -55,6 +61,13 @@ variable "runner_labels" {
 variable "working_directory" {
   description = "Working directory for the runner"
   type        = string
+  default     = ""
+}
+
+variable "kubeconfig" {
+  description = "Kubeconfig content for runner pods"
+  type        = string
+  sensitive   = true
   default     = ""
 }
 
