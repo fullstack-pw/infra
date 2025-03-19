@@ -240,39 +240,46 @@ module "postgres" {
 }
 
 module "redis" {
-  count  = contains(local.workload, "redis") ? 1 : 0
-  source = "../modules/redis"
+  source = "../modules/apps/redis"
 
-  namespace                 = "default"
-  create_namespace          = false
-  release_name              = "redis"
+  # Basic configuration
+  namespace        = "default"
+  create_namespace = false
+  release_name     = "redis"
+
+  # Resource settings
+  memory_request = "512Mi"
+  memory_limit   = "1Gi"
+  cpu_request    = "200m"
+  cpu_limit      = "500m"
+
+  # Persistence
+  persistence_enabled       = true
   persistence_storage_class = "local-path"
-  persistence_size          = "8Gi"
+  persistence_size          = "10Gi"
 
-  # Configure this as LoadBalancer to expose Redis port
-  service_type = "LoadBalancer"
+  # Authentication
+  generate_password = true
+  auth_enabled      = true
 
-  # Disable ServiceMonitor since CRDs are not installed
-  enable_metrics = false
+  # High Availability settings
+  sentinel_enabled = false
+  replicas         = 1
 
-  # Ingress configuration
-  ingress_enabled    = true
-  ingress_host       = "redis.fullstack.pw"
-  ingress_class_name = "traefik"
+  # Connectivity
+  service_type    = "LoadBalancer"
+  ingress_enabled = true
+  ingress_host    = "redis.fullstack.pw"
   ingress_annotations = {
-    "external-dns.alpha.kubernetes.io/hostname" = "redis.fullstack.pw"
-    "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
+    "nginx.ingress.kubernetes.io/proxy-body-size"       = "10m"
+    "nginx.ingress.kubernetes.io/proxy-connect-timeout" = "60"
+    "nginx.ingress.kubernetes.io/proxy-read-timeout"    = "60"
+    "nginx.ingress.kubernetes.io/proxy-send-timeout"    = "60"
+    "nginx.ingress.kubernetes.io/service-upstream"      = "true"
   }
 
-  # Optional: Enable Redis Sentinel for high availability
-  sentinel_enabled = false
-  replicas         = 2
-
-  # Resource limits
-  memory_request = "256Mi"
-  cpu_request    = "100m"
-  memory_limit   = "512Mi"
-  cpu_limit      = "200m"
+  # Monitoring
+  enable_metrics = false
 }
 
 
