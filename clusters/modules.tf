@@ -166,7 +166,7 @@ module "ingress_nginx" {
 
 module "minio" {
   count  = contains(local.workload, "minio") ? 1 : 0
-  source = "../modules/minio"
+  source = "../modules/apps/minio"
 
   namespace                 = "default"
   persistence_storage_class = "local-path"
@@ -286,7 +286,7 @@ module "redis" {
 
 module "nats" {
   count  = contains(local.workload, "nats") ? 1 : 0
-  source = "../modules/nats"
+  source = "../modules/apps/nats"
 
   namespace        = "default"
   create_namespace = false
@@ -312,7 +312,7 @@ module "nats" {
   service_type = "LoadBalancer"
 
   # Monitoring and metrics
-  prometheus_enabled = true
+  prometheus_enabled = false
   monitoring_enabled = true
 
   # Ingress configuration
@@ -322,6 +322,7 @@ module "nats" {
   ingress_annotations = {
     "external-dns.alpha.kubernetes.io/hostname" = "nats.fullstack.pw"
     "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
+    "kubernetes.io/ingress.class"               = "traefik"
   }
 
   additional_set_values = []
