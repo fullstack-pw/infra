@@ -6,3 +6,6 @@
 *.backup
 private*
 backend.hcl
+*.plan
+*.out
+plan.txt

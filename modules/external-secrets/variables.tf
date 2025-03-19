@@ -116,6 +116,7 @@ variable "secret_data" {
   ]
 }
 
-variable "deploy_crd" {
+variable "install_crd" {
   default = false
+  type    = bool
 }

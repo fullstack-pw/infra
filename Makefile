@@ -93,10 +93,11 @@ plan:
 	@if [ -z "$(ENV)" ]; then \
 		echo -e "${CYAN}Planning changes for all environments...${NC}"; \
 		for env in $(ENVIRONMENTS); do \
+			cd $(TERRAFORM_DIR) && terraform workspace select $${env}; \
 			echo -e "\n#########################################################" | tee -a plan.txt; \
 			echo -e "##\n##   Planning changes for $${env} environment..." | tee -a plan.txt; \
 			echo -e "##\n#########################################################" | tee -a plan.txt; \
-			cd $(TERRAFORM_DIR) && terraform workspace select $${env} && terraform plan -no-color -out=$${env}.tfplan && terraform show -no-color $${env}.tfplan >> plan.txt && cd ..; \
+			terraform plan -no-color -out=$${env}.tfplan && terraform show -no-color $${env}.tfplan >> plan.txt && cd .. || cd ..; \
 		done; \
 	else \
 		echo -e "${CYAN}Planning changes for $(ENV) environment...${NC}"; \
@@ -108,14 +109,14 @@ plan:
 apply:
 	@if [ -z "$(ENV)" ]; then \
 		for env in $(ENVIRONMENTS); do \
-			echo -e "\n#########################################################" | tee -a plan.txt; \
-			echo -e "##\n## Applying changes to $${env} environment..." | tee -a plan.txt; \
-			echo -e "##\n#########################################################" | tee -a plan.txt; \
 			cd $(TERRAFORM_DIR) && terraform workspace select $${env} || terraform workspace new $${env}; \
+			echo -e "\n#########################################################"; \
+			echo -e "##\n## Applying changes to $${env} environment..."; \
+			echo -e "##\n#########################################################"; \
 			if [ -f "$${env}.tfplan" ]; then \
-				terraform apply $${env}.tfplan && cd ..; \
+				terraform apply $${env}.tfplan && cd .. || cd ..; \
 			else \
-				terraform apply -auto-approve && cd ..; \
+				terraform apply -auto-approve && cd .. || cd ..; \
 			fi; \
 		done; \
 	else \

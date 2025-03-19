@@ -33,6 +33,6 @@ variable "vault_token" {
   sensitive   = true
 }
 
-variable "deploy_crd" {
+variable "install_crd" {
   default = false
 }
