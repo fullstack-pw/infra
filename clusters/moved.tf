@@ -69,3 +69,41 @@ moved {
   from = module.postgres[0].kubernetes_ingress_v1.postgres_ingress[0]
   to   = module.postgres[0].module.ingress.kubernetes_ingress_v1.this[0]
 }
+
+/**
+ * Moved blocks for NATS module refactoring
+ */
+
+# Moved blocks for namespace
+moved {
+  from = module.nats[0].kubernetes_namespace.nats[0]
+  to   = module.nats[0].module.namespace.kubernetes_namespace.this[0]
+}
+
+# Moved blocks for NATS credentials and auth
+moved {
+  from = module.nats[0].random_password.nats_password[0]
+  to   = module.nats[0].module.credentials.random_password.password[0]
+}
+
+# moved {
+#   from = module.nats[0].random_password.nats_auth_token[0]
+#   to   = module.nats[0].random_password.nats_auth_token[0]
+# }
+
+moved {
+  from = module.nats[0].kubernetes_secret.nats_credentials[0]
+  to   = module.nats[0].module.credentials.kubernetes_secret.this[0]
+}
+
+# Moved blocks for Helm release
+moved {
+  from = module.nats[0].helm_release.nats
+  to   = module.nats[0].module.helm.helm_release.this
+}
+
+# Moved blocks for ingress
+moved {
+  from = module.nats[0].kubernetes_ingress_v1.nats_ingress[0]
+  to   = module.nats[0].module.ingress.kubernetes_ingress_v1.this[0]
+}

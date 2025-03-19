@@ -1,11 +1,11 @@
 output "release_name" {
   description = "Name of the Helm release"
-  value       = helm_release.nats.name
+  value       = module.helm.name
 }
 
 output "namespace" {
   description = "Namespace of the deployed NATS"
-  value       = helm_release.nats.namespace
+  value       = module.namespace.name
 }
 
 output "version" {
@@ -15,7 +15,7 @@ output "version" {
 
 output "service_name" {
   description = "Name of the NATS service"
-  value       = "nats"
+  value       = var.release_name
 }
 
 output "service_port" {
@@ -25,32 +25,37 @@ output "service_port" {
 
 output "nats_url" {
   description = "URL for connecting to NATS"
-  value       = "nats://nats.${local.namespace}.svc.cluster.local:${var.nats_port}"
+  value       = "nats://${var.release_name}.${module.namespace.name}.svc.cluster.local:${var.nats_port}"
 }
 
 output "websocket_url" {
   description = "WebSocket URL for connecting to NATS (if enabled)"
-  value       = var.websocket_enabled ? "ws://nats.${local.namespace}.svc.cluster.local:${var.websocket_port}" : null
+  value       = var.websocket_enabled ? "ws://${var.release_name}.${module.namespace.name}.svc.cluster.local:${var.websocket_port}" : null
 }
 
 output "monitoring_url" {
   description = "Monitoring URL for NATS (if enabled)"
-  value       = var.monitoring_enabled ? "http://nats.${local.namespace}.svc.cluster.local:8222" : null
+  value       = var.monitoring_enabled ? "http://${var.release_name}.${module.namespace.name}.svc.cluster.local:8222" : null
 }
 
 output "prometheus_url" {
   description = "Prometheus metrics URL (if enabled)"
-  value       = var.prometheus_enabled ? "http://nats.${local.namespace}.svc.cluster.local:${var.prometheus_port}" : null
+  value       = var.prometheus_enabled ? "http://${var.release_name}.${module.namespace.name}.svc.cluster.local:${var.prometheus_port}" : null
 }
 
 output "ingress_host" {
   description = "Hostname for NATS monitoring ingress (if enabled)"
-  value       = var.ingress_enabled && var.monitoring_enabled ? var.ingress_host : null
+  value       = var.ingress_enabled && var.monitoring_enabled ? module.ingress.host : null
+}
+
+output "ingress_url" {
+  description = "URL for NATS monitoring ingress (if enabled)"
+  value       = var.ingress_enabled && var.monitoring_enabled ? module.ingress.url : null
 }
 
 output "credentials_secret_name" {
   description = "Name of the secret containing NATS credentials (if created)"
-  value       = (var.auth_enabled || var.auth_token_enabled) && var.create_credentials_secret ? kubernetes_secret.nats_credentials[0].metadata[0].name : null
+  value       = (var.auth_enabled || var.auth_token_enabled) && var.create_credentials_secret ? module.credentials.name : null
 }
 
 output "jetstream_enabled" {
