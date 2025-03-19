@@ -1,11 +1,11 @@
 output "release_name" {
   description = "Name of the Helm release"
-  value       = helm_release.postgres.name
+  value       = module.helm.name
 }
 
 output "namespace" {
   description = "Namespace of the deployed PostgreSQL"
-  value       = helm_release.postgres.namespace
+  value       = module.namespace.name
 }
 
 output "version" {
@@ -15,7 +15,7 @@ output "version" {
 
 output "postgres_host" {
   description = "PostgreSQL service hostname"
-  value       = "${var.release_name}-postgresql.${local.namespace}.svc.cluster.local"
+  value       = "${var.release_name}-postgresql.${module.namespace.name}.svc.cluster.local"
 }
 
 output "postgres_port" {
@@ -31,7 +31,7 @@ output "postgres_username" {
 
 output "postgres_password" {
   description = "PostgreSQL admin password"
-  value       = local.postgres_password
+  value       = module.credentials.password
   sensitive   = true
 }
 
@@ -42,13 +42,13 @@ output "postgres_database" {
 
 output "connection_string" {
   description = "PostgreSQL connection string"
-  value       = "postgresql://${local.postgres_username}:${local.postgres_password}@${var.release_name}-postgresql.${local.namespace}.svc.cluster.local:${var.service_port}/${local.postgres_database}"
+  value       = "postgresql://${local.postgres_username}:${module.credentials.password}@${var.release_name}-postgresql.${module.namespace.name}.svc.cluster.local:${var.service_port}/${local.postgres_database}"
   sensitive   = true
 }
 
 output "credentials_secret_name" {
   description = "Name of the secret containing PostgreSQL credentials"
-  value       = var.generate_credentials && var.create_credentials_secret ? kubernetes_secret.postgres_credentials[0].metadata[0].name : null
+  value       = var.generate_credentials && var.create_credentials_secret ? module.credentials.name : null
 }
 
 output "metrics_enabled" {
@@ -59,4 +59,14 @@ output "metrics_enabled" {
 output "service_name" {
   description = "Name of the PostgreSQL service"
   value       = "${var.release_name}-postgresql"
+}
+
+output "ingress_host" {
+  description = "Hostname for PostgreSQL ingress (if ingress is enabled)"
+  value       = var.ingress_enabled ? module.ingress.host : null
+}
+
+output "ingress_url" {
+  description = "URL for PostgreSQL ingress (if ingress is enabled)"
+  value       = var.ingress_enabled ? module.ingress.url : null
 }
