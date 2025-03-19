@@ -107,3 +107,30 @@ moved {
   from = module.nats[0].kubernetes_ingress_v1.nats_ingress[0]
   to   = module.nats[0].module.ingress.kubernetes_ingress_v1.this[0]
 }
+
+/**
+ * Moved blocks for MinIO module refactoring
+ */
+
+# Moved blocks for namespace
+moved {
+  from = module.minio[0].kubernetes_namespace.minio[0]
+  to   = module.minio[0].module.namespace.kubernetes_namespace.this[0]
+}
+
+# # Moved blocks for MinIO credentials
+# moved {
+#   from = module.minio[0].random_password.minio_root_password[0]
+#   to   = module.minio[0].random_password.minio_root_password[0]
+# }
+
+moved {
+  from = module.minio[0].kubernetes_secret.minio_credentials[0]
+  to   = module.minio[0].module.credentials.kubernetes_secret.this[0]
+}
+
+# Moved blocks for Helm release
+moved {
+  from = module.minio[0].helm_release.minio
+  to   = module.minio[0].module.helm.helm_release.this
+}

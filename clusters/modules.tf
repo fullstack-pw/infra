@@ -166,7 +166,7 @@ module "ingress_nginx" {
 
 module "minio" {
   count  = contains(local.workload, "minio") ? 1 : 0
-  source = "../modules/minio"
+  source = "../modules/apps/minio"
 
   namespace                 = "default"
   persistence_storage_class = "local-path"
