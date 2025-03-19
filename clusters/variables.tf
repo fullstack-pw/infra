@@ -18,40 +18,39 @@ variable "config" {
   description = "Map of providers with configuration per workspace."
   default = {
     dev = {
-      kubernetes_context   = "dev"
-      externalsecret       = "default"
-      external_secrets_crd = true
-      cert_manager_crd     = true
+      kubernetes_context = "dev"
+      externalsecret     = "default"
+      install_crd        = true
+      cert_manager_crd   = true
     }
     stg = {
-      kubernetes_context   = "stg"
-      externalsecret       = "default"
-      external_secrets_crd = true
-      cert_manager_crd     = true
+      kubernetes_context = "stg"
+      externalsecret     = "default"
+      install_crd        = true
+      cert_manager_crd   = true
     }
     prod = {
-      kubernetes_context   = "prod"
-      externalsecret       = "default"
-      external_secrets_crd = true
-      cert_manager_crd     = true
+      kubernetes_context = "prod"
+      externalsecret     = "default"
+      install_crd        = true
+      cert_manager_crd   = true
     }
     runners = {
-      kubernetes_context   = "runners"
-      externalsecret       = "actions-runner-system"
-      external_secrets_crd = true
-      cert_manager_crd     = true
+      kubernetes_context = "runners"
+      externalsecret     = "actions-runner-system"
+      install_crd        = true
     }
     sandbox = {
-      kubernetes_context   = "sandbox"
-      externalsecret       = "default"
-      external_secrets_crd = true
-      cert_manager_crd     = true
+      kubernetes_context = "sandbox"
+      externalsecret     = "default"
+      install_crd        = true
+      cert_manager_crd   = true
     }
     tools = {
-      kubernetes_context   = "quick-harbor"
-      externalsecret       = "default"
-      external_secrets_crd = true
-      cert_manager_crd     = true
+      kubernetes_context = "quick-harbor"
+      externalsecret     = "default"
+      install_crd        = true
+      cert_manager_crd   = true
     }
   }
 }

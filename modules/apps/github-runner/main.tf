@@ -54,7 +54,26 @@ module "helm" {
 
   values_files = []
 
-  set_values = []
+  set_values = [{
+    name  = "authSecret.create"
+    value = "true"
+    },
+    {
+      name  = "authSecret.github_token"
+      value = var.github_token
+    },
+    {
+      name  = "installCRDs"
+      value = "true"
+    },
+    {
+      name  = "certManagerEnabled"
+      value = tostring(var.cert_manager_enabled)
+    },
+    {
+      name  = "image.actionsRunnerRepositoryAndTag"
+      value = var.runner_image
+  }]
 }
 
 # Create service account for GitHub runners
@@ -67,6 +86,7 @@ resource "kubernetes_service_account" "github_runner" {
 
 # Create runner deployment manifest
 resource "kubernetes_manifest" "runner_deployment" {
+  count = var.install_crd == true ? 1 : 0
   manifest = {
     apiVersion = "actions.summerwind.dev/v1alpha1"
     kind       = "RunnerDeployment"

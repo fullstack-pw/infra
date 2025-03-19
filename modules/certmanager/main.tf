@@ -43,7 +43,7 @@ resource "kubernetes_secret" "cloudflare_api_token" {
 
 // Create cluster issuer for Let's Encrypt production
 resource "kubernetes_manifest" "letsencrypt_issuer" {
-  count      = var.deploy_crd == true ? 1 : 0
+  count      = var.install_crd == true ? 1 : 0
   depends_on = [helm_release.cert_manager]
 
   manifest = {

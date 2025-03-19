@@ -27,7 +27,7 @@ module "cert_manager" {
   vault_token    = var.VAULT_TOKEN
   cluster_issuer = "letsencrypt-prod"
   email          = "pedropilla@gmail.com"
-  deploy_crd     = var.config[terraform.workspace].cert_manager_crd
+  install_crd    = var.config[terraform.workspace].cert_manager_crd
 }
 
 // External Secrets
@@ -39,7 +39,7 @@ module "external_secrets" {
   chart_version = "0.12.1"
   vault_token   = var.VAULT_TOKEN
   vault_addr    = var.vault_addr
-  deploy_crd    = var.config[terraform.workspace].external_secrets_crd
+  install_crd   = var.config[terraform.workspace].install_crd
 
   namespace_selectors = {
     "kubernetes.io/metadata.name" = var.config[terraform.workspace].externalsecret
@@ -140,6 +140,7 @@ module "github_runner" {
   runner_replicas    = 2
   enable_autoscaling = false
   github_token       = data.vault_kv_secret_v2.github_token[0].data["GITHUB_PAT"]
+  install_crd        = var.config[terraform.workspace].install_crd
 }
 
 module "gitlab_runner" {

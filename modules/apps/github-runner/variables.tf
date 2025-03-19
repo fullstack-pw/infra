@@ -112,3 +112,8 @@ variable "scale_down_factor" {
   type        = string
   default     = "0.7"
 }
+
+variable "install_crd" {
+  default = false
+  type    = bool
+}
