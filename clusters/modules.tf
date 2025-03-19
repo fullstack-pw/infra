@@ -219,7 +219,7 @@ module "observability" {
 
 module "postgres" {
   count  = contains(local.workload, "postgres") ? 1 : 0
-  source = "../modules/postgres"
+  source = "../modules/apps/postgres"
 
   namespace                 = "default"
   create_namespace          = false
