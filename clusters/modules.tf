@@ -148,7 +148,7 @@ module "vault" {
 
 module "observability" {
   count  = contains(local.workload, "observability") ? 1 : 0
-  source = "../modules/observability"
+  source = "../modules/apps/observability"
 
   namespace               = "observability"
   jaeger_storage_type     = "memory"
