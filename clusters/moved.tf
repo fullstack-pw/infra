@@ -163,3 +163,18 @@ moved {
   to   = module.github_runner[0].module.helm.helm_release.this
 }
 
+/**
+ * Moved blocks for OpenTelemetry Collector refactoring
+ */
+
+# Moved blocks for namespace
+moved {
+  from = kubernetes_namespace.observability[0]
+  to   = module.otel_collector[0].module.namespace.kubernetes_namespace.this[0]
+}
+
+# Moved blocks for Helm release
+moved {
+  from = helm_release.opentelemetry_collector[0]
+  to   = module.otel_collector[0].module.helm.helm_release.this
+}

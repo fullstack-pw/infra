@@ -47,86 +47,28 @@ module "external_secrets" {
 }
 
 // OpenTelemetry Collector
-resource "kubernetes_namespace" "observability" {
-  count = contains(local.workload, "otel_collector") ? 1 : 0
-  metadata {
-    name = "observability"
-  }
-}
+module "otel_collector" {
+  count  = contains(local.workload, "otel_collector") ? 1 : 0
+  source = "../modules/apps/otel-collector"
 
-resource "helm_release" "opentelemetry_collector" {
-  count      = contains(local.workload, "otel_collector") ? 1 : 0
-  name       = "opentelemetry-collector"
-  repository = "https://open-telemetry.github.io/opentelemetry-helm-charts"
-  chart      = "opentelemetry-collector"
-  namespace  = kubernetes_namespace.observability[0].metadata[0].name
-  version    = "0.62.0"
-
-  values = [<<EOF
-mode: deployment
-
-presets:
-  logsCollection:
-    enabled: false
-
-ports:
-  otlp:
-    enabled: true
-    containerPort: 4317
-    servicePort: 4317
-    protocol: TCP
-  otlp-http:
-    enabled: true
-    containerPort: 4318
-    servicePort: 4318
-    protocol: TCP
-
-config:
-  receivers:
-    otlp:
-      protocols:
-        grpc:
-          endpoint: 0.0.0.0:4317
-        http:
-          endpoint: 0.0.0.0:4318
-
-  processors:
-    batch:
-      timeout: 1s
-      send_batch_size: 1024
-    memory_limiter:
-      check_interval: 1s
-      limit_percentage: 80
-      spike_limit_percentage: 25
-
-  exporters:
-    otlphttp/sandbox:
-      endpoint: "https://otel-collector.fullstack.pw"
-      tls:
-        insecure: false
-    logging:
-      loglevel: debug
-
-  service:
-    pipelines:
-      traces:
-        receivers: [otlp]
-        processors: [memory_limiter, batch]
-        exporters: [otlphttp/sandbox, logging]
-      metrics:
-        receivers: [otlp]
-        processors: [memory_limiter, batch]
-        exporters: [otlphttp/sandbox, logging]
-
-resources:
-  limits:
-    cpu: 200m
-    memory: 256Mi
-  requests:
-    cpu: 100m
-    memory: 128Mi
-EOF
-  ]
+  namespace          = "observability"
+  create_namespace   = true
+  release_name       = "opentelemetry-collector"
+  chart_version      = "0.62.0"
+  mode               = "deployment"
+  logs_collection    = false
+  otlp_enabled       = true
+  otlp_port          = 4317
+  otlp_http_enabled  = true
+  otlp_http_port     = 4318
+  exporters_endpoint = "https://otel-collector.fullstack.pw"
+  tls_insecure       = false
+  log_level          = "debug"
+  memory_limit       = "256Mi"
+  cpu_limit          = "200m"
+  memory_request     = "128Mi"
+  cpu_request        = "100m"
+  ingress_enabled    = false
 }
 
 module "github_runner" {
