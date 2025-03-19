@@ -1,6 +1,6 @@
 output "namespace" {
   description = "Namespace where GitLab Runner is deployed"
-  value       = kubernetes_namespace.gitlab.metadata[0].name
+  value       = module.namespace.name
 }
 
 output "service_account_name" {
@@ -10,7 +10,7 @@ output "service_account_name" {
 
 output "release_name" {
   description = "Name of the GitLab Runner Helm release"
-  value       = helm_release.gitlab_runner.name
+  value       = module.helm.name
 }
 
 output "concurrent_runners" {

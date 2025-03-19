@@ -27,10 +27,31 @@ variable "service_name" {
 variable "service_port" {
   description = "Port of the service to route traffic to"
   type        = number
+  default     = null
+}
+
+variable "service_port_name" {
+  description = "Name of the service port to route traffic to"
+  type        = string
+  default     = null
+}
+
+variable "paths" {
+  description = "List of paths to match for routing"
+  type = list(object({
+    path      = string
+    path_type = string
+    backend = object({
+      service_name      = optional(string)
+      service_port      = optional(number)
+      service_port_name = optional(string)
+    })
+  }))
+  default = []
 }
 
 variable "path" {
-  description = "Path to match for routing"
+  description = "Path to match for routing (used when paths is empty)"
   type        = string
   default     = "/"
 }

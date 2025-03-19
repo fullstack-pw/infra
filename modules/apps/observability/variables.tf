@@ -68,7 +68,7 @@ variable "jaeger_domain" {
 variable "jaeger_ingress_annotations" {
   description = "Additional annotations for Jaeger ingress"
   type        = map(string)
-  default     = {}
+  default     = { "nginx.ingress.kubernetes.io/proxy-body-size" = "0" }
 }
 
 # OpenTelemetry Collector

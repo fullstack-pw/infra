@@ -1,4 +1,3 @@
-// modules/gitlab-runner/variables.tf
 variable "namespace" {
   description = "Namespace for GitLab runners"
   type        = string

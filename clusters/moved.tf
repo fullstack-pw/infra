@@ -178,3 +178,82 @@ moved {
   from = helm_release.opentelemetry_collector[0]
   to   = module.otel_collector[0].module.helm.helm_release.this
 }
+
+/**
+ * Moved blocks for GitLab Runner module refactoring
+ */
+
+# Moved blocks for namespace
+moved {
+  from = module.gitlab_runner[0].kubernetes_namespace.gitlab
+  to   = module.gitlab_runner[0].module.namespace.kubernetes_namespace.this[0]
+}
+
+
+# Moved blocks for kubeconfig secret
+moved {
+  from = module.gitlab_runner[0].kubernetes_secret.kubeconfig
+  to   = module.gitlab_runner[0].module.kubeconfig_secret.kubernetes_secret.this[0]
+}
+
+# Moved blocks for Helm release
+moved {
+  from = module.gitlab_runner[0].helm_release.gitlab_runner
+  to   = module.gitlab_runner[0].module.helm.helm_release.this
+}
+
+/**
+ * Moved blocks for OpenTelemetry Collector refactoring
+ */
+
+# Moved blocks for namespace
+moved {
+  from = kubernetes_namespace.observability[0]
+  to   = module.otel_collector[0].module.namespace.kubernetes_namespace.this[0]
+}
+
+# Moved blocks for Helm release
+moved {
+  from = helm_release.opentelemetry_collector[0]
+  to   = module.otel_collector[0].module.helm.helm_release.this
+}
+
+/**
+ * Moved blocks for Observability module refactoring
+ */
+
+# Moved blocks for namespace - need to check this one
+moved {
+  from = module.observability[0].kubernetes_namespace.observability
+  to   = module.observability[0].module.namespace.kubernetes_namespace.this[0]
+}
+
+# Moved blocks for OpenTelemetry Operator
+moved {
+  from = module.observability[0].helm_release.opentelemetry_operator
+  to   = module.observability[0].module.otel_operator.helm_release.this
+}
+
+# Moved blocks for Jaeger Operator
+moved {
+  from = module.observability[0].helm_release.jaeger_operator
+  to   = module.observability[0].module.jaeger_operator.helm_release.this
+}
+
+# Moved blocks for OTEL Collector ingress
+moved {
+  from = module.observability[0].kubernetes_ingress_v1.otel_collector_http_ingress
+  to   = module.observability[0].module.otel_collector_http_ingress.kubernetes_ingress_v1.this[0]
+}
+
+# Moved blocks for Jaeger ingress
+moved {
+  from = module.observability[0].kubernetes_ingress_v1.jaeger_ingress
+  to   = module.observability[0].module.jaeger_ingress.kubernetes_ingress_v1.this[0]
+}
+
+# Moved blocks for Prometheus
+moved {
+  from = module.observability[0].helm_release.prometheus[0]
+  to   = module.observability[0].module.prometheus[0].helm_release.this
+}

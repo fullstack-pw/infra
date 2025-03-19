@@ -87,7 +87,7 @@ module "github_runner" {
 
 module "gitlab_runner" {
   count  = contains(local.workload, "gitlab_runner") ? 1 : 0
-  source = "../modules/gitlab-runner"
+  source = "../modules/apps/gitlab-runner"
 
   namespace            = "gitlab"
   service_account_name = "gitlab-runner-sa"
@@ -148,7 +148,7 @@ module "vault" {
 
 module "observability" {
   count  = contains(local.workload, "observability") ? 1 : 0
-  source = "../modules/observability"
+  source = "../modules/apps/observability"
 
   namespace               = "observability"
   jaeger_storage_type     = "memory"
