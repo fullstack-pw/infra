@@ -301,3 +301,25 @@ moved {
   from = module.external_secrets[0].kubernetes_secret.vault_token
   to   = module.external_secrets[0].module.vault_token_secret.kubernetes_secret.this[0]
 }
+
+/**
+ * Moved blocks for Registry module refactoring
+ */
+
+# Moved blocks for namespace
+moved {
+  from = module.registry[0].kubernetes_namespace.registry[0]
+  to   = module.registry[0].module.namespace.kubernetes_namespace.this[0]
+}
+
+# Moved blocks for PVC
+moved {
+  from = module.registry[0].kubernetes_persistent_volume_claim.registry_storage
+  to   = module.registry[0].module.persistence.kubernetes_persistent_volume_claim.this[0]
+}
+
+# Moved blocks for ingress
+moved {
+  from = module.registry[0].kubernetes_ingress_v1.registry_ingress[0]
+  to   = module.registry[0].module.ingress[0].kubernetes_ingress_v1.this[0]
+}
