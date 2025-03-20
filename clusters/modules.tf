@@ -99,7 +99,7 @@ module "gitlab_runner" {
 
 module "ingress_nginx" {
   count  = contains(local.workload, "ingress_nginx") ? 1 : 0
-  source = "../modules/ingress-nginx"
+  source = "../modules/apps/ingress-nginx"
 
   namespace          = "default"
   chart_version      = "1.2.0"
@@ -137,7 +137,7 @@ module "registry" {
 
 module "vault" {
   count  = contains(local.workload, "vault") ? 1 : 0
-  source = "../modules/vault"
+  source = "../modules/apps/vault"
 
   namespace          = "vault"
   ingress_host       = "vault.fullstack.pw"
