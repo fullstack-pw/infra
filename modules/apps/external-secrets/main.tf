@@ -1,31 +1,50 @@
-resource "kubernetes_namespace" "external_secrets" {
-  metadata {
-    name = var.namespace
+/**
+ * External Secrets Module
+ * 
+ * This module deploys the External Secrets operator with Vault integration
+ * for managing Kubernetes secrets from external secret stores.
+ */
+
+module "namespace" {
+  source = "../../base/namespace"
+
+  create = true
+  name   = var.namespace
+  labels = {
+    "kubernetes.io/metadata.name" = var.namespace
   }
 }
-resource "helm_release" "external_secrets" {
-  name         = "external-secrets"
-  namespace    = kubernetes_namespace.external_secrets.metadata[0].name
-  repository   = "https://charts.external-secrets.io"
-  chart        = "external-secrets"
-  version      = var.chart_version
-  timeout      = var.timeout
-  atomic       = true
-  force_update = true
 
-  values = [
-    <<-EOF
-    installCRDs: true
-    EOF
+module "helm" {
+  source = "../../base/helm"
+
+  release_name     = "external-secrets"
+  namespace        = module.namespace.name
+  chart            = "external-secrets"
+  repository       = "https://charts.external-secrets.io"
+  chart_version    = var.chart_version
+  timeout          = var.timeout
+  create_namespace = false
+  atomic           = true
+  force_update     = true
+
+  values_files = [
+    <<-EOT
+      installCRDs: true
+    EOT
   ]
+
+  set_values = []
 }
 
 // Create Secret for Vault token
-resource "kubernetes_secret" "vault_token" {
-  metadata {
-    name      = "vault-token"
-    namespace = kubernetes_namespace.external_secrets.metadata[0].name
-  }
+module "vault_token_secret" {
+  source = "../../base/credentials"
+
+  name              = "vault-token"
+  namespace         = module.namespace.name
+  generate_password = false
+  create_secret     = true
 
   data = {
     token = var.vault_token
@@ -49,8 +68,8 @@ resource "kubernetes_manifest" "vault_secret_store" {
           "version" = "v1"
           "auth" = {
             "tokenSecretRef" = {
-              "name"      = "vault-token"
-              "namespace" = kubernetes_namespace.external_secrets.metadata[0].name
+              "name"      = module.vault_token_secret.name
+              "namespace" = module.namespace.name
               "key"       = "token"
             }
           }
@@ -59,7 +78,7 @@ resource "kubernetes_manifest" "vault_secret_store" {
     }
   }
 
-  depends_on = [helm_release.external_secrets]
+  depends_on = [module.helm]
 }
 
 // Deploy ClusterExternalSecret

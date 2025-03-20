@@ -117,6 +117,7 @@ variable "secret_data" {
 }
 
 variable "install_crd" {
-  default = false
-  type    = bool
+  description = "Whether to install External Secrets CRDs"
+  type        = bool
+  default     = false
 }

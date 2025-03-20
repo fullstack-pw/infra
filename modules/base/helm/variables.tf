@@ -41,6 +41,11 @@ variable "atomic" {
   default     = false
 }
 
+variable "force_update" {
+  type    = bool
+  default = false
+}
+
 variable "values_files" {
   description = "List of values files to use for the Helm release"
   type        = list(string)

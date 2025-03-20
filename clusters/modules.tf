@@ -33,7 +33,7 @@ module "cert_manager" {
 // External Secrets
 module "external_secrets" {
   count  = contains(local.workload, "external_secrets") ? 1 : 0
-  source = "../modules/external-secrets"
+  source = "../modules/apps/external-secrets"
 
   namespace     = "external-secrets"
   chart_version = "0.12.1"
