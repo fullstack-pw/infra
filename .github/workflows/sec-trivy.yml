@@ -1,0 +1,16 @@
+name: security-scan-trivy
+on: [pull_request]
+
+jobs:
+  scan:
+    name: SecScan Trivy
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner in fs mode
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: "fs"
+          scan-ref: "."
