@@ -14,6 +14,7 @@ resource "helm_release" "this" {
   timeout          = var.timeout
   atomic           = var.atomic
   values           = var.values_files
+  force_update     = var.force_update
 
   dynamic "set" {
     for_each = var.set_values

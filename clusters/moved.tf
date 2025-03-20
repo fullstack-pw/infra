@@ -279,3 +279,25 @@ moved {
   from = module.cert_manager[0].kubernetes_secret.cloudflare_api_token
   to   = module.cert_manager[0].module.cloudflare_secret.kubernetes_secret.this[0]
 }
+
+/**
+ * Moved blocks for External Secrets module refactoring
+ */
+
+# Moved blocks for namespace
+moved {
+  from = module.external_secrets[0].kubernetes_namespace.external_secrets
+  to   = module.external_secrets[0].module.namespace.kubernetes_namespace.this[0]
+}
+
+# Moved blocks for Helm release
+moved {
+  from = module.external_secrets[0].helm_release.external_secrets
+  to   = module.external_secrets[0].module.helm.helm_release.this
+}
+
+# Moved blocks for Vault token secret
+moved {
+  from = module.external_secrets[0].kubernetes_secret.vault_token
+  to   = module.external_secrets[0].module.vault_token_secret.kubernetes_secret.this[0]
+}
