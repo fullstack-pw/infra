@@ -137,7 +137,7 @@ module "registry" {
 
 module "vault" {
   count  = contains(local.workload, "vault") ? 1 : 0
-  source = "../modules/vault"
+  source = "../modules/apps/vault"
 
   namespace          = "vault"
   ingress_host       = "vault.fullstack.pw"

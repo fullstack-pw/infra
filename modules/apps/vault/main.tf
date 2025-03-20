@@ -1,44 +1,54 @@
-resource "kubernetes_namespace" "vault" {
-  count = var.create_namespace ? 1 : 0
-  metadata {
-    name = var.namespace
-  }
+/**
+ * Vault Module
+ * 
+ * This module deploys HashiCorp Vault on Kubernetes using our base modules for standardization.
+ */
+
+module "namespace" {
+  source = "../../base/namespace"
+
+  create = var.create_namespace
+  name   = var.namespace
 }
 
 locals {
-  namespace = var.create_namespace ? kubernetes_namespace.vault[0].metadata[0].name : var.namespace
+  namespace = module.namespace.name
 }
 
-resource "helm_release" "vault" {
-  name             = var.release_name
+module "values" {
+  source = "../../base/values-template"
+
+  template_files = [
+    {
+      path = "${path.module}/templates/values.yaml.tpl"
+      vars = {
+        ui_enabled                 = var.ui_enabled
+        data_storage_enabled       = var.data_storage_enabled
+        data_storage_storage_class = var.data_storage_storage_class
+        ingress_enabled            = var.ingress_enabled
+        ingress_class_name         = var.ingress_class_name
+        ingress_annotations        = var.ingress_annotations
+        ingress_host               = var.ingress_host
+        tls_secret_name            = var.tls_secret_name
+      }
+    }
+  ]
+}
+
+module "helm" {
+  source = "../../base/helm"
+
+  release_name     = var.release_name
   namespace        = local.namespace
   repository       = "https://helm.releases.hashicorp.com"
   chart            = "vault"
-  version          = var.chart_version
-  create_namespace = false # We already create it explicitly if needed
+  chart_version    = var.chart_version
+  create_namespace = false
   force_update     = var.force_update
   timeout          = var.timeout
+  values_files     = module.values.rendered_values
 
-  values = [
-    templatefile("${path.module}/templates/values.yaml.tpl", {
-      ui_enabled                 = var.ui_enabled
-      data_storage_enabled       = var.data_storage_enabled
-      data_storage_storage_class = var.data_storage_storage_class
-      ingress_enabled            = var.ingress_enabled
-      ingress_class_name         = var.ingress_class_name
-      ingress_annotations        = var.ingress_annotations
-      ingress_host               = var.ingress_host
-      tls_secret_name            = var.tls_secret_name
-    })
-  ]
-
-  dynamic "set" {
-    for_each = var.additional_set_values
-    content {
-      name  = set.value.name
-      value = set.value.value
-    }
-  }
+  set_values = var.additional_set_values
 }
 
 # Only create these resources if initialize_vault is true
@@ -50,14 +60,14 @@ resource "vault_mount" "kv" {
   options = {
     version = "2"
   }
-  depends_on = [helm_release.vault]
+  depends_on = [module.helm]
 }
 
 resource "vault_auth_backend" "kubernetes" {
   count       = var.initialize_vault ? 1 : 0
   type        = "kubernetes"
   description = "Kubernetes Auth Method"
-  depends_on  = [helm_release.vault]
+  depends_on  = [module.helm]
 }
 
 resource "vault_kubernetes_auth_backend_config" "config" {
@@ -66,7 +76,7 @@ resource "vault_kubernetes_auth_backend_config" "config" {
   kubernetes_host    = var.kubernetes_host
   kubernetes_ca_cert = var.kubernetes_ca_cert
   token_reviewer_jwt = var.token_reviewer_jwt
-  depends_on         = [helm_release.vault]
+  depends_on         = [module.helm]
 }
 
 # Dynamic block to create initial secrets

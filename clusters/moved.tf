@@ -323,3 +323,20 @@ moved {
   from = module.registry[0].kubernetes_ingress_v1.registry_ingress[0]
   to   = module.registry[0].module.ingress[0].kubernetes_ingress_v1.this[0]
 }
+
+/**
+ * Moved blocks for Vault module refactoring
+ */
+
+# Moved blocks for namespace
+moved {
+  from = module.vault[0].kubernetes_namespace.vault[0]
+  to   = module.vault[0].module.namespace.kubernetes_namespace.this[0]
+}
+
+# Moved blocks for Helm release
+moved {
+  from = module.vault[0].helm_release.vault
+  to   = module.vault[0].module.helm.helm_release.this
+}
+

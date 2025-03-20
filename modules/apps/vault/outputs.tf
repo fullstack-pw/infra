@@ -5,7 +5,7 @@ output "namespace" {
 
 output "release_name" {
   description = "The name of the Vault Helm release"
-  value       = helm_release.vault.name
+  value       = module.helm.name
 }
 
 output "vault_service_name" {
