@@ -257,3 +257,25 @@ moved {
   from = module.observability[0].helm_release.prometheus[0]
   to   = module.observability[0].module.prometheus[0].helm_release.this
 }
+
+/**
+ * Moved blocks for CertManager module refactoring
+ */
+
+# Moved blocks for namespace
+moved {
+  from = module.cert_manager[0].kubernetes_namespace.cert_manager
+  to   = module.cert_manager[0].module.namespace.kubernetes_namespace.this[0]
+}
+
+# Moved blocks for Helm release
+moved {
+  from = module.cert_manager[0].helm_release.cert_manager
+  to   = module.cert_manager[0].module.helm.helm_release.this
+}
+
+# Moved blocks for Cloudflare API token secret
+moved {
+  from = module.cert_manager[0].kubernetes_secret.cloudflare_api_token
+  to   = module.cert_manager[0].module.cloudflare_secret.kubernetes_secret.this[0]
+}

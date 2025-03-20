@@ -20,11 +20,11 @@ module "externaldns" {
 // CertManager
 module "cert_manager" {
   count  = contains(local.workload, "cert_manager") ? 1 : 0
-  source = "../modules/certmanager"
+  source = "../modules/apps/certmanager"
 
-  namespace      = "cert-manager"
-  chart_version  = "v1.16.2"
-  vault_token    = var.VAULT_TOKEN
+  namespace     = "cert-manager"
+  chart_version = "v1.16.2"
+  # vault_token    = var.VAULT_TOKEN
   cluster_issuer = "letsencrypt-prod"
   email          = "pedropilla@gmail.com"
   install_crd    = var.config[terraform.workspace].cert_manager_crd
