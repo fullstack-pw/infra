@@ -1,11 +1,11 @@
 output "release_name" {
   description = "Name of the Helm release"
-  value       = helm_release.nginx.name
+  value       = module.helm.name
 }
 
 output "namespace" {
   description = "Namespace of the deployed ingress controller"
-  value       = helm_release.nginx.namespace
+  value       = module.helm.namespace
 }
 
 output "version" {

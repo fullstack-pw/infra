@@ -99,7 +99,7 @@ module "gitlab_runner" {
 
 module "ingress_nginx" {
   count  = contains(local.workload, "ingress_nginx") ? 1 : 0
-  source = "../modules/ingress-nginx"
+  source = "../modules/apps/ingress-nginx"
 
   namespace          = "default"
   chart_version      = "1.2.0"

@@ -340,3 +340,12 @@ moved {
   to   = module.vault[0].module.helm.helm_release.this
 }
 
+/**
+ * Moved blocks for ingress-nginx module refactoring
+ */
+
+# Moved blocks for Helm release
+moved {
+  from = module.ingress_nginx[0].helm_release.nginx
+  to   = module.ingress_nginx[0].module.helm.helm_release.this
+}
