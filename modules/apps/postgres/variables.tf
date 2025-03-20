@@ -200,3 +200,27 @@ variable "additional_set_values" {
   }))
   default = []
 }
+
+variable "store_password_in_vault" {
+  description = "Store PostgreSQL password in Vault at the specified path"
+  type        = bool
+  default     = false
+}
+
+variable "vault_mount_path" {
+  description = "Mount path for Vault KV store"
+  type        = string
+  default     = "kv"
+}
+
+variable "vault_secret_path" {
+  description = "Path within the Vault KV store where the secret will be stored"
+  type        = string
+  default     = "cluster-secret-store/secrets"
+}
+
+variable "preserve_existing_vault_data" {
+  description = "Preserve existing data in the Vault secret when adding the PostgreSQL password"
+  type        = bool
+  default     = true
+}

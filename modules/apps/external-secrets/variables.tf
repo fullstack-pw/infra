@@ -112,6 +112,12 @@ variable "secret_data" {
         key      = "EXTERNAL_DNS_PIHOLE_PASSWORD"
         property = "data.EXTERNAL_DNS_PIHOLE_PASSWORD"
       }
+      }, {
+      secretKey = "POSTGRES_PASSWORD"
+      remoteRef = {
+        key      = "POSTGRES"
+        property = "data.POSTGRES_PASSWORD"
+      }
     }
   ]
 }

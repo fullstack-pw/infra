@@ -70,3 +70,13 @@ output "ingress_url" {
   description = "URL for PostgreSQL ingress (if ingress is enabled)"
   value       = var.ingress_enabled ? module.ingress.url : null
 }
+
+output "vault_password_stored" {
+  description = "Whether the PostgreSQL password was stored in Vault"
+  value       = var.store_password_in_vault
+}
+
+output "vault_secret_path" {
+  description = "Path in Vault where the PostgreSQL password is stored"
+  value       = var.store_password_in_vault ? "${var.vault_mount_path}/${var.vault_secret_path}" : null
+}

@@ -31,6 +31,36 @@ module "credentials" {
   }
 }
 
+resource "vault_kv_secret_v2" "postgres_password" {
+  count = var.store_password_in_vault ? 1 : 0
+
+  mount               = var.vault_mount_path
+  name                = var.vault_secret_path
+  delete_all_versions = true
+  data_json = jsonencode(
+    merge(
+      jsondecode(var.preserve_existing_vault_data ? data.vault_kv_secret_v2.existing_secret[0].data_json : "{}"),
+      {
+        "POSTGRES_PASSWORD" = module.credentials.password
+        "POSTGRES_USER"     = local.postgres_username
+        "POSTGRES_HOST"     = "${var.release_name}-postgresql.${module.namespace.name}.svc.cluster.local"
+        "POSTGRES_PORT"     = var.service_port
+        "POSTGRES_DATABASE" = local.postgres_database
+      }
+    )
+  )
+
+  depends_on = [module.credentials]
+}
+data "vault_kv_secret_v2" "existing_secret" {
+  count = var.store_password_in_vault && var.preserve_existing_vault_data ? 1 : 0
+
+  mount = var.vault_mount_path
+  name  = var.vault_secret_path
+
+  // We don't want to fail if the secret doesn't exist yet
+  depends_on = [module.credentials]
+}
 locals {
   postgres_username = var.generate_credentials ? "admin" : var.postgres_username
   postgres_database = var.postgres_database != "" ? var.postgres_database : "postgres"

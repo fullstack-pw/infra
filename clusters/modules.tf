@@ -171,6 +171,12 @@ module "postgres" {
   persistence_size          = "10Gi"
   enable_metrics            = false
 
+  # Store password in Vault for cross-cluster access
+  store_password_in_vault      = true
+  vault_mount_path             = "kv"
+  vault_secret_path            = "cluster-secret-store/secrets/POSTGRES"
+  preserve_existing_vault_data = true
+
   # Optional: Enable replication for high availability
   replication_enabled  = false
   replication_replicas = 1
