@@ -9,3 +9,4 @@ backend.hcl
 *.plan
 *.out
 plan.txt
+settings.json

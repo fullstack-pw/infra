@@ -25,14 +25,11 @@ variable "acme_server" {
 variable "email" {
   description = "Email for ACME registration"
   type        = string
-}
-
-variable "vault_token" {
-  description = "Vault token for authentication"
-  type        = string
-  sensitive   = true
+  default     = "admin@example.com"
 }
 
 variable "install_crd" {
-  default = false
+  description = "Whether to install cert-manager CRDs"
+  type        = bool
+  default     = true
 }
