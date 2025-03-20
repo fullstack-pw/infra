@@ -1,6 +1,6 @@
 output "namespace" {
   description = "The namespace where the registry is deployed"
-  value       = local.namespace
+  value       = module.namespace.name
 }
 
 output "registry_service_name" {
@@ -15,7 +15,7 @@ output "registry_service_port" {
 
 output "registry_internal_endpoint" {
   description = "Internal endpoint for the registry (cluster-local)"
-  value       = "${kubernetes_service.registry.metadata[0].name}.${local.namespace}.svc.cluster.local:${kubernetes_service.registry.spec[0].port[0].port}"
+  value       = "${kubernetes_service.registry.metadata[0].name}.${module.namespace.name}.svc.cluster.local:${kubernetes_service.registry.spec[0].port[0].port}"
 }
 
 output "registry_external_endpoint" {
@@ -25,5 +25,5 @@ output "registry_external_endpoint" {
 
 output "pvc_name" {
   description = "Name of the persistent volume claim for registry storage"
-  value       = kubernetes_persistent_volume_claim.registry_storage.metadata[0].name
+  value       = module.persistence.name
 }

@@ -128,7 +128,7 @@ module "minio" {
 
 module "registry" {
   count  = contains(local.workload, "registry") ? 1 : 0
-  source = "../modules/registry"
+  source = "../modules/apps/registry"
 
   namespace    = "registry"
   storage_size = "10Gi"
