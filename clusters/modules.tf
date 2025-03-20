@@ -1,7 +1,7 @@
 // ExternalDNS
 module "externaldns" {
   count  = contains(local.workload, "externaldns") ? 1 : 0
-  source = "../modules/externaldns"
+  source = "../modules/apps/externaldns"
 
   namespace          = "default"
   replicas           = 1

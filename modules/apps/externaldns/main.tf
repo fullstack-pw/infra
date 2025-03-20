@@ -1,3 +1,9 @@
+/**
+ * ExternalDNS Module
+ * 
+ * This module deploys ExternalDNS to manage DNS records from Kubernetes resources.
+ */
+
 resource "kubernetes_service_account" "externaldns" {
   automount_service_account_token = false
   metadata {
@@ -98,4 +104,3 @@ resource "kubernetes_deployment" "externaldns" {
     }
   }
 }
-

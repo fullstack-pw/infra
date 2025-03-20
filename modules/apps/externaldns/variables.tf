@@ -34,14 +34,3 @@ variable "container_args" {
     "--pihole-server=http://192.168.1.3",
   ]
 }
-
-// modules/externaldns/outputs.tf
-output "service_account_name" {
-  description = "Name of the ExternalDNS service account"
-  value       = kubernetes_service_account.externaldns.metadata[0].name
-}
-
-output "deployment_name" {
-  description = "Name of the ExternalDNS deployment"
-  value       = kubernetes_deployment.externaldns.metadata[0].name
-}
