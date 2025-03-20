@@ -1,5 +1,4 @@
-name: Terraform Plan
-
+name: Terraform
 on:
   pull_request:
     branches:

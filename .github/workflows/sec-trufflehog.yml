@@ -1,9 +1,8 @@
-name: security-scan-trufflehog
+name: TruffleHog
 on: [pull_request]
 
 jobs:
-  scan:
-    name: SecScan TruffleHog
+  security-scan:
     runs-on: self-hosted
     steps:
       - name: Checkout code

@@ -1,9 +1,8 @@
-name: security-scan-trivy
+name: Trivy
 on: [pull_request]
 
 jobs:
-  scan:
-    name: SecScan Trivy
+  security-scan:
     runs-on: self-hosted
     steps:
       - name: Checkout code
