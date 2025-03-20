@@ -20,6 +20,7 @@ module "persistence" {
   storage_class = var.storage_class
   size          = var.storage_size
   access_modes  = ["ReadWriteOnce"]
+  use_selector  = false
 }
 
 resource "kubernetes_deployment" "registry" {

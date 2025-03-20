@@ -22,8 +22,12 @@ resource "kubernetes_persistent_volume_claim" "this" {
       }
     }
 
-    selector {
-      match_labels = var.selector_labels
+    # Only include selector if explicitly enabled
+    dynamic "selector" {
+      for_each = var.use_selector && length(var.selector_labels) > 0 ? [1] : []
+      content {
+        match_labels = var.selector_labels
+      }
     }
   }
 }

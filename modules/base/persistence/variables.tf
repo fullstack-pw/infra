@@ -43,3 +43,9 @@ variable "selector_labels" {
   type        = map(string)
   default     = {}
 }
+
+variable "use_selector" {
+  description = "Whether to include a selector block"
+  type        = bool
+  default     = false
+}
