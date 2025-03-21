@@ -125,7 +125,7 @@ apply:
 		if [ -f "$(ENV).tfplan" ]; then \
 			terraform apply $(ENV).tfplan; \
 		else \
-			terraform apply -var="vault_token=${VAULT_TOKEN}"; \
+			terraform apply -auto-approve; \
 		fi; \
 	fi
 

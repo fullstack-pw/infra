@@ -31,7 +31,7 @@ variable "force_update" {
 variable "timeout" {
   description = "Timeout for Helm operations"
   type        = number
-  default     = 300
+  default     = 60
 }
 
 variable "additional_set_values" {
