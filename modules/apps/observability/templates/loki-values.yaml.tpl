@@ -50,21 +50,13 @@ singleBinary:
 chunksCache:
   allocatedMemory: 1024
 
-serviceMonitor:
-  enabled: ${service_monitor_enabled}
-  interval: 15s
-  scrapeTimeout: 10s
-  labels: {}
-
-service:
-  port: 3100
-
 ingress:
   enabled: true
   ingressClassName: ${ingress_class_name}
   annotations:
     cert-manager.io/cluster-issuer: ${cert_manager_cluster_issuer}
     external-dns.alpha.kubernetes.io/hostname: ${loki_domain}
+    nginx.ingress.kubernetes.io/proxy-body-size: 16m
   hosts:
     - ${loki_domain}
   tls:
