@@ -15,6 +15,16 @@ luaScripts:
             
             return 1, timestamp, record
         end
+    filter_health_checks.lua: |
+        function filter_health_checks(tag, timestamp, record)
+            local log = record["log"]
+            
+            if log ~= nil and string.match(string.lower(log), "health check") then
+                return -1, timestamp, record
+            end
+            
+            return 2, timestamp, record
+        end
 config:
   inputs: |
     [INPUT]
@@ -51,6 +61,12 @@ config:
         Match               kube.var.log.containers.trace-demo*
         Script              /fluent-bit/scripts/extract_trace_id.lua
         Call                extract_trace_id
+
+    [FILTER]
+        Name                lua
+        Match               kube.*
+        Script              /fluent-bit/scripts/filter_health_checks.lua
+        Call                filter_health_checks
 
   outputs: |
     [OUTPUT]
