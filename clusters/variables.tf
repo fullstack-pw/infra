@@ -5,9 +5,9 @@ variable "workload" {
     dev     = ["externaldns", "cert_manager", "external_secrets", "otel_collector", "fluent"]
     stg     = ["externaldns", "cert_manager", "external_secrets", "otel_collector", "fluent"]
     prod    = ["externaldns", "cert_manager", "external_secrets", "otel_collector", "fluent"]
-    sandbox = ["externaldns", "cert_manager", "ingress_nginx", "minio", "observability", "registry", "vault"]
-    runners = ["external_secrets", "gitlab_runner", "github_runner"]
-    tools   = ["externaldns", "cert_manager", "external_secrets", "postgres", "redis", "nats"]
+    sandbox = ["externaldns", "cert_manager", "ingress_nginx", "minio", "observability", "registry", "vault", "fluent"]
+    runners = ["external_secrets", "gitlab_runner", "github_runner", "fluent"]
+    tools   = ["externaldns", "cert_manager", "external_secrets", "postgres", "redis", "nats", "fluent"]
   }
 }
 
