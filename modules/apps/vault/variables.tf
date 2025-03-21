@@ -98,7 +98,7 @@ variable "additional_set_values" {
 variable "initialize_vault" {
   description = "Whether to initialize Vault with KV store and Kubernetes auth"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "kv_path" {

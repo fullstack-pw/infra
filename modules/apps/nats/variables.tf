@@ -108,7 +108,7 @@ variable "persistence_storage_class" {
 variable "persistence_size" {
   description = "Size of the persistence volume"
   type        = string
-  default     = "1Gi"
+  default     = "2Gi"
 }
 
 # Scalability
@@ -122,7 +122,7 @@ variable "replicas" {
 variable "memory_request" {
   description = "Memory request for NATS pods"
   type        = string
-  default     = "128Mi"
+  default     = "256Mi"
 }
 
 variable "cpu_request" {
@@ -134,7 +134,7 @@ variable "cpu_request" {
 variable "memory_limit" {
   description = "Memory limit for NATS pods"
   type        = string
-  default     = "256Mi"
+  default     = "512Mi"
 }
 
 variable "cpu_limit" {
@@ -147,7 +147,7 @@ variable "cpu_limit" {
 variable "prometheus_enabled" {
   description = "Enable Prometheus metrics"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "prometheus_port" {
@@ -221,7 +221,11 @@ variable "ingress_tls_secret_name" {
 variable "ingress_annotations" {
   description = "Additional annotations for NATS ingress"
   type        = map(string)
-  default     = {}
+  default = {
+    "external-dns.alpha.kubernetes.io/hostname" = "nats.fullstack.pw"
+    "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
+    "kubernetes.io/ingress.class"               = "traefik"
+  }
 }
 
 variable "cert_manager_cluster_issuer" {

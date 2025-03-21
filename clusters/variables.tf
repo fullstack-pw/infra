@@ -61,18 +61,3 @@ variable "vault_addr" {
   default = "https://vault.fullstack.pw"
 }
 variable "VAULT_TOKEN" {}
-
-
-variable "kubernetes_ca_cert" {
-  description = "Kubernetes CA certificate for Vault auth"
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "token_reviewer_jwt" {
-  description = "Service account JWT for Vault auth"
-  type        = string
-  sensitive   = true
-  default     = ""
-}

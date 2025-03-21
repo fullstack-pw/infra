@@ -19,6 +19,7 @@ variable "timeout" {
 variable "vault_token" {
   description = "Vault token for authentication"
   type        = string
+  default     = ""
   sensitive   = true
 }
 

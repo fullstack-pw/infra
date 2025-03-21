@@ -25,7 +25,7 @@ variable "acme_server" {
 variable "email" {
   description = "Email for ACME registration"
   type        = string
-  default     = "admin@example.com"
+  default     = "pedropilla@gmail.com"
 }
 
 variable "install_crd" {

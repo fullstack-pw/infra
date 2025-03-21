@@ -49,7 +49,7 @@ variable "enable_snippets" {
 variable "default_tls_secret" {
   description = "Default TLS secret for the ingress controller"
   type        = string
-  default     = ""
+  default     = "default/fullstack-tls"
 }
 
 variable "additional_set_values" {

@@ -82,7 +82,7 @@ variable "persistence_storage_class" {
 variable "persistence_size" {
   description = "Size of the PostgreSQL PVC"
   type        = string
-  default     = "8Gi"
+  default     = "10Gi"
 }
 
 # Resources
@@ -114,7 +114,7 @@ variable "cpu_limit" {
 variable "enable_metrics" {
   description = "Enable Prometheus metrics exporter"
   type        = bool
-  default     = true
+  default     = false
 }
 
 # Service
@@ -204,7 +204,7 @@ variable "additional_set_values" {
 variable "store_password_in_vault" {
   description = "Store PostgreSQL password in Vault at the specified path"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "vault_mount_path" {
@@ -216,7 +216,7 @@ variable "vault_mount_path" {
 variable "vault_secret_path" {
   description = "Path within the Vault KV store where the secret will be stored"
   type        = string
-  default     = "cluster-secret-store/secrets"
+  default     = "cluster-secret-store/secrets/POSTGRES"
 }
 
 variable "preserve_existing_vault_data" {
