@@ -24,6 +24,9 @@ prometheus:
     serviceMonitorSelector: {}
     serviceMonitorNamespaceSelector: {}
     serviceMonitorSelectorNilUsesHelmValues: false
+    additionalArgs:
+      - name: web.enable-otlp-receiver
+        value: ""
   ingress:
     enabled: true
     ingressClassName: ${ingress_class_name}
