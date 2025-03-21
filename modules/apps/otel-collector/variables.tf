@@ -7,7 +7,7 @@ variable "namespace" {
 variable "create_namespace" {
   description = "Create namespace if it doesn't exist"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "release_name" {

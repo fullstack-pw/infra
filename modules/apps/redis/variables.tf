@@ -70,26 +70,26 @@ variable "persistence_storage_class" {
 variable "persistence_size" {
   description = "Size of the Redis PVC"
   type        = string
-  default     = "8Gi"
+  default     = "10Gi"
 }
 
 # Resources
 variable "memory_request" {
   description = "Memory request for Redis pods"
   type        = string
-  default     = "256Mi"
+  default     = "512Mi"
 }
 
 variable "cpu_request" {
   description = "CPU request for Redis pods"
   type        = string
-  default     = "250m"
+  default     = "200m"
 }
 
 variable "memory_limit" {
   description = "Memory limit for Redis pods"
   type        = string
-  default     = "512Mi"
+  default     = "1Gi"
 }
 
 variable "cpu_limit" {
@@ -152,7 +152,13 @@ variable "ingress_tls_secret_name" {
 variable "ingress_annotations" {
   description = "Additional annotations for the Redis ingress"
   type        = map(string)
-  default     = {}
+  default = {
+    "nginx.ingress.kubernetes.io/proxy-body-size"       = "10m"
+    "nginx.ingress.kubernetes.io/proxy-connect-timeout" = "60"
+    "nginx.ingress.kubernetes.io/proxy-read-timeout"    = "60"
+    "nginx.ingress.kubernetes.io/proxy-send-timeout"    = "60"
+    "nginx.ingress.kubernetes.io/service-upstream"      = "true"
+  }
 }
 
 variable "cert_manager_cluster_issuer" {
@@ -177,7 +183,7 @@ variable "sentinel_quorum" {
 variable "replicas" {
   description = "Number of Redis replicas when using Sentinel"
   type        = number
-  default     = 2
+  default     = 1
 }
 
 variable "additional_set_values" {

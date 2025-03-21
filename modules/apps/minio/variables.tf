@@ -103,7 +103,6 @@ variable "ingress_annotations" {
   default = {
     "external-dns.alpha.kubernetes.io/hostname" = "s3.fullstack.pw"
     "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
-    "kubernetes.io/ingress.class"               = "nginx"
   }
 }
 
@@ -144,7 +143,6 @@ variable "console_ingress_annotations" {
   default = {
     "external-dns.alpha.kubernetes.io/hostname" = "minio.fullstack.pw"
     "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
-    "kubernetes.io/ingress.class"               = "nginx"
   }
 }
 
