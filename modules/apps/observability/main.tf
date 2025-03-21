@@ -214,3 +214,93 @@ module "prometheus" {
   create_namespace = false
   values_files     = var.prometheus_values_file != "" ? [var.prometheus_values_file] : module.prometheus_values[0].rendered_values
 }
+
+# Deploy Loki for log aggregation
+module "loki_values" {
+  count  = var.loki_enabled ? 1 : 0
+  source = "../../base/values-template"
+
+  template_files = [
+    {
+      path = "${path.module}/templates/loki-values.yaml.tpl"
+      vars = {
+        deployment_mode             = var.deployment_mode
+        storage_type                = var.loki_storage_type
+        filesystem_directory_key    = var.loki_storage_type == "filesystem" ? "filesystem" : "chunks_directory"
+        retention_period            = var.loki_retention_period
+        replicas                    = var.loki_replicas
+        memory_request              = var.loki_memory_request
+        cpu_request                 = var.loki_cpu_request
+        memory_limit                = var.loki_memory_limit
+        cpu_limit                   = var.loki_cpu_limit
+        persistence_enabled         = var.loki_persistence_enabled
+        persistence_size            = var.loki_persistence_size
+        persistence_storage_class   = var.loki_persistence_storage_class
+        service_monitor_enabled     = var.loki_service_monitor_enabled
+        ingress_class_name          = var.ingress_class_name
+        cert_manager_cluster_issuer = var.cert_manager_cluster_issuer
+        loki_domain                 = var.loki_domain
+        promtail_enabled            = var.promtail_enabled
+      }
+    }
+  ]
+}
+
+module "loki" {
+  count  = var.loki_enabled ? 1 : 0
+  source = "../../base/helm"
+
+  release_name     = "loki"
+  namespace        = module.namespace.name
+  chart            = "loki"
+  repository       = "https://grafana.github.io/helm-charts"
+  chart_version    = var.loki_chart_version
+  timeout          = 600 # Increased timeout for Loki installation
+  create_namespace = false
+  values_files     = module.loki_values[0].rendered_values
+}
+
+# Create Grafana datasource for Loki if enabled
+resource "kubernetes_manifest" "loki_datasource" {
+  count = var.loki_enabled && var.install_crd && var.prometheus_enabled ? 1 : 0
+  manifest = {
+    apiVersion = "integreatly.org/v1alpha1"
+    kind       = "GrafanaDatasource"
+    metadata = {
+      name      = "loki-datasource"
+      namespace = module.namespace.name
+    }
+    spec = {
+      datasource = {
+        name      = "Loki"
+        type      = "loki"
+        url       = "http://loki-gateway.${module.namespace.name}.svc.cluster.local:3100"
+        isDefault = false
+        jsonData = {
+          maxLines = 5000
+        }
+      }
+    }
+  }
+
+  depends_on = [module.loki, module.prometheus]
+}
+
+# Deploy unified dashboard as a ConfigMap
+resource "kubernetes_config_map" "unified_dashboard" {
+  count = var.prometheus_enabled && var.loki_enabled ? 1 : 0
+
+  metadata {
+    name      = "unified-observability-dashboard"
+    namespace = module.namespace.name
+    labels = {
+      grafana_dashboard = "1"
+    }
+  }
+
+  data = {
+    "unified-observability.json" = file("${path.module}/templates/unified-observability-dashboard.json")
+  }
+
+  depends_on = [module.prometheus, module.loki]
+}

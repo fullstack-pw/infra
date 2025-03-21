@@ -158,6 +158,17 @@ module "observability" {
   prometheus_enabled      = true
   prometheus_domain       = "prometheus.fullstack.pw"
   grafana_domain          = "grafana.fullstack.pw"
+  # Loki configuration
+  loki_enabled                   = true
+  loki_domain                    = "loki.fullstack.pw"
+  loki_storage_type              = "filesystem"
+  loki_retention_period          = "168h"
+  loki_persistence_enabled       = true
+  loki_persistence_size          = "10Gi"
+  loki_persistence_storage_class = "local-path"
+  loki_memory_request            = "256Mi"
+  loki_memory_limit              = "512Mi"
+  minio_rootPassword             = data.vault_kv_secret_v2.minio[0].data["rootPassword"]
 }
 
 module "postgres" {

@@ -150,3 +150,121 @@ variable "grafana_ingress_annotations" {
   type        = map(string)
   default     = {}
 }
+
+# Loki Configuration
+variable "loki_enabled" {
+  description = "Enable Loki for log aggregation"
+  type        = bool
+  default     = true
+}
+
+variable "loki_chart_version" {
+  description = "Loki Helm chart version"
+  type        = string
+  default     = "6.28.0"
+}
+
+variable "loki_domain" {
+  description = "Domain name for Loki ingress"
+  type        = string
+  default     = "loki.fullstack.pw"
+}
+
+variable "loki_storage_type" {
+  description = "Storage type for Loki (filesystem, s3, gcs, etc)"
+  type        = string
+  default     = "filesystem"
+}
+
+variable "loki_retention_period" {
+  description = "Retention period for logs in Loki"
+  type        = string
+  default     = "168h" # 7 days
+}
+
+variable "loki_persistence_enabled" {
+  description = "Enable persistence for Loki"
+  type        = bool
+  default     = true
+}
+
+variable "loki_persistence_size" {
+  description = "Size of the persistence volume for Loki"
+  type        = string
+  default     = "10Gi"
+}
+
+variable "loki_persistence_storage_class" {
+  description = "Storage class for Loki persistence"
+  type        = string
+  default     = "local-path"
+}
+
+variable "loki_replicas" {
+  description = "Number of Loki replicas in single binary mode"
+  type        = number
+  default     = 1
+}
+
+variable "loki_memory_request" {
+  description = "Memory request for Loki"
+  type        = string
+  default     = "256Mi"
+}
+
+variable "loki_cpu_request" {
+  description = "CPU request for Loki"
+  type        = string
+  default     = "100m"
+}
+
+variable "loki_memory_limit" {
+  description = "Memory limit for Loki"
+  type        = string
+  default     = "512Mi"
+}
+
+variable "loki_cpu_limit" {
+  description = "CPU limit for Loki"
+  type        = string
+  default     = "200m"
+}
+
+variable "promtail_enabled" {
+  description = "Enable Promtail for log collection"
+  type        = bool
+  default     = false
+}
+
+variable "loki_service_monitor_enabled" {
+  description = "Enable ServiceMonitor for Loki"
+  type        = bool
+  default     = true
+}
+
+variable "install_crd" {
+  type    = bool
+  default = false
+}
+
+variable "deployment_mode" {
+  type    = string
+  default = "SingleBinary"
+}
+
+variable "minio_enabled" {
+  type    = bool
+  default = true
+}
+variable "minio_rootUser" {
+  type    = string
+  default = "rootuser"
+}
+variable "minio_rootPassword" {
+  type    = string
+  default = "rootpass123"
+}
+variable "minio_address" {
+  type    = string
+  default = "s3.fullstack.pw"
+}

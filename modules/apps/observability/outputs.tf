@@ -37,3 +37,23 @@ output "grafana_url" {
   description = "URL for the Grafana UI"
   value       = var.prometheus_enabled ? "https://${var.grafana_domain}" : null
 }
+
+output "loki_url" {
+  description = "URL for the Loki UI"
+  value       = var.loki_enabled ? "https://${var.loki_domain}" : null
+}
+
+output "loki_endpoint" {
+  description = "Internal Loki endpoint for log pushing"
+  value       = var.loki_enabled ? "http://loki-gateway.${module.namespace.name}.svc.cluster.local:3100" : null
+}
+
+output "promtail_enabled" {
+  description = "Whether Promtail is enabled for log collection"
+  value       = var.loki_enabled && var.promtail_enabled
+}
+
+output "logs_available" {
+  description = "Whether logs are available in the observability stack"
+  value       = var.loki_enabled
+}
