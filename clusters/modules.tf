@@ -93,3 +93,9 @@ module "nats" {
   source = "../modules/apps/nats"
 
 }
+
+module "fluent" {
+  count  = contains(local.workload, "fluent") ? 1 : 0
+  source = "../modules/apps/fluent"
+
+}

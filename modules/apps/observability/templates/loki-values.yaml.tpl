@@ -1,9 +1,6 @@
 deploymentMode: ${deployment_mode}
 minio:
   enabled: true
-  rootUser: rootuser
-  rootPassword: rootpass123
-  address: s3.fullstack.pw
 loki:
   auth_enabled: false
   commonConfig:
