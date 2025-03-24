@@ -54,7 +54,6 @@ config:
         Name                record_modifier
         Match               *
         Record              log_format structured
-        Record              cluster_name ${CLUSTER}
         
     [FILTER]
         Name                lua
