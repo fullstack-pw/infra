@@ -119,6 +119,12 @@ variable "secret_data" {
         key      = "POSTGRES"
         property = "data.POSTGRES_PASSWORD"
       }
+      }, {
+      secretKey = "REDIS_PASSWORD"
+      remoteRef = {
+        key      = "REDIS"
+        property = "data.REDIS_PASSWORD"
+      }
     }
   ]
 }

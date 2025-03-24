@@ -139,7 +139,7 @@ variable "ingress_class_name" {
 variable "tls_secret_name" {
   description = "Name of the TLS secret for the registry ingress"
   type        = string
-  default     = "fullstack-tls"
+  default     = "registry-tls"
 }
 
 variable "ingress_annotations" {

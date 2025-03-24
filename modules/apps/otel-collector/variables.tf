@@ -81,7 +81,7 @@ variable "tls_insecure" {
 variable "log_level" {
   description = "Log level for the collector"
   type        = string
-  default     = "debug"
+  default     = "warn"
 }
 
 # Resources

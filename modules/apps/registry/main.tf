@@ -135,5 +135,6 @@ module "ingress" {
     "nginx.ingress.kubernetes.io/proxy-read-timeout" = "600"
     "nginx.ingress.kubernetes.io/proxy-send-timeout" = "600"
     "nginx.org/client-max-body-size"                 = "0"
+    "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
   }, var.ingress_annotations)
 }
