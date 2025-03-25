@@ -61,7 +61,7 @@ variable "resources_limits_cpu" {
 variable "resources_limits_memory" {
   description = "Memory limits for registry container"
   type        = string
-  default     = "256Mi"
+  default     = "64Mi"
 }
 
 variable "resources_requests_cpu" {
@@ -73,7 +73,7 @@ variable "resources_requests_cpu" {
 variable "resources_requests_memory" {
   description = "Memory requests for registry container"
   type        = string
-  default     = "128Mi"
+  default     = "16Mi"
 }
 
 variable "service_name" {

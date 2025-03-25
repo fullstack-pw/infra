@@ -48,7 +48,9 @@ singleBinary:
 %{endif}
 
 chunksCache:
-  allocatedMemory: 1024
+  allocatedMemory: 384
+resultsCache:
+  allocatedMemory: 128
 
 ingress:
   enabled: true
