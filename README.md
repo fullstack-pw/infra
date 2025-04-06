@@ -1,232 +1,177 @@
-# infra
+# fullstack.pw Infrastructure
 
-This repository contains the infrastructure-as-code and cluster configurations for the **fullstack.pw** homelab environment. The environment runs multiple Kubernetes clusters (sandbox, dev, stg, prod, runners) and supporting services like DNS, ingress controllers, certificate management, etc.
+This repository contains the infrastructure-as-code for the **fullstack.pw** homelab environment. It manages multiple Kubernetes clusters (K3s and vanilla), Proxmox VMs, and supporting services through a modular, declarative approach.
 
 ## Overview
 
-The main goals of this repository are:
+The environment is designed as a production-grade homelab platform for:
 
-- **Centralized Configuration**: Keep all infrastructure code in one place for consistent management and version control.
-- **Homelab Kubernetes**: Manage multiple K3s and vanilla Kubernetes clusters on Proxmox VMs.
-- **CI/CD Integration**: Provide GitHub and GitLab pipelines (via self-hosted runners) to automate builds and deployments.
-- **Support Services**: Set up DNS, ingress, certificates, vault-based secret management, and more.
+- **Multi-environment Deployments**: Managing dev, staging, production, and tooling environments
+- **Infrastructure Automation**: Provision and configure infrastructure using Terraform and Ansible
+- **Observability**: Comprehensive monitoring with Prometheus, Grafana, Jaeger, and OpenTelemetry
+- **CI/CD Integration**: Self-hosted runners for GitHub Actions and GitLab CI
+- **Security**: Vault for secrets management, cert-manager for TLS, and External Secrets for Kubernetes integration
 
 ## Repository Structure
 
-The repository follows a modular, DRY (Don't Repeat Yourself) approach to infrastructure code:
-
 ```
 infra/
-├── clusters/              # Kubernetes cluster configurations
-│   ├── modules.tf         # Module instances for each cluster
-│   ├── variables.tf       # Cluster-specific variables
-│   ├── providers.tf       # Provider configurations
-│   ├── outputs.tf         # Cluster outputs
-│   ├── backend.tf         # Remote state configuration
-│   ├── imports.tf         # Resource import definitions
-│   └── moved.tf           # Resource move tracking
-├── modules/               # Reusable Terraform modules
-│   ├── base/              # Base modules (composable building blocks)
-│   │   ├── credentials/   # Secret management
-│   │   ├── helm/          # Standardized Helm releases
-│   │   ├── ingress/       # Ingress configurations
-│   │   ├── monitoring/    # Monitoring configurations
-│   │   ├── namespace/     # Namespace management
-│   │   ├── persistence/   # PVC configurations
-│   │   └── values-template/ # Template rendering
-│   └── apps/              # Application modules (composed from base modules)
-│       ├── certmanager/   # Certificate management
-│       ├── externaldns/   # DNS management
-│       ├── external-secrets/ # External secret management
-│       ├── github-runner/ # GitHub Actions runners
-│       ├── gitlab-runner/ # GitLab CI runners
-│       ├── ingress-nginx/ # NGINX ingress controller
-│       ├── minio/         # S3-compatible storage
-│       ├── nats/          # NATS messaging
-│       ├── observability/ # Observability stack
-│       ├── otel-collector/ # OpenTelemetry collector
-│       ├── postgres/      # PostgreSQL database
-│       ├── redis/         # Redis database
-│       ├── registry/      # Docker registry
-│       └── vault/         # HashiCorp Vault
-├── proxmox/               # Proxmox VM configurations
-│   ├── main.tf            # VM provisioning logic
-│   ├── variables.tf       # Proxmox-specific variables
-│   ├── providers.tf       # Provider configurations
-│   ├── outputs.tf         # Proxmox outputs
-│   ├── scripts/           # VM configuration scripts
-│   ├── playbooks/         # Ansible playbooks for VM configuration
-│   └── vms/               # VM configuration files
-└── .github/workflows/     # GitHub Actions workflows
-    ├── ansible.yml        # Ansible provisioning workflow
-    ├── terraform-plan.yml # Terraform plan workflow
-    └── terraform-apply.yml # Terraform apply workflow
+├── .github/workflows/    # GitHub Actions workflows for CI/CD
+├── clusters/             # Kubernetes cluster configurations
+├── modules/              # Reusable Terraform modules
+│   ├── base/             # Base modules (building blocks)
+│   └── apps/             # Application modules
+├── proxmox/              # Proxmox VM configurations
+│   ├── vms/              # YAML VM definitions
+│   ├── playbooks/        # Ansible playbooks
+│   └── scripts/          # Helper scripts
+└── secrets/              # Encrypted secrets (SOPS)
 ```
 
-## Module Design Philosophy
+## Key Components
 
-Our infrastructure follows these key principles:
+### Infrastructure Layer
 
-1. **Composability**: Base modules are designed to be composed together to create more complex application modules.
-2. **Standardization**: Common patterns (namespaces, Helm releases, etc.) are implemented consistently.
-3. **DRY (Don't Repeat Yourself)**: Common configuration is centralized and reused.
-4. **Separation of Concerns**: Each module focuses on a specific responsibility.
+- **Proxmox Management**: Provisions VMs from YAML definitions
+- **PXE Boot Server**: Network boot for quick node provisioning
+- **K3s Clusters**: Lightweight Kubernetes clusters for dev, staging, and production
+- **Vanilla K8s**: Multi-node Kubernetes cluster for sandbox environments
 
-### Base Modules
+### Platform Services
 
-Base modules provide fundamental building blocks that can be composed to create more complex modules:
+- **Certificate Management**: Automatic TLS using cert-manager and Let's Encrypt
+- **DNS Management**: ExternalDNS integration for automatic DNS record updates
+- **Secret Management**: HashiCorp Vault with Kubernetes integration via External Secrets
+- **Storage**: MinIO S3-compatible object storage
+- **Container Registry**: Private Docker registry
+- **Ingress**: NGINX ingress controllers with custom configurations
 
-- **namespace**: Standardized namespace creation and management
-- **helm**: Consistent Helm chart deployment
-- **values-template**: Standardized template rendering for Helm values
-- **ingress**: Common ingress configuration
-- **persistence**: Standard persistent volume claim management
-- **credentials**: Secret management and generation
-- **monitoring**: Standardized monitoring configurations
+### Observability Stack
 
-### Application Modules
+- **Metrics**: Prometheus for infrastructure and application metrics
+- **Dashboards**: Grafana for visualization
+- **Tracing**: Jaeger and OpenTelemetry for distributed tracing
+- **Logging**: Fluent Bit for log collection and forwarding to Loki
 
-Application modules compose base modules to create complete application deployments:
+### CI/CD Integration
 
-```terraform
-module "namespace" {
-  source = "../../base/namespace"
-  # ...
-}
+- **GitHub Actions Runners**: Self-hosted via actions-runner-controller
+- **GitLab Runners**: Self-hosted GitLab CI executor
+- **Shared Pipelines**: Reusable workflow templates for application deployments
 
-module "credentials" {
-  source = "../../base/credentials"
-  # ...
-}
-
-module "values" {
-  source = "../../base/values-template"
-  # ...
-}
-
-module "helm" {
-  source = "../../base/helm"
-  # ...
-}
-
-module "ingress" {
-  source = "../../base/ingress"
-  # ...
-}
-```
-
-## High-Level Architecture
-
-### Cloudflare
-
-- Manages DNS for `fullstack.pw` and provides a CDN and WAF.
-- `cert-manager` in each cluster handles ACME certificate issuance via DNS challenges to Cloudflare.
-
-### Homelab / Proxmox
-
-- Two physical nodes:
-  - **NODE01** (Acer Nitro, i7-4710HQ, 16GB)
-  - **NODE02** (HP ED800 G3 Mini, i7-7700T, 32GB)
-- Proxmox hosts multiple VMs:
-  - **Internal DNS** (authoritative for `fullstack.pw` inside homelab)
-  - **HAProxy** VM at `k8s.fullstack.pw` (load balancer for the Kubernetes clusters)
-  - **K8s Clusters**:
-    - **Sandbox** (vanilla K8s) on VMs `k01`, `k02`, `k03`
-    - **Dev** (K3s) on VM `k8s-dev`
-    - **Stg** (K3s) on VM `k8s-stg`
-    - **Prod** (K3s) on VM `k8s-prod`
-    - **Tools** (K3s) on VM `k8s-tools`
-
-### Lenovo Legion (Personal Laptop)
-
-- **Rancher Desktop** installed, running a **runners** cluster (K3s) for pipelines.
-- Not running Proxmox, but considered part of the homelab environment because it can spin up ephemeral runners to execute CI jobs.
-
-### Kubernetes (K3s / Vanilla) Clusters
-
-- Common add-ons across clusters:
-  - **cert-manager**, **external-dns**, **external-secrets**, **nginx-ingress**, **metalLB**, **local-path-provisioner**.
-- Storage and services: **MinIO** (`s3.fullstack.pw`), **private registry** (`registry.fullstack.pw`), **Vault** (`vault.fullstack.pw`).
-- Example application: **API User Management** (`dev.api-usermgmt.fullstack.pw`, `stg.api-usermgmt.fullstack.pw`, `api-usermgmt.fullstack.pw`).
-
-### CI/CD Integrations
-
-- **GitHub**: `actions-runner-controller` runs on the Rancher Desktop cluster to register self-hosted GitHub Actions runners.
-- **GitLab**: A separate `gitlab-runner` is deployed on K3s to run GitLab CI jobs.
-
-## Observability Stack
-
-The infrastructure includes a comprehensive observability stack:
-
-- **Prometheus**: For metrics collection and storage
-- **Grafana**: For visualization and dashboards
-- **Jaeger**: For distributed tracing
-- **OpenTelemetry Collector**: For telemetry collection and processing
-
-The observability components are deployed using the `observability` module, which combines multiple tools for a complete monitoring solution.
-
-## Disaster Recovery
-
-The infrastructure includes backup and recovery mechanisms:
-
-- **State Management**: Terraform state is stored in MinIO (S3-compatible storage)
-- **Configuration Backups**: Infrastructure configurations are version-controlled in Git
-- **Database Backups**: Persistent volumes for databases are backed up
-
-## Security
-
-Security is a core consideration in the infrastructure design:
-
-- **Vault Integration**: Secrets are managed in HashiCorp Vault
-- **TLS Everywhere**: All services use TLS certificates managed by cert-manager
-- **Network Policies**: Traffic between services is controlled via Kubernetes network policies
-- **CI/CD Security**: GitHub Actions and GitLab CI workflows include security scanning
-
-## Usage
+## Getting Started
 
 ### Prerequisites
 
-- Terraform v1.10.5 or higher
-- kubectl configured for your clusters
-- Vault token for accessing secrets
+- Terraform v1.10.5+
+- kubectl
+- Ansible
+- SOPS for secret management
+- Access to Proxmox and Vault
 
-### Terraform Workflow
+### Provisioning Infrastructure
+
+1. **Initialize Terraform**
 
 ```bash
-# Initialize Terraform
 terraform init
+```
 
-# Select workspace (dev, stg, prod, sandbox, runners, tools)
-terraform workspace select dev
+2. **Configure Variables**
 
-# Plan changes
+Create a `terraform.tfvars` file with required variables (see `terraform.tfvars.example`).
+
+3. **Plan and Apply**
+
+```bash
+# For Proxmox VMs
+cd proxmox
 terraform plan -out=plan.tfplan
+terraform apply plan.tfplan
 
-# Apply changes
+# For Kubernetes resources
+cd clusters
+terraform workspace select dev  # or stg, prod, sandbox, tools
+terraform plan -out=plan.tfplan
 terraform apply plan.tfplan
 ```
 
-### GitHub Actions Workflows
+### Configure VMs with Ansible
 
-The repository includes several GitHub Actions workflows for automation:
+```bash
+# Run playbook for specific environment
+cd proxmox
+ansible-playbook playbooks/k8s.yml -i k8s.ini -e "target_hosts=dev"
+```
+
+## Workflows
+
+The repository includes several GitHub Actions workflows:
 
 - **terraform-plan.yml**: Runs `terraform plan` on pull requests
-- **terraform-apply.yml**: Applies Terraform changes when pull requests are merged
+- **terraform-apply.yml**: Applies changes when PRs are merged
 - **ansible.yml**: Runs Ansible playbooks for VM configuration
-- **sec-trivy.yml**: Scans infrastructure code for security issues
-- **sec-trufflehog.yml**: Scans for sensitive information in the repository
+- **sec-trivy.yml**: Security scanning with Trivy
+- **iac-tests.yml**: Infrastructure as Code testing
 
-## Contributing
+## Module Design
 
-When contributing to this repository, please follow these guidelines:
+The infrastructure follows these principles:
 
-1. **Module Structure**: Follow the established module structure and composition pattern
-2. **Resource Tracking**: Always include `moved` blocks when refactoring resources
-3. **Testing**: Test changes in a non-production environment before applying to production
-4. **Documentation**: Update documentation to reflect any infrastructure changes
+1. **Composability**: Base modules can be combined to create more complex app modules
+2. **Standardization**: Common patterns implemented consistently
+3. **DRY (Don't Repeat Yourself)**: Reusable configurations
+4. **Separation of Concerns**: Each module has a single responsibility
 
-## Diagram
+### Base Modules
 
-Below is an old dated homelab architecture diagram, I'll build a better one soon:
+- **namespace**: Kubernetes namespace management
+- **helm**: Standardized Helm chart deployment
+- **values-template**: Template rendering for Helm values
+- **ingress**: Common ingress configuration
+- **persistence**: Volume management
+- **credentials**: Secret handling
+- **monitoring**: Prometheus integration
 
-![image](fullstack.drawio.svg)
+### Application Modules
+
+Built from base modules to provide complete solutions:
+
+- **cert-manager**: TLS certificate automation
+- **externaldns**: DNS record management
+- **external-secrets**: External secret integration
+- **fluent**: Log collection and forwarding
+- **github-runner**: GitHub Actions runners
+- **gitlab-runner**: GitLab CI runners
+- **ingress-nginx**: Ingress controller
+- **minio**: S3-compatible storage
+- **nats**: Messaging system
+- **observability**: Complete monitoring stack
+- **otel-collector**: OpenTelemetry collector
+- **postgres**: PostgreSQL database
+- **redis**: Redis database/cache
+- **registry**: Docker registry
+- **vault**: Secret management
+
+## Physical Infrastructure
+
+The homelab runs on:
+
+- **NODE01**: Acer Nitro (i7-4710HQ, 16GB RAM)
+- **NODE02**: HP ED800 G3 Mini (i7-7700T, 32GB RAM)
+- **Lenovo Legion**: For ephemeral CI/CD runners
+
+## Network Architecture
+
+- **Cloudflare**: DNS, CDN, and WAF for public-facing services
+- **HAProxy**: Load balancer for Kubernetes traffic
+- **Internal DNS**: Local name resolution
+- **MetalLB**: Kubernetes load balancing
+
+## Security
+
+- **Vault**: Centralized secret management
+- **External Secrets**: Kubernetes secret integration
+- **cert-manager**: Automated TLS certificate management
+- **SOPS**: Secret encryption in Git
+- **Trivy**: Security scanning
