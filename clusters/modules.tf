@@ -104,23 +104,3 @@ module "fluent" {
   source = "../modules/apps/fluent"
 
 }
-
-module "runner_secrets" {
-  count  = contains(local.workload, "runner-secrets") ? 1 : 0
-  source = "../modules/base/runner-secrets"
-
-  secret_name     = "sops-age-key"
-  namespace       = "default"
-  age_key_content = var.sops_age_key
-
-  create_github_runner_secret = var.create_github_runner_secret
-  github_runner_namespace     = contains(local.workload, "github_runner") ? "actions-runner-system" : "default"
-
-  create_gitlab_runner_secret = var.create_gitlab_runner_secret
-  gitlab_runner_namespace     = contains(local.workload, "gitlab_runner") ? "gitlab" : "default"
-
-  labels = {
-    "app.kubernetes.io/managed-by" = "terraform"
-    "app.kubernetes.io/part-of"    = "ci-cd"
-  }
-}

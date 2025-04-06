@@ -14,6 +14,12 @@ spec:
             items:
               - key: KUBECONFIG
                 path: kubeconfig
+        - name: sops-volume
+          secret:
+            secretName: cluster-secrets
+            items:
+              - key: SOPS
+                path: SOPS
       organization: ${organization}
       serviceAccountName: ${service_account_name}
       envFrom:
@@ -25,6 +31,9 @@ spec:
             - name: kubeconfig-volume
               mountPath: /home/runner/.kube/config
               subPath: kubeconfig
+            - name: sops-volume
+              mountPath: /home/runner/.sops/keys/sops-key.txt
+              subPath: SOPS
 %{if runner_labels != ""}
           labels:
             - ${runner_labels}
