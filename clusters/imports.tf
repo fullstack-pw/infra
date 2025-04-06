@@ -235,3 +235,20 @@
 #   to       = module.vault[0].vault_mount.kv[0]
 #   id       = "kv"
 # }
+
+import {
+  to = module.vault[0].vault_kv_secret_v2.initial_secrets["kv/cluster-secrets"]
+  id = "kv/data/cluster-secrets"
+}
+import {
+  to = module.vault[0].vault_kv_secret_v2.initial_secrets["kv/github-runner"]
+  id = "kv/data/github-runner"
+}
+import {
+  to = module.vault[0].vault_kv_secret_v2.initial_secrets["kv/gitlab-runner"]
+  id = "kv/data/gitlab-runner"
+}
+import {
+  to = module.vault[0].vault_kv_secret_v2.initial_secrets["kv/jenkins"]
+  id = "kv/data/jenkins"
+}

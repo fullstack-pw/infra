@@ -59,9 +59,14 @@ module "registry" {
 }
 
 module "vault" {
-  count  = contains(local.workload, "vault") ? 1 : 0
-  source = "../modules/apps/vault"
+  count           = contains(local.workload, "vault") ? 1 : 0
+  source          = "../modules/apps/vault"
+  initial_secrets = local.vault_secrets
+}
 
+locals {
+  secrets_json  = jsondecode(file("${path.module}/tmp/secrets.json"))
+  vault_secrets = local.secrets_json
 }
 
 module "observability" {
@@ -98,4 +103,24 @@ module "fluent" {
   count  = contains(local.workload, "fluent") ? 1 : 0
   source = "../modules/apps/fluent"
 
+}
+
+module "runner_secrets" {
+  count  = contains(local.workload, "runner-secrets") ? 1 : 0
+  source = "../modules/base/runner-secrets"
+
+  secret_name     = "sops-age-key"
+  namespace       = "default"
+  age_key_content = var.sops_age_key
+
+  create_github_runner_secret = var.create_github_runner_secret
+  github_runner_namespace     = contains(local.workload, "github_runner") ? "actions-runner-system" : "default"
+
+  create_gitlab_runner_secret = var.create_gitlab_runner_secret
+  gitlab_runner_namespace     = contains(local.workload, "gitlab_runner") ? "gitlab" : "default"
+
+  labels = {
+    "app.kubernetes.io/managed-by" = "terraform"
+    "app.kubernetes.io/part-of"    = "ci-cd"
+  }
 }

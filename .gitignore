@@ -10,3 +10,13 @@ backend.hcl
 *.out
 plan.txt
 settings.json
+# Ignore unencrypted secrets
+secrets/**/*.unencrypted.yaml
+secrets/**/*.unencrypted.json
+secrets/**/*.unencrypted.env
+
+# Ignore any plaintext files in secrets directory
+secrets/**/*.plaintext.*
+
+# Ignore the SOPS age key
+.sops/keys/
