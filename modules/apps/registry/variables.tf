@@ -49,7 +49,7 @@ variable "container_port" {
 variable "environment_variables" {
   description = "Environment variables for the registry container"
   type        = map(string)
-  default     = {}
+  default     = { "REGISTRY_STORAGE_DELETE_ENABLED" : "true" }
 }
 
 variable "resources_limits_cpu" {
