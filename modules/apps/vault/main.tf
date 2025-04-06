@@ -84,7 +84,7 @@ resource "vault_kv_secret_v2" "initial_secrets" {
   for_each = var.initialize_vault ? var.initial_secrets : {}
 
   mount     = vault_mount.kv[0].path
-  name      = each.key
+  name      = length(regexall("^kv/", each.key)) > 0 ? substr(each.key, 3, length(each.key) - 3) : each.key
   data_json = jsonencode(each.value)
 
   depends_on = [vault_mount.kv]

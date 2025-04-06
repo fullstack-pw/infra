@@ -67,7 +67,7 @@ help:
 
 # Initialize Terraform for clusters
 .PHONY: init
-init:
+init: install-crypto-tools
 	@echo -e "${CYAN}Initializing Terraform for all environments...${NC}"
 	@cd $(TERRAFORM_DIR) && terraform init
 
@@ -97,10 +97,18 @@ plan:
 			echo -e "\n#########################################################" | tee -a plan.txt; \
 			echo -e "##\n##   Planning changes for $${env} environment..." | tee -a plan.txt; \
 			echo -e "##\n#########################################################" | tee -a plan.txt; \
+			if [ "$${env}" = "sandbox" ]; then \
+				echo -e "${CYAN}Running load_secrets.py for sandbox environment...${NC}"; \
+				python3 load_secrets.py; \
+			fi; \
 			terraform plan -no-color -out=$${env}.tfplan && terraform show -no-color $${env}.tfplan >> plan.txt && cd .. || cd ..; \
 		done; \
 	else \
 		echo -e "${CYAN}Planning changes for $(ENV) environment...${NC}"; \
+		if [ "$${env}" = "sandbox" ]; then \
+			echo -e "${CYAN}Running load_secrets.py for sandbox environment...${NC}"; \
+			python3 load_secrets.py; \
+		fi; \
 		cd $(TERRAFORM_DIR) && terraform workspace select $(ENV) && terraform plan -no-color -out=$(ENV).tfplan && terraform show -no-color $(ENV).tfplan >> plan.txt; \
 	fi
 
@@ -219,3 +227,53 @@ docs:
 		echo -e "Generating docs for $${module}..."; \
 		cd $${module} && terraform-docs markdown . > README.md; \
 	done
+
+# Install SOPS
+install-sops:
+	@echo "Installing SOPS..."
+	@if ! command -v sops &> /dev/null; then \
+		echo "Installing SOPS..."; \
+		if [ "$(shell uname)" = "Darwin" ]; then \
+			brew install sops; \
+		else \
+			wget -O /tmp/sops.deb https://github.com/mozilla/sops/releases/download/v3.8.1/sops_3.8.1_amd64.deb && \
+			sudo dpkg -i /tmp/sops.deb && \
+			rm /tmp/sops.deb; \
+		fi; \
+	else \
+		echo "SOPS is already installed."; \
+	fi
+
+# Install age
+install-age:
+	@echo "Installing age..."
+	@if ! command -v age &> /dev/null; then \
+		echo "Installing age..."; \
+		if [ "$(shell uname)" = "Darwin" ]; then \
+			brew install age; \
+		else \
+			wget -O /tmp/age.tar.gz https://github.com/FiloSottile/age/releases/download/v1.1.1/age-v1.1.1-linux-amd64.tar.gz && \
+			tar -xzf /tmp/age.tar.gz -C /tmp && \
+			sudo mv /tmp/age/age /usr/local/bin/ && \
+			sudo mv /tmp/age/age-keygen /usr/local/bin/ && \
+			rm -rf /tmp/age /tmp/age.tar.gz; \
+		fi; \
+	else \
+		echo "age is already installed."; \
+	fi
+
+# Install deps
+install-deps:
+	@echo "Installing deps..."
+	@if ! python -c "import pyyaml" &> /dev/null; then \
+		echo "Installing pyyaml..."; \
+			pip3 install pyyaml; \
+	else \
+		echo "pyyaml is already installed."; \
+	fi
+
+# Combined target to install both tools and configure environment
+install-crypto-tools: install-sops install-age install-deps
+	@echo "Setting up SOPS environment variables..."
+	@echo "SOPS_AGE_KEY_FILE=/home/runner/.sops/keys/sops-key.txt" >> $(if $(GITHUB_ENV),$(GITHUB_ENV),${HOME}/.bashrc)
+	@echo "Crypto tools installation and setup complete."

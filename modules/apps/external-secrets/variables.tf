@@ -125,6 +125,12 @@ variable "secret_data" {
         key      = "REDIS"
         property = "data.REDIS_PASSWORD"
       }
+      }, {
+      secretKey = "SOPS"
+      remoteRef = {
+        key      = "SOPS"
+        property = "data.SOPS"
+      }
     }
   ]
 }

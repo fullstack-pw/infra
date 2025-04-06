@@ -101,8 +101,10 @@ variable "ingress_annotations" {
   description = "Annotations for the MinIO API ingress"
   type        = map(string)
   default = {
-    "external-dns.alpha.kubernetes.io/hostname" = "s3.fullstack.pw"
-    "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
+    "external-dns.alpha.kubernetes.io/hostname"   = "s3.fullstack.pw"
+    "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
+    "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
+    "nginx.org/client-max-body-size"              = "0"
   }
 }
 

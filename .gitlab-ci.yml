@@ -1,18 +1,78 @@
-include:
-  - project: 'pedropilla/pipelines'
-    ref: main
-    file: '/ci-templates.yml'
+stages:
+  - validate
+  - plan
+  - apply
 
 variables:
-  APP_NAME: "infra-test"
-  DOCKER_BUILD_PATH: "./github_runner/sample"
-  ENVIRONMENT: "dev"
+  TF_IN_AUTOMATION: "true"
+  TF_VAR_VAULT_TOKEN: ${VAULT_TOKEN}
 
-test-app:
-  extends: .test-app-template
+# Base job definition to be extended by other jobs
+.terraform:
+  image: hashicorp/terraform:1.10.5
+  tags:
+    - k8s-gitlab-runner
+  before_script:
+    # Install SOPS and age
+    - apk add --no-cache wget bash curl python3 py3-pip gnupg
+    - wget -O /tmp/sops.rpm https://github.com/mozilla/sops/releases/download/v3.8.1/sops-3.8.1-1.x86_64.rpm
+    - rpm -i /tmp/sops.rpm || apk add --no-cache rpm && rpm -i /tmp/sops.rpm
+    - wget -O /tmp/age.tar.gz https://github.com/FiloSottile/age/releases/download/v1.1.1/age-v1.1.1-linux-amd64.tar.gz
+    - tar -xzf /tmp/age.tar.gz -C /tmp
+    - mv /tmp/age/age /usr/local/bin/
+    - mv /tmp/age/age-keygen /usr/local/bin/
+    - chmod +x /usr/local/bin/age /usr/local/bin/age-keygen
+    # Setup age key from GitLab CI variable
+    - mkdir -p ~/.sops/keys
+    - echo "$SOPS_AGE_KEY" > ~/.sops/keys/sops-key.txt
+    - chmod 600 ~/.sops/keys/sops-key.txt
+    - export SOPS_AGE_KEY_FILE=~/.sops/keys/sops-key.txt
+    # Process secrets for Terraform
+    - mkdir -p bootstrap/tmp
+    - cd bootstrap
+    - pip install -r requirements.txt
+    - python3 load_secrets.py --environment ${CI_ENVIRONMENT_NAME:-dev}
+    - cd ..
+    # Terraform initialization
+    - cd terraform
+    - terraform init
 
-build-docker-image:
-  extends: .build-docker-image-template
+validate:
+  extends: .terraform
+  stage: validate
+  script:
+    - terraform validate
+  except:
+    - main
+    - tags
 
-deploy-app:
-  extends: .deploy-app-template
+plan:
+  extends: .terraform
+  stage: plan
+  script:
+    - terraform plan -out=plan.tfplan
+  artifacts:
+    paths:
+      - terraform/plan.tfplan
+    expire_in: 1 week
+  except:
+    - main
+    - tags
+
+apply:
+  extends: .terraform
+  stage: apply
+  script:
+    - terraform apply -auto-approve plan.tfplan
+  dependencies:
+    - plan
+  when: manual
+  environment:
+    name: ${CI_ENVIRONMENT_NAME:-prod}
+  only:
+    - main
+    - tags
+  after_script:
+    # Cleanup sensitive data
+    - rm -f ~/.sops/keys/sops-key.txt
+    - rm -rf bootstrap/tmp/*

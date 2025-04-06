@@ -110,6 +110,17 @@ resource "kubernetes_manifest" "runner_deployment" {
                   }
                 ]
               }
+              }, {
+              name = "sops-volume"
+              secret = {
+                secretName = "cluster-secrets"
+                items = [
+                  {
+                    key  = "SOPS"
+                    path = "SOPS"
+                  }
+                ]
+              }
             }
           ]
           organization       = var.github_owner
@@ -129,6 +140,10 @@ resource "kubernetes_manifest" "runner_deployment" {
                   name      = "kubeconfig-volume"
                   mountPath = "/home/runner/.kube/config"
                   subPath   = "kubeconfig"
+                  }, {
+                  name      = "sops-volume"
+                  mountPath = "/home/runner/.sops/keys/sops-key.txt"
+                  subPath   = "SOPS"
                 }
               ]
               labels     = var.runner_labels != "" ? [var.runner_labels] : null
