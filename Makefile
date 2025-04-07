@@ -121,6 +121,10 @@ apply:
 			echo -e "\n#########################################################"; \
 			echo -e "##\n## Applying changes to $${env} environment..."; \
 			echo -e "##\n#########################################################"; \
+			if [ "$${env}" = "sandbox" ]; then \
+				echo -e "${CYAN}Running load_secrets.py for sandbox environment...${NC}"; \
+				python3 load_secrets.py; \
+			fi; \
 			if [ -f "$${env}.tfplan" ]; then \
 				terraform apply $${env}.tfplan && cd .. || cd ..; \
 			else \
@@ -130,6 +134,10 @@ apply:
 	else \
 		echo -e "${CYAN}Applying changes to $(ENV) environment...${NC}"; \
 		cd $(TERRAFORM_DIR) && terraform workspace select $(ENV); \
+		if [ "$${env}" = "sandbox" ]; then \
+			echo -e "${CYAN}Running load_secrets.py for sandbox environment...${NC}"; \
+			python3 load_secrets.py; \
+		fi; \
 		if [ -f "$(ENV).tfplan" ]; then \
 			terraform apply $(ENV).tfplan; \
 		else \
