@@ -38,12 +38,6 @@ module "helm" {
   ]
 }
 
-// Fetch Cloudflare credentials from Vault
-data "vault_kv_secret_v2" "cloudflare" {
-  mount = "kv"
-  name  = "cloudflare"
-}
-
 // Create Kubernetes secret for Cloudflare API token
 module "cloudflare_secret" {
   source = "../../base/credentials"
@@ -54,7 +48,7 @@ module "cloudflare_secret" {
   generate_password = false
 
   data = {
-    "api-token" = data.vault_kv_secret_v2.cloudflare.data["api-token"]
+    "api-token" = var.cloudflare_secret
   }
 }
 

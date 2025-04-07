@@ -33,3 +33,9 @@ variable "install_crd" {
   type        = bool
   default     = true
 }
+
+variable "cloudflare_secret" {
+  description = "CloudFlare secret"
+  type        = string
+  sensitive   = true
+}
