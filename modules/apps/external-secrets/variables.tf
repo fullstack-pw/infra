@@ -131,6 +131,18 @@ variable "secret_data" {
         key      = "SOPS"
         property = "data.SOPS"
       }
+      }, {
+      secretKey = "GITLAB_TOKEN"
+      remoteRef = {
+        key      = "GITLAB_TOKEN"
+        property = "data.GITLAB_TOKEN"
+      }
+      }, {
+      secretKey = "HARBOR_KEY"
+      remoteRef = {
+        key      = "HARBOR_KEY"
+        property = "data.HARBOR_KEY"
+      }
     }
   ]
 }

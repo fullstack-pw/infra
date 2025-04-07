@@ -1,9 +1,3 @@
-/**
- * PostgreSQL Module
- * 
- * This module deploys PostgreSQL using our base modules for standardization.
- */
-
 module "namespace" {
   source = "../../base/namespace"
 
@@ -58,7 +52,6 @@ data "vault_kv_secret_v2" "existing_secret" {
   mount = var.vault_mount_path
   name  = var.vault_secret_path
 
-  // We don't want to fail if the secret doesn't exist yet
   depends_on = [module.credentials]
 }
 locals {
@@ -125,13 +118,11 @@ module "ingress" {
   ingress_class_name = var.ingress_class_name
   cluster_issuer     = var.cert_manager_cluster_issuer
   annotations = merge({
-    # Add PostgreSQL-specific annotations
     "nginx.ingress.kubernetes.io/proxy-body-size"       = "50m"
     "nginx.ingress.kubernetes.io/proxy-connect-timeout" = "60"
     "nginx.ingress.kubernetes.io/proxy-read-timeout"    = "60"
     "nginx.ingress.kubernetes.io/proxy-send-timeout"    = "60"
-    # This is critical for PostgreSQL through ingress
-    "nginx.ingress.kubernetes.io/backend-protocol" = "HTTPS"
-    "nginx.ingress.kubernetes.io/ssl-passthrough"  = "true"
+    "nginx.ingress.kubernetes.io/backend-protocol"      = "HTTPS"
+    "nginx.ingress.kubernetes.io/ssl-passthrough"       = "true"
   }, var.ingress_annotations)
 }

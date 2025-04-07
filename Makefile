@@ -90,6 +90,7 @@ workspace:
 # Plan changes for all environments or a specific one
 .PHONY: plan
 plan:
+	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TERRAFORM_DIR) && python3 load_secrets.py && cd ..
 	@if [ -z "$(ENV)" ]; then \
 		echo -e "${CYAN}Planning changes for all environments...${NC}"; \
 		for env in $(ENVIRONMENTS); do \
@@ -97,34 +98,23 @@ plan:
 			echo -e "\n#########################################################" | tee -a plan.txt; \
 			echo -e "##\n##   Planning changes for $${env} environment..." | tee -a plan.txt; \
 			echo -e "##\n#########################################################" | tee -a plan.txt; \
-			if [ "$${env}" = "sandbox" ]; then \
-				echo -e "${CYAN}Running load_secrets.py for sandbox environment...${NC}"; \
-				python3 load_secrets.py; \
-			fi; \
 			terraform plan -no-color -out=$${env}.tfplan && terraform show -no-color $${env}.tfplan >> plan.txt && cd .. || cd ..; \
 		done; \
 	else \
 		echo -e "${CYAN}Planning changes for $(ENV) environment...${NC}"; \
-		if [ "$${env}" = "sandbox" ]; then \
-			echo -e "${CYAN}Running load_secrets.py for sandbox environment...${NC}"; \
-			python3 load_secrets.py; \
-		fi; \
 		cd $(TERRAFORM_DIR) && terraform workspace select $(ENV) && terraform plan -no-color -out=$(ENV).tfplan && terraform show -no-color $(ENV).tfplan >> plan.txt; \
 	fi
 
 # Apply changes for all environments or a specific one
 .PHONY: apply
 apply:
+	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TERRAFORM_DIR) && python3 load_secrets.py && cd ..
 	@if [ -z "$(ENV)" ]; then \
 		for env in $(ENVIRONMENTS); do \
 			cd $(TERRAFORM_DIR) && terraform workspace select $${env} || terraform workspace new $${env}; \
 			echo -e "\n#########################################################"; \
 			echo -e "##\n## Applying changes to $${env} environment..."; \
 			echo -e "##\n#########################################################"; \
-			if [ "$${env}" = "sandbox" ]; then \
-				echo -e "${CYAN}Running load_secrets.py for sandbox environment...${NC}"; \
-				python3 load_secrets.py; \
-			fi; \
 			if [ -f "$${env}.tfplan" ]; then \
 				terraform apply $${env}.tfplan && cd .. || cd ..; \
 			else \
@@ -134,10 +124,6 @@ apply:
 	else \
 		echo -e "${CYAN}Applying changes to $(ENV) environment...${NC}"; \
 		cd $(TERRAFORM_DIR) && terraform workspace select $(ENV); \
-		if [ "$${env}" = "sandbox" ]; then \
-			echo -e "${CYAN}Running load_secrets.py for sandbox environment...${NC}"; \
-			python3 load_secrets.py; \
-		fi; \
 		if [ -f "$(ENV).tfplan" ]; then \
 			terraform apply $(ENV).tfplan; \
 		else \
