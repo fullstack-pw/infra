@@ -7,7 +7,8 @@ module "cert_manager" {
   count  = contains(local.workload, "cert_manager") ? 1 : 0
   source = "../modules/apps/certmanager"
 
-  install_crd = var.config[terraform.workspace].cert_manager_crd
+  install_crd       = var.config[terraform.workspace].cert_manager_crd
+  cloudflare_secret = local.secrets_json["kv/cloudflare"]["api-token"]
 }
 
 module "external_secrets" {
@@ -49,7 +50,7 @@ module "minio" {
   count  = contains(local.workload, "minio") ? 1 : 0
   source = "../modules/apps/minio"
 
-  root_password = data.vault_kv_secret_v2.minio[0].data["rootPassword"]
+  root_password = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootPassword"]
 }
 
 module "registry" {
@@ -73,7 +74,7 @@ module "observability" {
   count  = contains(local.workload, "observability") ? 1 : 0
   source = "../modules/apps/observability"
 
-  minio_rootPassword = data.vault_kv_secret_v2.minio[0].data["rootPassword"]
+  minio_rootPassword = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootPassword"]
 }
 
 module "postgres" {
