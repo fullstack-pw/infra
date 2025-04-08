@@ -1,9 +1,3 @@
-/**
- * GitLab Runner Module
- * 
- * This module deploys GitLab Runner using our base modules for standardization.
- */
-
 module "namespace" {
   source = "../../base/namespace"
 
@@ -12,37 +6,6 @@ module "namespace" {
   labels = {
     "kubernetes.io/metadata.name" = var.namespace
   }
-}
-
-module "credentials" {
-  source = "../../base/credentials"
-
-  name              = "gitlab-credentials"
-  namespace         = module.namespace.name
-  generate_password = false
-  create_secret     = false # Set to false initially to avoid conflict with moved blocks
-
-  data = {
-    GITLAB_TOKEN = data.vault_kv_secret_v2.gitlab_runner_token.data["GITLAB_TOKEN"]
-  }
-}
-
-module "kubeconfig_secret" {
-  source = "../../base/credentials"
-
-  name              = "kubeconfig"
-  namespace         = module.namespace.name
-  generate_password = false
-  create_secret     = true # Keep this true as it matches the original resource
-
-  data = {
-    KUBECONFIG = data.vault_kv_secret_v2.gitlab_runner_token.data["KUBECONFIG"]
-  }
-}
-
-data "vault_kv_secret_v2" "gitlab_runner_token" {
-  mount = "kv"
-  name  = "gitlab-runner"
 }
 
 resource "kubernetes_service_account" "gitlab_runner" {
@@ -61,7 +24,7 @@ module "values" {
       vars = {
         service_account_name = kubernetes_service_account.gitlab_runner.metadata[0].name
         namespace            = module.namespace.name
-        registration_token   = data.vault_kv_secret_v2.gitlab_runner_token.data["GITLAB_TOKEN"]
+        registration_token   = var.gitlab_token
         concurrent           = var.concurrent_runners
         check_interval       = var.check_interval
         runner_tags          = var.runner_tags

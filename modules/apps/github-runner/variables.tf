@@ -49,7 +49,7 @@ variable "cert_manager_enabled" {
 variable "runner_replicas" {
   description = "Number of GitHub runner replicas"
   type        = number
-  default     = 2
+  default     = 5
 }
 
 variable "runner_labels" {

@@ -52,6 +52,10 @@ variable "gitlab_url" {
   default     = "https://gitlab.com/"
 }
 
+variable "gitlab_token" {
+  description = "Gitlab token"
+  type        = string
+}
 variable "privileged" {
   description = "Whether to run containers in privileged mode"
   type        = bool

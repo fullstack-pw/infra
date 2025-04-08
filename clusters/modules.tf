@@ -31,13 +31,15 @@ module "github_runner" {
   count  = contains(local.workload, "github_runner") ? 1 : 0
   source = "../modules/apps/github-runner"
 
-  github_token = data.vault_kv_secret_v2.github_token[0].data["GITHUB_PAT"]
+  github_token = local.secrets_json["kv/cluster-secret-store/secrets/GITHUB_PAT"]["GITHUB_PAT"]
   install_crd  = var.config[terraform.workspace].install_crd
 }
 
 module "gitlab_runner" {
   count  = contains(local.workload, "gitlab_runner") ? 1 : 0
   source = "../modules/apps/gitlab-runner"
+
+  gitlab_token = local.secrets_json["kv/cluster-secret-store/secrets/GITLAB_TOKEN"]["GITLAB_TOKEN"]
 }
 
 module "ingress_nginx" {
@@ -104,4 +106,12 @@ module "fluent" {
   count  = contains(local.workload, "fluent") ? 1 : 0
   source = "../modules/apps/fluent"
 
+}
+
+module "harbor" {
+  count  = contains(local.workload, "harbor") ? 1 : 0
+  source = "../modules/apps/harbor"
+
+  external_database_password = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
+  external_redis_password    = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
 }

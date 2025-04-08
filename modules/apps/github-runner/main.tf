@@ -1,9 +1,3 @@
-/**
- * GitHub Runner Module
- * 
- * This module deploys GitHub Actions runners on Kubernetes using the Actions Runner Controller (ARC).
- */
-
 module "namespace" {
   source = "../../base/namespace"
 
@@ -14,33 +8,6 @@ module "namespace" {
   }
 }
 
-module "credentials" {
-  source = "../../base/credentials"
-
-  name              = "github-pat"
-  namespace         = module.namespace.name
-  generate_password = false
-  create_secret     = false
-
-  data = {
-    github_token = var.github_token
-  }
-}
-
-module "kubeconfig_secret" {
-  source = "../../base/credentials"
-
-  name              = "kubeconfig"
-  namespace         = module.namespace.name
-  generate_password = false
-  create_secret     = false
-
-  data = {
-    kubeconfig = var.kubeconfig
-  }
-}
-
-# Deploy the GitHub Actions runner controller
 module "helm" {
   source = "../../base/helm"
 
@@ -76,7 +43,6 @@ module "helm" {
   }]
 }
 
-# Create service account for GitHub runners
 resource "kubernetes_service_account" "github_runner" {
   metadata {
     name      = "github-runner"
@@ -84,7 +50,6 @@ resource "kubernetes_service_account" "github_runner" {
   }
 }
 
-# Create runner deployment manifest
 resource "kubernetes_manifest" "runner_deployment" {
   count = var.install_crd == true ? 1 : 0
   manifest = {
@@ -159,7 +124,6 @@ resource "kubernetes_manifest" "runner_deployment" {
   depends_on = [module.helm]
 }
 
-# Create horizontal autoscaler if enabled
 resource "kubernetes_manifest" "runner_autoscaler" {
   count = var.enable_autoscaling ? 1 : 0
 
