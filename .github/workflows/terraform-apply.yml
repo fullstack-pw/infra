@@ -164,7 +164,6 @@ jobs:
           terraform_version: 1.10.5
 
       - name: Terraform Init
-        working-directory: ./clusters
         run: |
           make init
 
