@@ -166,7 +166,7 @@ jobs:
       - name: Terraform Init
         working-directory: ./clusters
         run: |
-          terraform init
+          make init
 
       - name: Terraform Apply
         id: apply
