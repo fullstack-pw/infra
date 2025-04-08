@@ -11,9 +11,6 @@ variable "workload" {
   }
 }
 
-locals {
-  workload = var.workload[terraform.workspace]
-}
 variable "config" {
   description = "Map of providers with configuration per workspace."
   default = {

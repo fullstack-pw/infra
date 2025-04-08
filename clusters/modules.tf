@@ -67,11 +67,6 @@ module "vault" {
   initial_secrets = local.vault_secrets
 }
 
-locals {
-  secrets_json  = jsondecode(file("${path.module}/tmp/secrets.json"))
-  vault_secrets = local.secrets_json
-}
-
 module "observability" {
   count  = contains(local.workload, "observability") ? 1 : 0
   source = "../modules/apps/observability"
