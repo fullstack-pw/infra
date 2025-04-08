@@ -31,7 +31,7 @@ variable "runner_name" {
 variable "runner_image" {
   description = "Docker image for GitHub runner"
   type        = string
-  default     = "registry.fullstack.pw/github-runner:latest"
+  default     = "harbor.fullstack.pw/library/github-runner:latest"
 }
 
 variable "runner_image_override" {

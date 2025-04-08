@@ -1,0 +1,45 @@
+name: Build Docker Images
+
+on:
+  push:
+    branches: [main]
+    paths: ["**/Dockerfile"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Expose HARBOR_KEY to the Workflow
+        run: echo "HARBOR_KEY=${HARBOR_KEY}" >> $GITHUB_ENV
+
+      - name: Login to Harbor
+        uses: docker/login-action@v3
+        with:
+          registry: harbor.fullstack.pw
+          username: admin
+          password: ${{ env.HARBOR_KEY }}
+
+      - name: Find and Build Dockerfiles
+        run: |
+          # Find all Dockerfiles
+          DOCKERFILES=$(find . -name "Dockerfile" -not -path "*/\.*" -not -path "*/node_modules/*")
+
+          # Process each Dockerfile
+          for DOCKERFILE in $DOCKERFILES; do
+            # Get parent directory name for image name
+            DIR=$(dirname "$DOCKERFILE")
+            IMAGE_NAME=$(basename "$DIR")
+            
+            echo "Building $DOCKERFILE as harbor.fullstack.pw/library/$IMAGE_NAME:latest"
+            
+            # Build and push
+            docker build -t harbor.fullstack.pw/library/$IMAGE_NAME:latest -f "$DOCKERFILE" "$DIR"
+            docker push harbor.fullstack.pw/library/$IMAGE_NAME:latest
+          done
