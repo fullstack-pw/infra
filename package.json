@@ -1,0 +1,29 @@
+{
+    "name": "fullstack-pw-infra",
+    "version": "0.0.1",
+    "description": "Infrastructure as Code for fullstack.pw homelab",
+    "private": true,
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/fullstack-pw/infra.git"
+    },
+    "author": "fullstack-pw",
+    "devDependencies": {
+        "@semantic-release/changelog": "^6.0.3",
+        "@semantic-release/git": "^10.0.1",
+        "conventional-changelog-conventionalcommits": "^7.0.2",
+        "semantic-release": "^22.0.12"
+    },
+    "main": "index.js",
+    "directories": {
+        "doc": "docs"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/fullstack-pw/infra/issues"
+    },
+    "homepage": "https://github.com/fullstack-pw/infra#readme"
+}

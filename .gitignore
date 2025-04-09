@@ -20,3 +20,5 @@ secrets/**/*.plaintext.*
 
 # Ignore the SOPS age key
 .sops/keys/
+
+node_modules
