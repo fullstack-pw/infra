@@ -19,7 +19,7 @@ variable "release_name" {
 variable "chart_version" {
   description = "Harbor Helm chart version"
   type        = string
-  default     = "1.12.2"
+  default     = "1.16.2"
 }
 
 variable "timeout" {

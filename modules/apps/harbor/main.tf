@@ -121,6 +121,7 @@ module "helm" {
   timeout          = var.timeout
   create_namespace = false
   values_files     = module.values.rendered_values
+  force_update     = false
 
   set_values = var.additional_set_values
 
