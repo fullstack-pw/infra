@@ -1,3 +1,14 @@
+## [1.0.1](https://github.com/fullstack-pw/infra/compare/v1.0.0...v1.0.1) (2025-04-10)
+
+### Bug Fixes
+
+* **clusters:** enable stg and prod ([#71](https://github.com/fullstack-pw/infra/issues/71)) ([d7591d7](https://github.com/fullstack-pw/infra/commit/d7591d76e99502eb0119a614b5202ce7273f056f))
+* **clusters:** enable stg and prod on pipelines ([#70](https://github.com/fullstack-pw/infra/issues/70)) ([49a231c](https://github.com/fullstack-pw/infra/commit/49a231cc62b2fdd8ec96846f1dc35b377eb26350))
+
+### Chores
+
+* shrink harbor ([db134a2](https://github.com/fullstack-pw/infra/commit/db134a248bba68bdebc7807798d1263f4112541e))
+
 ## 1.0.0 (2025-04-09)
 
 ### Bug Fixes
