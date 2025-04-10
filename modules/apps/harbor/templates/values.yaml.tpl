@@ -100,6 +100,13 @@ chartmuseum:
   enabled: false
 trivy:
   enabled: true
+  resources:
+    limits:
+      cpu: ${resources_limits.portal.cpu}
+      memory: ${resources_limits.portal.memory}
+    requests:
+      cpu: ${resources_requests.portal.cpu}
+      memory: ${resources_requests.portal.memory}
 log:
   level: info
   audit:

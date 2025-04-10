@@ -189,20 +189,24 @@ variable "resources_limits" {
   }))
   default = {
     core = {
-      cpu    = "1"
-      memory = "1Gi"
+      cpu    = "1000m"
+      memory = "128Mi"
     },
     jobservice = {
       cpu    = "500m"
-      memory = "512Mi"
+      memory = "128Mi"
     },
     registry = {
       cpu    = "500m"
-      memory = "512Mi"
+      memory = "128Mi"
     },
     portal = {
       cpu    = "200m"
-      memory = "256Mi"
+      memory = "128Mi"
+    },
+    trivy = {
+      cpu    = "200m"
+      memory = "128Mi"
     }
   }
 }
@@ -216,19 +220,23 @@ variable "resources_requests" {
   default = {
     core = {
       cpu    = "300m"
-      memory = "512Mi"
+      memory = "64Mi"
     },
     jobservice = {
       cpu    = "100m"
-      memory = "256Mi"
+      memory = "64Mi"
     },
     registry = {
       cpu    = "100m"
-      memory = "256Mi"
+      memory = "64Mi"
     },
     portal = {
       cpu    = "100m"
-      memory = "128Mi"
+      memory = "64Mi"
+    },
+    trivy = {
+      cpu    = "100m"
+      memory = "64Mi"
     }
   }
 }
