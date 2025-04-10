@@ -22,7 +22,7 @@ jobs:
       - name: Login to Harbor
         uses: docker/login-action@v3
         with:
-          registry: harbor.fullstack.pw
+          registry: registry.fullstack.pw
           username: admin
           password: ${{ env.HARBOR_KEY }}
 
@@ -37,9 +37,9 @@ jobs:
             DIR=$(dirname "$DOCKERFILE")
             IMAGE_NAME=$(basename "$DIR")
             
-            echo "Building $DOCKERFILE as harbor.fullstack.pw/library/$IMAGE_NAME:latest"
+            echo "Building $DOCKERFILE as registry.fullstack.pw/library/$IMAGE_NAME:latest"
             
             # Build and push
-            docker build -t harbor.fullstack.pw/library/$IMAGE_NAME:latest -f "$DOCKERFILE" "$DIR"
-            docker push harbor.fullstack.pw/library/$IMAGE_NAME:latest
+            docker build -t registry.fullstack.pw/library/$IMAGE_NAME:latest -f "$DOCKERFILE" "$DIR"
+            docker push registry.fullstack.pw/library/$IMAGE_NAME:latest
           done
