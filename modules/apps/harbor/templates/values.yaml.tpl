@@ -2,11 +2,12 @@ expose:
   type: ingress
   tls:
     enabled: ${tls_enabled}
-    secretName: ${tls_cert_secret_name}
+    certSource: secret
+    secret:
+      secretName: ${tls_cert_secret_name}
   ingress:
     hosts:
       core: ${harbor_domain}
-      notary: ${notary_domain}
     className: ${ingress_class_name}
     annotations:
 %{for key, value in ingress_annotations}

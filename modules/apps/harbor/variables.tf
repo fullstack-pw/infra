@@ -19,7 +19,7 @@ variable "release_name" {
 variable "chart_version" {
   description = "Harbor Helm chart version"
   type        = string
-  default     = "1.12.2"
+  default     = "1.16.2"
 }
 
 variable "timeout" {
@@ -32,7 +32,7 @@ variable "timeout" {
 variable "harbor_domain" {
   description = "Domain for Harbor"
   type        = string
-  default     = "harbor.fullstack.pw"
+  default     = "registry.fullstack.pw"
 }
 
 variable "notary_domain" {
@@ -161,7 +161,7 @@ variable "ingress_annotations" {
   description = "Annotations for Harbor ingress"
   type        = map(string)
   default = {
-    "external-dns.alpha.kubernetes.io/hostname"   = "harbor.fullstack.pw"
+    "external-dns.alpha.kubernetes.io/hostname"   = "registry.fullstack.pw"
     "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
     "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
     "nginx.org/client-max-body-size"              = "0"
