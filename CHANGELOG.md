@@ -1,3 +1,9 @@
+## [1.1.0](https://github.com/fullstack-pw/infra/compare/v1.0.1...v1.1.0) (2025-04-13)
+
+### Features
+
+* **metrics:** export cluster metrics ([#72](https://github.com/fullstack-pw/infra/issues/72)) ([8345483](https://github.com/fullstack-pw/infra/commit/83454831fe0cdd5398090a6d19c9508d942a4e98))
+
 ## [1.0.1](https://github.com/fullstack-pw/infra/compare/v1.0.0...v1.0.1) (2025-04-10)
 
 ### Bug Fixes
