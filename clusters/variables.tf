@@ -2,12 +2,12 @@ variable "workload" {
   description = "map"
   type        = map(list(string))
   default = {
-    dev     = ["externaldns", "cert_manager", "external_secrets", "otel_collector", "fluent"]
-    stg     = ["externaldns", "cert_manager", "external_secrets", "otel_collector", "fluent"]
-    prod    = ["externaldns", "cert_manager", "external_secrets", "otel_collector", "fluent"]
+    dev     = ["externaldns", "cert_manager", "external_secrets", "observability-box"]
+    stg     = ["externaldns", "cert_manager", "external_secrets", "observability-box"]
+    prod    = ["externaldns", "cert_manager", "external_secrets", "observability-box"]
     sandbox = ["externaldns", "cert_manager", "ingress_nginx", "minio", "observability", "vault", "fluent", "harbor"]
-    runners = ["external_secrets", "gitlab_runner", "github_runner", "runner_secrets"]
-    tools   = ["externaldns", "cert_manager", "external_secrets", "postgres", "redis", "nats", "fluent"]
+    runners = ["external_secrets", "gitlab_runner", "github_runner", "runner_secrets", "observability-box"]
+    tools   = ["externaldns", "cert_manager", "external_secrets", "postgres", "redis", "nats", "fluent", "observability-box"]
   }
 }
 
