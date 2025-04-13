@@ -41,6 +41,17 @@ serverFiles:
           - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
             action: keep
             regex: default;kubernetes;https
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_service_name]
+            action: replace
+            target_label: service
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            action: replace
+            target_label: endpoint
+          - target_label: cluster
+            replacement: ${cluster_name}
 
       - job_name: kubernetes-nodes
         scheme: https
@@ -53,6 +64,14 @@ serverFiles:
         relabel_configs:
           - action: labelmap
             regex: __meta_kubernetes_node_label_(.+)
+          - source_labels: [__meta_kubernetes_node_name]
+            action: replace
+            target_label: node
+          - target_label: namespace
+            replacement: "kube-system"
+          - target_label: cluster
+            replacement: ${cluster_name}
+
       - job_name: kubernetes-nodes-cadvisor
         scheme: https
         tls_config:
@@ -68,6 +87,12 @@ serverFiles:
             regex: (.+)
             target_label: node
             replacement: $1
+          - target_label: namespace
+            replacement: "kube-system"
+          - target_label: container
+            replacement: "kubelet"
+          - target_label: service
+            replacement: "kubelet"
           - target_label: cluster
             replacement: ${cluster_name}
 
@@ -101,10 +126,22 @@ serverFiles:
             regex: __meta_kubernetes_service_label_(.+)
           - source_labels: [__meta_kubernetes_namespace]
             action: replace
-            target_label: kubernetes_namespace
+            target_label: namespace
           - source_labels: [__meta_kubernetes_service_name]
             action: replace
-            target_label: kubernetes_name
+            target_label: service
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_container_name]
+            action: replace
+            target_label: container
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            action: replace
+            target_label: node
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            action: replace
+            target_label: endpoint
           - target_label: cluster
             replacement: ${cluster_name}
 
@@ -117,6 +154,18 @@ serverFiles:
             action: keep
           - source_labels: [__meta_kubernetes_endpoint_node_name]
             target_label: node
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_container_name]
+            action: replace
+            target_label: container
+          - source_labels: [__meta_kubernetes_service_name]
+            action: replace
+            target_label: service
           - target_label: cluster
             replacement: ${cluster_name}
 
@@ -127,5 +176,20 @@ serverFiles:
           - source_labels: [__meta_kubernetes_endpoints_name]
             regex: prometheus-kube-state-metrics
             action: keep
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_container_name]
+            action: replace
+            target_label: container
+          - source_labels: [__meta_kubernetes_service_name]
+            action: replace
+            target_label: service
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            action: replace
+            target_label: endpoint
           - target_label: cluster
             replacement: ${cluster_name}
