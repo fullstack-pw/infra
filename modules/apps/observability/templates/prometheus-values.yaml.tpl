@@ -27,6 +27,8 @@ prometheus:
     additionalArgs:
       - name: web.enable-otlp-receiver
         value: ""
+    enableRemoteWriteReceiver: true
+    remoteWriteDashboards: true
   ingress:
     enabled: true
     ingressClassName: ${ingress_class_name}

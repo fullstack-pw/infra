@@ -22,10 +22,6 @@ module "external_secrets" {
   }
 }
 
-module "otel_collector" {
-  count  = contains(local.workload, "otel_collector") ? 1 : 0
-  source = "../modules/apps/otel-collector"
-}
 
 module "github_runner" {
   count  = contains(local.workload, "github_runner") ? 1 : 0
@@ -74,6 +70,11 @@ module "observability" {
   minio_rootPassword = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootPassword"]
 }
 
+module "observability-box" {
+  count  = contains(local.workload, "observability-box") ? 1 : 0
+  source = "../modules/apps/observability-box"
+}
+
 module "postgres" {
   count  = contains(local.workload, "postgres") ? 1 : 0
   source = "../modules/apps/postgres"
@@ -94,12 +95,6 @@ module "redis" {
 module "nats" {
   count  = contains(local.workload, "nats") ? 1 : 0
   source = "../modules/apps/nats"
-
-}
-
-module "fluent" {
-  count  = contains(local.workload, "fluent") ? 1 : 0
-  source = "../modules/apps/fluent"
 
 }
 
