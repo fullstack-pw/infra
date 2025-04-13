@@ -169,12 +169,12 @@ variable "prometheus_additional_set_values" {
 
 variable "prometheus_memory_limit" {
   type    = string
-  default = "512Mi"
+  default = "1024Mi"
 }
 
 variable "prometheus_cpu_limit" {
   type    = string
-  default = "200m"
+  default = "1000m"
 }
 
 variable "prometheus_memory_request" {

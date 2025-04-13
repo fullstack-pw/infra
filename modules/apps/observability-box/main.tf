@@ -102,6 +102,7 @@ module "prometheus_values" {
         memory_request   = var.prometheus_memory_request
         cpu_request      = var.prometheus_cpu_request
         remote_write_url = var.prometheus_remote_write_url
+        cluster_name     = terraform.workspace
       }
     }
   ]
