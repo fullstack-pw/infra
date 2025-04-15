@@ -1,3 +1,9 @@
+## [1.1.1](https://github.com/fullstack-pw/infra/compare/v1.1.0...v1.1.1) (2025-04-15)
+
+### Bug Fixes
+
+* **metrics:** send sandbox cluster name ([50bb76d](https://github.com/fullstack-pw/infra/commit/50bb76de3d1b757a026b7cddd03d3154814b50ae))
+
 ## [1.1.0](https://github.com/fullstack-pw/infra/compare/v1.0.1...v1.1.0) (2025-04-13)
 
 ### Features
