@@ -1,10 +1,3 @@
-/**
- * Observability Module
- * 
- * This module deploys a complete observability stack using our base modules for standardization.
- * It includes OpenTelemetry Operator, Jaeger, OpenTelemetry Collector, and optionally Prometheus/Grafana.
- */
-
 module "namespace" {
   source = "../../base/namespace"
 
@@ -15,7 +8,6 @@ module "namespace" {
   }
 }
 
-# Deploy OpenTelemetry Operator
 module "otel_operator_values" {
   source = "../../base/values-template"
 
@@ -43,7 +35,6 @@ module "otel_operator" {
   values_files     = module.otel_operator_values.rendered_values
 }
 
-# Deploy Jaeger Operator
 module "jaeger_operator_values" {
   source = "../../base/values-template"
 
@@ -70,7 +61,6 @@ module "jaeger_operator" {
   values_files     = module.jaeger_operator_values.rendered_values
 }
 
-# Deploy Jaeger instance
 resource "kubernetes_manifest" "jaeger_instance" {
   manifest = {
     apiVersion = "jaegertracing.io/v1"
@@ -85,20 +75,17 @@ resource "kubernetes_manifest" "jaeger_instance" {
         type = var.jaeger_storage_type
       }
       ingress = {
-        enabled = false # We'll create our own ingress
+        enabled = false
       }
     }
   }
 
-  # Add field manager configuration to handle conflicts with Jaeger Operator
   field_manager {
-    # Set force_conflicts to true to override conflicts with other controllers
     force_conflicts = true
   }
   depends_on = [module.jaeger_operator.name]
 }
 
-# Deploy OpenTelemetry Collector configuration
 module "otel_collector_config" {
   source = "../../base/values-template"
 
@@ -112,7 +99,6 @@ module "otel_collector_config" {
   ]
 }
 
-# Deploy OpenTelemetry Collector
 resource "kubernetes_manifest" "otel_collector" {
   manifest = {
     apiVersion = "opentelemetry.io/v1alpha1"
@@ -129,7 +115,6 @@ resource "kubernetes_manifest" "otel_collector" {
   depends_on = [module.otel_operator.name]
 }
 
-# Create Ingress for Jaeger UI
 module "jaeger_ingress" {
   source = "../../base/ingress"
 
@@ -148,7 +133,6 @@ module "jaeger_ingress" {
   annotations        = var.jaeger_ingress_annotations
 }
 
-# Create Ingress for OpenTelemetry Collector HTTP
 module "otel_collector_http_ingress" {
   source = "../../base/ingress"
 
@@ -183,7 +167,6 @@ module "otel_collector_http_ingress" {
   }
 }
 
-# Deploy Prometheus stack if enabled
 module "prometheus_values" {
   count  = var.prometheus_enabled ? 1 : 0
   source = "../../base/values-template"
@@ -196,6 +179,7 @@ module "prometheus_values" {
         grafana_domain              = var.grafana_domain
         ingress_class_name          = var.ingress_class_name
         cert_manager_cluster_issuer = var.cert_manager_cluster_issuer
+        cluster_name                = terraform.workspace
       }
     }
   ]
@@ -210,12 +194,11 @@ module "prometheus" {
   chart            = "kube-prometheus-stack"
   repository       = "https://prometheus-community.github.io/helm-charts"
   chart_version    = var.prometheus_chart_version
-  timeout          = 900 # Increase timeout for complex installation
+  timeout          = 300
   create_namespace = false
   values_files     = var.prometheus_values_file != "" ? [var.prometheus_values_file] : module.prometheus_values[0].rendered_values
 }
 
-# Deploy Loki for log aggregation
 module "loki_values" {
   count  = var.loki_enabled ? 1 : 0
   source = "../../base/values-template"
@@ -255,12 +238,11 @@ module "loki" {
   chart            = "loki"
   repository       = "https://grafana.github.io/helm-charts"
   chart_version    = var.loki_chart_version
-  timeout          = 600 # Increased timeout for Loki installation
+  timeout          = 300
   create_namespace = false
   values_files     = module.loki_values[0].rendered_values
 }
 
-# Create Grafana datasource for Loki if enabled
 resource "kubernetes_manifest" "loki_datasource" {
   count = var.loki_enabled && var.install_crd && var.prometheus_enabled ? 1 : 0
   manifest = {
@@ -286,7 +268,6 @@ resource "kubernetes_manifest" "loki_datasource" {
   depends_on = [module.loki, module.prometheus]
 }
 
-# Deploy unified dashboard as a ConfigMap
 resource "kubernetes_config_map" "unified_dashboard" {
   count = var.prometheus_enabled && var.loki_enabled ? 1 : 0
 

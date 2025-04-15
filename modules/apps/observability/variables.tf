@@ -4,7 +4,6 @@ variable "namespace" {
   default     = "observability"
 }
 
-# OpenTelemetry Operator
 variable "opentelemetry_operator_version" {
   description = "Version of the OpenTelemetry Operator Helm chart"
   type        = string
@@ -23,7 +22,6 @@ variable "cert_manager_enabled" {
   default     = true
 }
 
-# Jaeger Operator
 variable "jaeger_operator_version" {
   description = "Version of the Jaeger Operator Helm chart"
   type        = string
@@ -36,7 +34,6 @@ variable "jaeger_rbac_cluster_role" {
   default     = true
 }
 
-# Jaeger Instance
 variable "jaeger_instance_name" {
   description = "Name of the Jaeger instance"
   type        = string
@@ -71,7 +68,6 @@ variable "jaeger_ingress_annotations" {
   default     = { "nginx.ingress.kubernetes.io/proxy-body-size" = "0" }
 }
 
-# OpenTelemetry Collector
 variable "otel_collector_name" {
   description = "Name of the OpenTelemetry Collector"
   type        = string
@@ -96,7 +92,6 @@ variable "otel_collector_ingress_annotations" {
   default     = {}
 }
 
-# Common
 variable "ingress_class_name" {
   description = "Ingress class name to use for all ingresses"
   type        = string
@@ -151,7 +146,6 @@ variable "grafana_ingress_annotations" {
   default     = {}
 }
 
-# Loki Configuration
 variable "loki_enabled" {
   description = "Enable Loki for log aggregation"
   type        = bool
@@ -179,7 +173,7 @@ variable "loki_storage_type" {
 variable "loki_retention_period" {
   description = "Retention period for logs in Loki"
   type        = string
-  default     = "168h" # 7 days
+  default     = "168h"
 }
 
 variable "loki_persistence_enabled" {
