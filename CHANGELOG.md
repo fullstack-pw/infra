@@ -1,3 +1,9 @@
+## [1.1.2](https://github.com/fullstack-pw/infra/compare/v1.1.1...v1.1.2) (2025-04-16)
+
+### Bug Fixes
+
+* **tools:** runners ([42c3b21](https://github.com/fullstack-pw/infra/commit/42c3b21423e175ae43a6e4fa27b0f355172361b9))
+
 ## [1.1.1](https://github.com/fullstack-pw/infra/compare/v1.1.0...v1.1.1) (2025-04-15)
 
 ### Bug Fixes
