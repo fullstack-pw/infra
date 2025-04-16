@@ -49,7 +49,7 @@ variable "data_storage_enabled" {
 variable "data_storage_storage_class" {
   description = "Storage class for Vault data"
   type        = string
-  default     = "hostpath"
+  default     = "local-path"
 }
 
 variable "ingress_enabled" {

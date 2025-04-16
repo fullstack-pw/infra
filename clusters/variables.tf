@@ -45,8 +45,8 @@ variable "config" {
     }
     tools = {
       kubernetes_context = "quick-harbor"
-      externalsecret     = "default"
-      install_crd        = false
+      externalsecret     = "github"
+      install_crd        = true
       cert_manager_crd   = true
     }
   }
