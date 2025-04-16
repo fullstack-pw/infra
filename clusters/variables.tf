@@ -5,9 +5,9 @@ variable "workload" {
     dev     = ["externaldns", "cert_manager", "external_secrets", "observability-box"]
     stg     = ["externaldns", "cert_manager", "external_secrets", "observability-box"]
     prod    = ["externaldns", "cert_manager", "external_secrets", "observability-box"]
-    sandbox = ["externaldns", "cert_manager", "ingress_nginx", "minio", "observability", "vault", "fluent", "harbor"]
+    sandbox = ["externaldns", "cert_manager", "ingress_nginx", "minio", "observability", "vault", "harbor"]
     runners = ["external_secrets", "gitlab_runner", "github_runner", "runner_secrets", "observability-box"]
-    tools   = ["externaldns", "cert_manager", "external_secrets", "postgres", "redis", "nats", "fluent", "observability-box"]
+    tools   = ["externaldns", "cert_manager", "external_secrets", "postgres", "redis", "nats", "observability-box", "gitlab_runner", "github_runner"]
   }
 }
 
@@ -46,7 +46,7 @@ variable "config" {
     tools = {
       kubernetes_context = "quick-harbor"
       externalsecret     = "default"
-      install_crd        = true
+      install_crd        = false
       cert_manager_crd   = true
     }
   }

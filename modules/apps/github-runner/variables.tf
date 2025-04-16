@@ -1,7 +1,7 @@
 variable "namespace" {
   description = "Namespace for ARC and runners"
   type        = string
-  default     = "actions-runner-system"
+  default     = "github"
 }
 
 variable "github_token" {
