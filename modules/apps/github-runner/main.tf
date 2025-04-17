@@ -6,6 +6,7 @@ module "namespace" {
   labels = {
     "kubernetes.io/metadata.name" = var.namespace
   }
+  needs_secrets = true
 }
 
 module "helm" {
@@ -111,6 +112,7 @@ resource "kubernetes_manifest" "runner_deployment" {
                   subPath   = "SOPS"
                 }
               ]
+              #TODO FIX ETERNAL DIFF HERE
               labels     = var.runner_labels != "" ? [var.runner_labels] : null
               image      = var.runner_image_override != "" ? var.runner_image_override : null
               workingDir = var.working_directory != "" ? var.working_directory : null

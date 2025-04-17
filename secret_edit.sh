@@ -6,7 +6,7 @@ set -e
 # Check arguments
 if [ $# -lt 1 ]; then
   echo "Usage: $0 <secret-file-path>"
-  echo "Example: $0 secrets/dev/vault/cluster-secret-store/secrets/GITHUB_PAT.yaml"
+  echo "Example: $0 secrets/common/vault/cluster-secret-store/secrets/GITHUB_PAT.yaml"
   exit 1
 fi
 

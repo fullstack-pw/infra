@@ -4,13 +4,13 @@
 set -e
 
 # Default values
-DEFAULT_ENV="dev"
-DEFAULT_PATH="vault/cluster-secret-store/secrets"
+DEFAULT_ENV="common"
+DEFAULT_PATH="cluster-secret-store/secrets"
 
 # Check arguments
 if [ $# -lt 2 ]; then
   echo "Usage: $0 <secret-name> <secret-value> [environment] [path]"
-  echo "Example: $0 API_KEY \"my-api-key-12345\" dev vault/cluster-secret-store/secrets"
+  echo "Example: $0 API_KEY \"my-api-key-12345\" common cluster-secret-store/secrets"
   echo "Default environment: $DEFAULT_ENV"
   echo "Default path: $DEFAULT_PATH"
   exit 1

@@ -13,6 +13,9 @@ resource "kubernetes_namespace" "this" {
       var.labels,
       var.add_cluster_secretstore_label ? {
         "kubernetes.io/metadata.name" = var.name
+      } : {},
+      var.needs_secrets ? {
+        "cluster-secrets" = "true"
       } : {}
     )
     annotations = var.annotations

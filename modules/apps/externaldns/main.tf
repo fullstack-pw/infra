@@ -4,6 +4,17 @@
  * This module deploys ExternalDNS to manage DNS records from Kubernetes resources.
  */
 
+module "namespace" {
+  source = "../../base/namespace"
+
+  create = true
+  name   = var.namespace
+  labels = {
+    "kubernetes.io/metadata.name" = var.namespace
+  }
+  needs_secrets = true
+}
+
 resource "kubernetes_service_account" "externaldns" {
   automount_service_account_token = false
   metadata {

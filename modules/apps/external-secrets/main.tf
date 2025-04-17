@@ -92,8 +92,12 @@ resource "kubernetes_manifest" "cluster_secrets" {
     }
     "spec" = {
       "externalSecretName" = "cluster-secrets-es"
-      "namespaceSelector" = {
+      "namespaceSelector" = var.namespace_selector_type == "name" ? {
         "matchLabels" = var.namespace_selectors
+        } : {
+        "matchLabels" = {
+          "${var.namespace_selector_label.key}" = var.namespace_selector_label.value
+        }
       }
       "refreshTime" = var.refresh_time
       "externalSecretSpec" = {

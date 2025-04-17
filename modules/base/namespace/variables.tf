@@ -26,3 +26,9 @@ variable "add_cluster_secretstore_label" {
   type        = bool
   default     = false
 }
+
+variable "needs_secrets" {
+  description = "Add label for ExternalSecrets to target this namespace"
+  type        = bool
+  default     = false
+}

@@ -16,9 +16,13 @@ module "external_secrets" {
   source = "../modules/apps/external-secrets"
 
   install_crd = var.config[terraform.workspace].install_crd
+  secret_data = local.secret_data
+  vault_token = local.secrets_json["kv/cluster-secret-store/secrets/VAULT_TOKEN"]["VAULT_TOKEN"]
 
-  namespace_selectors = {
-    "kubernetes.io/metadata.name" = var.config[terraform.workspace].externalsecret
+  namespace_selector_type = "label"
+  namespace_selector_label = {
+    key   = "cluster-secrets"
+    value = "true"
   }
 }
 
@@ -105,4 +109,4 @@ module "harbor" {
   external_database_password = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
   external_redis_password    = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
 }
-#
+
