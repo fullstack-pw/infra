@@ -1,3 +1,19 @@
+/**
+ * GitHub Runner Module
+ * 
+ * This module deploys self-hosted GitHub Actions runners using the latest Actions Runner Controller (ARC).
+ * It supports a custom runner image defined in the included Dockerfile, which adds
+ * necessary tools like kubectl, Terraform, SOPS, and more.
+ *
+ * The custom image should be compatible with GitHub's runner architecture and include the
+ * necessary tooling for your CI/CD pipelines.
+ *
+ * The runners automatically scale between min and max values and use secrets from 'cluster-secrets' for:
+ * - Kubeconfig: Mounted at ~/.kube/config
+ * - SOPS keys: Mounted at ~/.sops/keys/sops-key.txt
+ * - Environment variables: All variables from cluster-secrets
+ */
+
 module "namespace" {
   source = "../../base/namespace"
 
@@ -9,151 +25,56 @@ module "namespace" {
   needs_secrets = true
 }
 
-module "helm" {
+# Deploy the controller (cluster-wide component)
+module "controller_helm" {
   source = "../../base/helm"
 
-  release_name     = "actions-runner-controller"
+  release_name     = "gha-runner-scale-set-controller"
   namespace        = module.namespace.name
-  chart            = "actions-runner-controller"
-  repository       = "https://actions-runner-controller.github.io/actions-runner-controller"
-  chart_version    = var.arc_chart_version
-  timeout          = 120
+  chart            = "gha-runner-scale-set-controller"
+  repository       = "oci://ghcr.io/actions/actions-runner-controller-charts"
+  chart_version    = var.controller_chart_version
+  timeout          = 300
   create_namespace = false
 
-  values_files = []
+  values_files = [templatefile("${path.module}/templates/controller-values.yaml.tpl", {
+    github_token = var.github_token
+  })]
 
-  set_values = [{
-    name  = "authSecret.create"
-    value = "true"
-    },
-    {
-      name  = "authSecret.github_token"
-      value = var.github_token
-    },
-    {
-      name  = "installCRDs"
-      value = "true"
-    },
-    {
-      name  = "certManagerEnabled"
-      value = tostring(var.cert_manager_enabled)
-    },
-    {
-      name  = "image.actionsRunnerRepositoryAndTag"
-      value = var.runner_image
-  }]
+  set_values = concat([], var.controller_additional_set_values)
 }
 
+# Create service account for runners
 resource "kubernetes_service_account" "github_runner" {
   metadata {
-    name      = "github-runner"
+    name      = var.service_account_name
     namespace = module.namespace.name
   }
 }
 
-resource "kubernetes_manifest" "runner_deployment" {
-  count = var.install_crd == true ? 1 : 0
-  manifest = {
-    apiVersion = "actions.summerwind.dev/v1alpha1"
-    kind       = "RunnerDeployment"
-    metadata = {
-      name      = var.runner_name
-      namespace = module.namespace.name
-    }
-    spec = {
-      replicas = var.runner_replicas
-      template = {
-        spec = {
-          volumes = [
-            {
-              name = "kubeconfig-volume"
-              secret = {
-                secretName = "cluster-secrets"
-                items = [
-                  {
-                    key  = "KUBECONFIG"
-                    path = "kubeconfig"
-                  }
-                ]
-              }
-              }, {
-              name = "sops-volume"
-              secret = {
-                secretName = "cluster-secrets"
-                items = [
-                  {
-                    key  = "SOPS"
-                    path = "SOPS"
-                  }
-                ]
-              }
-            }
-          ]
-          organization       = var.github_owner
-          serviceAccountName = kubernetes_service_account.github_runner.metadata[0].name
-          envFrom = [
-            {
-              secretRef = {
-                name = "cluster-secrets"
-              }
-            }
-          ]
-          containers = [
-            {
-              name = "runner"
-              volumeMounts = [
-                {
-                  name      = "kubeconfig-volume"
-                  mountPath = "/home/runner/.kube/config"
-                  subPath   = "kubeconfig"
-                  }, {
-                  name      = "sops-volume"
-                  mountPath = "/home/runner/.sops/keys/sops-key.txt"
-                  subPath   = "SOPS"
-                }
-              ]
-              #TODO FIX ETERNAL DIFF HERE
-              labels     = var.runner_labels != "" ? [var.runner_labels] : null
-              image      = var.runner_image_override != "" ? var.runner_image_override : null
-              workingDir = var.working_directory != "" ? var.working_directory : null
-            }
-          ]
-        }
-      }
-    }
-  }
+# Deploy the runner scale set
+module "runner_helm" {
+  source = "../../base/helm"
 
-  depends_on = [module.helm]
-}
+  release_name     = var.runner_name
+  namespace        = module.namespace.name
+  chart            = "gha-runner-scale-set"
+  repository       = "oci://ghcr.io/actions/actions-runner-controller-charts"
+  chart_version    = var.runner_chart_version
+  timeout          = 300
+  create_namespace = false
 
-resource "kubernetes_manifest" "runner_autoscaler" {
-  count = var.enable_autoscaling ? 1 : 0
+  values_files = [templatefile("${path.module}/templates/runner-values.yaml.tpl", {
+    namespace            = module.namespace.name
+    github_owner         = var.github_owner
+    runner_name          = var.runner_name
+    service_account_name = kubernetes_service_account.github_runner.metadata[0].name
+    min_runners          = var.min_runners
+    max_runners          = var.max_runners
+    runner_image         = var.runner_image
+    runner_labels        = var.runner_labels
+    working_directory    = var.working_directory
+  })]
 
-  manifest = {
-    apiVersion = "actions.summerwind.dev/v1alpha1"
-    kind       = "HorizontalRunnerAutoscaler"
-    metadata = {
-      name      = "${var.runner_name}-autoscaler"
-      namespace = module.namespace.name
-    }
-    spec = {
-      scaleTargetRef = {
-        kind = "RunnerDeployment"
-        name = var.runner_name
-      }
-      minReplicas = var.min_runners
-      maxReplicas = var.max_runners
-      metrics = [
-        {
-          type               = "PercentageRunnersBusy"
-          scaleUpThreshold   = var.scale_up_threshold
-          scaleDownThreshold = var.scale_down_threshold
-          scaleUpFactor      = var.scale_up_factor
-          scaleDownFactor    = var.scale_down_factor
-        }
-      ]
-    }
-  }
-
-  depends_on = [kubernetes_manifest.runner_deployment]
+  depends_on = [module.controller_helm]
 }

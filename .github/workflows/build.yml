@@ -5,7 +5,9 @@ on:
     branches: [main]
     paths: ["**/Dockerfile"]
   workflow_dispatch:
-
+  pull_request:
+    branches: [main]
+    paths: ["**/Dockerfile"]
 jobs:
   build:
     runs-on: self-hosted

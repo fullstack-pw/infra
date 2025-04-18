@@ -10,20 +10,20 @@ output "service_account_name" {
 
 output "controller_release_name" {
   description = "Name of the GitHub Actions Runner Controller Helm release"
-  value       = module.helm.name
+  value       = module.controller_helm.name
 }
 
-output "runner_deployment_name" {
-  description = "Name of the GitHub runner deployment"
-  value       = var.runner_name
+output "runner_release_name" {
+  description = "Name of the GitHub Runner Scale Set Helm release"
+  value       = module.runner_helm.name
 }
 
-output "autoscaler_enabled" {
-  description = "Whether autoscaling is enabled for GitHub runners"
-  value       = var.enable_autoscaling
+output "min_runners" {
+  description = "Minimum number of GitHub runners"
+  value       = var.min_runners
 }
 
-output "autoscaler_name" {
-  description = "Name of the GitHub runner autoscaler (if enabled)"
-  value       = var.enable_autoscaling ? "${var.runner_name}-autoscaler" : null
+output "max_runners" {
+  description = "Maximum number of GitHub runners"
+  value       = var.max_runners
 }
