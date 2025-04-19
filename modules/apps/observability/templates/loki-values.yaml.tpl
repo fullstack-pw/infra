@@ -56,7 +56,7 @@ ingress:
   annotations:
     cert-manager.io/cluster-issuer: ${cert_manager_cluster_issuer}
     external-dns.alpha.kubernetes.io/hostname: ${loki_domain}
-    nginx.ingress.kubernetes.io/proxy-body-size: 16m
+    nginx.ingress.kubernetes.io/proxy-body-size: 300m
   hosts:
     - ${loki_domain}
   tls:
