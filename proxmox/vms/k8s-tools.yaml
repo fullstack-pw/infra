@@ -1,5 +1,5 @@
 name: k8s-tools
-target_node: node01
+target_node: node03
 cores: 4
 sockets: 1
 memory: 8192

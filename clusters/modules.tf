@@ -31,7 +31,7 @@ module "github_runner" {
   count  = contains(local.workload, "github_runner") ? 1 : 0
   source = "../modules/apps/github-runner"
 
-  github_token = local.secrets_json["kv/cluster-secret-store/secrets/GITHUB_PAT"]["GITHUB_PAT"]
+  github_token = local.secrets_json["kv/cluster-secret-store/secrets/github_token"]["github_token"]
   install_crd  = var.config[terraform.workspace].install_crd
 }
 
