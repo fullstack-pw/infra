@@ -6,8 +6,8 @@ set -e
 # Check arguments
 if [ $# -lt 1 ]; then
   echo "Usage: $0 <secret-file-path> [<json-path>]"
-  echo "Example: $0 secrets/dev/vault/cluster-secret-store/secrets/KUBECONFIG.yaml"
-  echo "Example with JSON path: $0 secrets/dev/vault/cluster-secret-store/secrets.yaml .vault.kv.cluster-secret-store.secrets.GITHUB_PAT"
+  echo "Example: $0 secrets/common/vault/cluster-secret-store/secrets/KUBECONFIG.yaml"
+  echo "Example with JSON path: $0 secrets/common/vault/cluster-secret-store/secrets.yaml .vault.kv.cluster-secret-store.secrets.GITHUB_PAT"
   exit 1
 fi
 

@@ -1,7 +1,7 @@
 variable "namespace" {
   description = "Kubernetes namespace to deploy ExternalDNS"
   type        = string
-  default     = "default"
+  default     = "externaldns"
 }
 
 variable "replicas" {

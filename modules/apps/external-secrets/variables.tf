@@ -51,7 +51,7 @@ variable "namespace_selectors" {
   description = "Labels to select namespaces for ClusterExternalSecret"
   type        = map(string)
   default = {
-    "kubernetes.io/metadata.name" = "github-runner"
+    "kubernetes.io/metadata.name" = "default"
   }
 }
 
@@ -64,91 +64,33 @@ variable "secret_data" {
       property = optional(string)
     })
   }))
-  default = [
-    {
-      secretKey = "KUBECONFIG"
-      remoteRef = {
-        key      = "KUBECONFIG"
-        property = "data.KUBECONFIG"
-      }
-      }, {
-      secretKey = "SSH_PRIVATE_KEY"
-      remoteRef = {
-        key      = "SSH_PRIVATE_KEY"
-        property = "data.SSH_PRIVATE_KEY"
-      }
-      }, {
-      secretKey = "TF_VAR_PROXMOX_PASSWORD"
-      remoteRef = {
-        key      = "TF_VAR_PROXMOX_PASSWORD"
-        property = "data.TF_VAR_PROXMOX_PASSWORD"
-      }
-      }, {
-      secretKey = "AWS_ACCESS_KEY_ID"
-      remoteRef = {
-        key      = "AWS_ACCESS_KEY_ID"
-        property = "data.AWS_ACCESS_KEY_ID"
-      }
-      }, {
-      secretKey = "AWS_SECRET_ACCESS_KEY"
-      remoteRef = {
-        key      = "AWS_SECRET_ACCESS_KEY"
-        property = "data.AWS_SECRET_ACCESS_KEY"
-      }
-      }, {
-      secretKey = "VAULT_TOKEN"
-      remoteRef = {
-        key      = "VAULT_TOKEN"
-        property = "data.VAULT_TOKEN"
-      }
-      }, {
-      secretKey = "TF_VAR_VAULT_TOKEN"
-      remoteRef = {
-        key      = "TF_VAR_VAULT_TOKEN"
-        property = "data.TF_VAR_VAULT_TOKEN"
-      }
-      }, {
-      secretKey = "EXTERNAL_DNS_PIHOLE_PASSWORD"
-      remoteRef = {
-        key      = "EXTERNAL_DNS_PIHOLE_PASSWORD"
-        property = "data.EXTERNAL_DNS_PIHOLE_PASSWORD"
-      }
-      }, {
-      secretKey = "POSTGRES_PASSWORD"
-      remoteRef = {
-        key      = "POSTGRES"
-        property = "data.POSTGRES_PASSWORD"
-      }
-      }, {
-      secretKey = "REDIS_PASSWORD"
-      remoteRef = {
-        key      = "REDIS"
-        property = "data.REDIS_PASSWORD"
-      }
-      }, {
-      secretKey = "SOPS"
-      remoteRef = {
-        key      = "SOPS"
-        property = "data.SOPS"
-      }
-      }, {
-      secretKey = "GITLAB_TOKEN"
-      remoteRef = {
-        key      = "GITLAB_TOKEN"
-        property = "data.GITLAB_TOKEN"
-      }
-      }, {
-      secretKey = "HARBOR_KEY"
-      remoteRef = {
-        key      = "HARBOR_KEY"
-        property = "data.HARBOR_KEY"
-      }
-    }
-  ]
+  default = []
 }
 
 variable "install_crd" {
   description = "Whether to install External Secrets CRDs"
   type        = bool
   default     = false
+}
+
+variable "namespace_selector_type" {
+  description = "Type of namespace selector to use: 'name' for specific namespace name, 'label' for label selector"
+  type        = string
+  default     = "label"
+  validation {
+    condition     = contains(["name", "label"], var.namespace_selector_type)
+    error_message = "Namespace selector type must be either 'name' or 'label'."
+  }
+}
+
+variable "namespace_selector_label" {
+  description = "Label key-value pair for selecting namespaces when namespace_selector_type is 'label'"
+  type = object({
+    key   = string
+    value = string
+  })
+  default = {
+    key   = "needs-cluster-secrets"
+    value = "true"
+  }
 }

@@ -6,6 +6,7 @@ module "namespace" {
   labels = {
     "kubernetes.io/metadata.name" = var.namespace
   }
+  needs_secrets = true
 }
 
 resource "kubernetes_service_account" "gitlab_runner" {

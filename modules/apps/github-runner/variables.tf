@@ -1,29 +1,41 @@
 variable "namespace" {
-  description = "Namespace for ARC and runners"
+  description = "Namespace for GitHub Runners"
   type        = string
   default     = "github"
 }
 
+variable "service_account_name" {
+  description = "Service account name for GitHub runners"
+  type        = string
+  default     = "github-runner"
+}
+
 variable "github_token" {
-  description = "GitHub PAT token"
+  description = "GitHub PAT token with admin:org scope"
   type        = string
   sensitive   = true
 }
 
 variable "github_owner" {
-  description = "GitHub organization or user"
+  description = "GitHub organization or user name"
   type        = string
   default     = "fullstack-pw"
 }
 
-variable "arc_chart_version" {
-  description = "Version of the actions-runner-controller Helm chart"
+variable "controller_chart_version" {
+  description = "Version of the gha-runner-scale-set-controller Helm chart"
   type        = string
-  default     = "0.23.7"
+  default     = "0.11.0"
+}
+
+variable "runner_chart_version" {
+  description = "Version of the gha-runner-scale-set Helm chart"
+  type        = string
+  default     = "0.11.0"
 }
 
 variable "runner_name" {
-  description = "Name for the GitHub runner deployment"
+  description = "Name for the GitHub runner scale set"
   type        = string
   default     = "github-runner"
 }
@@ -34,26 +46,8 @@ variable "runner_image" {
   default     = "registry.fullstack.pw/library/github-runner:latest"
 }
 
-variable "runner_image_override" {
-  description = "Override for the runner image in the deployment (if different from controller config)"
-  type        = string
-  default     = ""
-}
-
-variable "cert_manager_enabled" {
-  description = "Enable cert-manager integration for ARC"
-  type        = bool
-  default     = false
-}
-
-variable "runner_replicas" {
-  description = "Number of GitHub runner replicas"
-  type        = number
-  default     = 5
-}
-
 variable "runner_labels" {
-  description = "Labels to assign to the GitHub runner"
+  description = "Comma-separated list of labels to assign to the GitHub runner"
   type        = string
   default     = ""
 }
@@ -64,56 +58,30 @@ variable "working_directory" {
   default     = ""
 }
 
-variable "kubeconfig" {
-  description = "Kubeconfig content for runner pods"
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "enable_autoscaling" {
-  description = "Enable HorizontalRunnerAutoscaler for GitHub runners"
-  type        = bool
-  default     = false
-}
-
 variable "min_runners" {
-  description = "Minimum number of runners when autoscaling is enabled"
+  description = "Minimum number of runners"
   type        = number
-  default     = 1
+  default     = 3
 }
 
 variable "max_runners" {
-  description = "Maximum number of runners when autoscaling is enabled"
+  description = "Maximum number of runners"
   type        = number
-  default     = 5
+  default     = 10
 }
 
-variable "scale_up_threshold" {
-  description = "Percentage of busy runners to trigger scale up"
-  type        = string
-  default     = "0.75"
+variable "controller_additional_set_values" {
+  description = "Additional values to set in the controller Helm release"
+  type = list(object({
+    name  = string
+    value = string
+  }))
+  default = []
 }
 
-variable "scale_down_threshold" {
-  description = "Percentage of busy runners to trigger scale down"
-  type        = string
-  default     = "0.3"
-}
-
-variable "scale_up_factor" {
-  description = "Factor to scale up by"
-  type        = string
-  default     = "1.4"
-}
-
-variable "scale_down_factor" {
-  description = "Factor to scale down by"
-  type        = string
-  default     = "0.7"
-}
-
+# Legacy variables kept for backward compatibility
 variable "install_crd" {
-  default = false
-  type    = bool
+  description = "[DEPRECATED] Whether to install CRDs - not used with new runner architecture"
+  type        = bool
+  default     = false
 }
