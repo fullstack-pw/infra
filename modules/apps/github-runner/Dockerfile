@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     wget \
     unzip \
+    make \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
