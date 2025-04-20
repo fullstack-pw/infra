@@ -6,7 +6,7 @@ on:
 jobs:
   detect-ansible-command:
     if: >
-      (github.event_name == 'push' && contains(github.event.head_commit.message, '[ansible'))
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true && && contains(github.event.head_commit.message, '[ansible'))
     runs-on: self-hosted
     outputs:
       playbook: ${{ steps.get-playbook.outputs.playbook }}
