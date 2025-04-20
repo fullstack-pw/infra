@@ -2,6 +2,12 @@ variable "workload" {
   description = "map"
   type        = map(list(string))
   default = {
+    home = [
+      "externaldns",
+      "cert_manager",
+      "external_secrets",
+      "observability-box"
+    ]
     dev = [
       "externaldns",
       "cert_manager",
@@ -46,6 +52,11 @@ variable "workload" {
 variable "config" {
   description = "Map of providers with configuration per workspace."
   default = {
+    home = {
+      kubernetes_context = "home"
+      install_crd        = true
+      cert_manager_crd   = true
+    }
     dev = {
       kubernetes_context = "dev"
       install_crd        = true
@@ -67,7 +78,7 @@ variable "config" {
       cert_manager_crd   = true
     }
     tools = {
-      kubernetes_context = "quick-harbor"
+      kubernetes_context = "tools"
       install_crd        = true
       cert_manager_crd   = true
     }

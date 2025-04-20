@@ -2,15 +2,10 @@ name: Ansible Provisioning
 
 on:
   push:
-    # branches:
-    #   - main
-    # paths:
-    #   - "proxmox/k8s.ini"
 
 jobs:
   detect-ansible-command:
     if: >
-      (github.event_name == 'pull_request' && github.event.pull_request.merged == true) || 
       (github.event_name == 'push' && contains(github.event.head_commit.message, '[ansible'))
     runs-on: self-hosted
     outputs:
