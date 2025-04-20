@@ -25,25 +25,25 @@ resource "proxmox_vm_qemu" "vm" {
   memory      = lookup(each.value, "memory", 1024)
   cpu_type    = lookup(each.value, "cpu_type", "host")
   onboot      = lookup(each.value, "onboot", true)
-  
+
   # Clone settings
-  clone       = lookup(each.value, "clone", null)
-  full_clone  = lookup(each.value, "full_clone", false)
-  
+  clone      = lookup(each.value, "clone", null)
+  full_clone = lookup(each.value, "full_clone", false)
+
   # Boot order if specified
-  boot        = lookup(each.value, "boot", null)
-  
+  boot = lookup(each.value, "boot", null)
+
   # Agent settings
-  agent       = lookup(each.value, "agent", 0)
-  
+  agent = lookup(each.value, "agent", 0)
+
   # VM state (if specified)
-  vm_state    = lookup(each.value, "vm_state", null)
-  
+  vm_state = lookup(each.value, "vm_state", null)
+
   # Other standard configs
-  scsihw                  = lookup(each.value, "scsihw", "virtio-scsi-single")
-  define_connection_info  = lookup(each.value, "define_connection_info", false)
-  automatic_reboot        = lookup(each.value, "automatic_reboot", true)
-  
+  scsihw                 = lookup(each.value, "scsihw", "virtio-scsi-single")
+  define_connection_info = lookup(each.value, "define_connection_info", false)
+  automatic_reboot       = lookup(each.value, "automatic_reboot", true)
+
   # Cloud-init settings
   ciuser     = lookup(each.value, "ciuser", null)
   cipassword = lookup(each.value, "cipassword", null)
@@ -51,7 +51,7 @@ resource "proxmox_vm_qemu" "vm" {
   nameserver = lookup(each.value, "nameserver", null)
   ipconfig0  = lookup(each.value, "ipconfig0", null)
   skip_ipv6  = lookup(each.value, "skip_ipv6", false)
-  
+
   # Add serial device if needed
   dynamic "serial" {
     for_each = tobool(lookup(each.value, "serial", false)) ? [1] : []
@@ -59,7 +59,7 @@ resource "proxmox_vm_qemu" "vm" {
       id = 0
     }
   }
-  
+
   # Choose disk format based on what's in the YAML
   # Use 'disks' block if nested_disks is defined
   dynamic "disks" {
@@ -82,9 +82,37 @@ resource "proxmox_vm_qemu" "vm" {
               }
             }
           }
+          dynamic "scsi1" {
+            for_each = contains(keys(scsi.value), "scsi1") ? [scsi.value.scsi1] : []
+            content {
+              dynamic "passthrough" {
+                for_each = contains(keys(scsi1.value), "passthrough") ? [scsi1.value.passthrough] : []
+                content {
+                  file                 = lookup(passthrough.value, "file", null)
+                  backup               = lookup(passthrough.value, "backup", null)
+                  discard              = lookup(passthrough.value, "discard", null)
+                  emulatessd           = lookup(passthrough.value, "emulatessd", null)
+                  iops_r_burst         = lookup(passthrough.value, "iops_r_burst", null)
+                  iops_r_burst_length  = lookup(passthrough.value, "iops_r_burst_length", null)
+                  iops_r_concurrent    = lookup(passthrough.value, "iops_r_concurrent", null)
+                  iops_wr_burst        = lookup(passthrough.value, "iops_wr_burst", null)
+                  iops_wr_burst_length = lookup(passthrough.value, "iops_wr_burst_length", null)
+                  iops_wr_concurrent   = lookup(passthrough.value, "iops_wr_concurrent", null)
+                  iothread             = lookup(passthrough.value, "iothread", null)
+                  mbps_r_burst         = lookup(passthrough.value, "mbps_r_burst", null)
+                  mbps_r_concurrent    = lookup(passthrough.value, "mbps_r_concurrent", null)
+                  mbps_wr_burst        = lookup(passthrough.value, "mbps_wr_burst", null)
+                  mbps_wr_concurrent   = lookup(passthrough.value, "mbps_wr_concurrent", null)
+                  readonly             = lookup(passthrough.value, "readonly", null)
+                  replicate            = lookup(passthrough.value, "replicate", null)
+                  size                 = lookup(passthrough.value, "size", null)
+                }
+              }
+            }
+          }
         }
       }
-      
+
       # IDE disks
       dynamic "ide" {
         for_each = contains(keys(disks.value), "ide") ? [disks.value.ide] : []
@@ -105,34 +133,34 @@ resource "proxmox_vm_qemu" "vm" {
       }
     }
   }
-  
+
   # Use 'disk' blocks if no nested_disks but regular disks are defined
   dynamic "disk" {
     for_each = (!contains(keys(each.value), "nested_disks") && contains(keys(each.value), "disks")) ? (
       [for d in lookup(each.value, "disks", []) : d
-       if !contains(keys(d), "cloudinit") || lookup(d, "cloudinit", false) == false]
+      if !contains(keys(d), "cloudinit") || lookup(d, "cloudinit", false) == false]
     ) : []
     content {
-      slot      = disk.value.slot
-      type      = disk.value.type
-      size      = contains(keys(disk.value), "size") ? disk.value.size : null
-      storage   = contains(keys(disk.value), "storage") ? disk.value.storage : null
-      iso       = contains(keys(disk.value), "iso") ? disk.value.iso : null
-      format    = lookup(disk.value, "format", null)
+      slot    = disk.value.slot
+      type    = disk.value.type
+      size    = contains(keys(disk.value), "size") ? disk.value.size : null
+      storage = contains(keys(disk.value), "storage") ? disk.value.storage : null
+      iso     = contains(keys(disk.value), "iso") ? disk.value.iso : null
+      format  = lookup(disk.value, "format", null)
     }
   }
-  
+
   # Network configuration
   dynamic "network" {
     for_each = contains(keys(each.value), "network") ? [each.value.network] : []
     content {
-      model     = lookup(network.value, "model", "virtio")
-      bridge    = network.value.bridge
-      firewall  = lookup(network.value, "firewall", true)
-      id        = 0
+      model    = lookup(network.value, "model", "virtio")
+      bridge   = network.value.bridge
+      firewall = lookup(network.value, "firewall", true)
+      id       = 0
     }
   }
-  
+
   lifecycle {
     # Ignore changes to specific attributes that might change outside of Terraform
     ignore_changes = [

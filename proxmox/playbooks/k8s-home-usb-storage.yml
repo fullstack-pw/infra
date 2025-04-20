@@ -4,7 +4,7 @@
   become: true
   gather_facts: yes
   vars:
-    usb_device: "/dev/sdc"
+    usb_device: "/dev/sdb"
     mount_point: "/mnt/home"
     filesystem: "ext4"
     immich_dirs:

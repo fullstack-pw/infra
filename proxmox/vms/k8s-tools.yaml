@@ -1,8 +1,8 @@
 name: k8s-tools
 target_node: node03
-cores: 4
-sockets: 1
-memory: 8192
+cores: 8
+sockets: 2
+memory: 16384
 cpu_type: host
 onboot: false
 clone: ubuntu24-cloudinit
