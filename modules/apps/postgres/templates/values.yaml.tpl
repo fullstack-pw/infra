@@ -2,7 +2,7 @@
 image:
   registry: ${registry}
   repository: ${repository}
-  tag: ${pg_version}
+  tag: "${pg_version}"
 
 global:
   postgresql:

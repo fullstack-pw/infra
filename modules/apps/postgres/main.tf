@@ -84,6 +84,8 @@ module "values" {
         replication_enabled  = var.replication_enabled
         replication_replicas = var.replication_replicas
         ha_enabled           = var.high_availability_enabled
+        registry             = var.registry
+        repository           = var.repository
       }
     }
   ]

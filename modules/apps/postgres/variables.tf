@@ -101,13 +101,13 @@ variable "cpu_request" {
 variable "memory_limit" {
   description = "Memory limit for PostgreSQL pods"
   type        = string
-  default     = "512Mi"
+  default     = "2048Mi"
 }
 
 variable "cpu_limit" {
   description = "CPU limit for PostgreSQL pods"
   type        = string
-  default     = "500m"
+  default     = "5000m"
 }
 
 # Metrics
