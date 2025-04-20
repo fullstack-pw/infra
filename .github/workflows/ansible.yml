@@ -2,10 +2,10 @@ name: Ansible Provisioning
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - "proxmox/k8s.ini"
+    # branches:
+    #   - main
+    # paths:
+    #   - "proxmox/k8s.ini"
 
 jobs:
   detect-ansible-command:
@@ -51,7 +51,7 @@ jobs:
 
       - name: Install Ansible
         run: |
-          python -m pip install --upgrade pip
+          python3 -m pip install --upgrade pip
           pip install ansible
 
       - name: Determine Playbook Path
@@ -94,6 +94,7 @@ jobs:
       - name: Run Ansible Playbook
         run: |
           echo "Running playbook: $PLAYBOOK_PATH"
+          export PATH=$PATH:/home/runner/.local/bin
 
           # Check if we have new hosts to limit execution to
           if [ -f "proxmox/new_hosts.txt" ] && [ -s "proxmox/new_hosts.txt" ]; then
