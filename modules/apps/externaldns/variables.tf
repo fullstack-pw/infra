@@ -19,7 +19,7 @@ variable "image" {
 variable "pihole_secret_name" {
   description = "Name of the secret containing PiHole credentials"
   type        = string
-  default     = "pihole-password"
+  default     = "cluster-secrets"
 }
 
 variable "container_args" {
