@@ -103,7 +103,15 @@ resource "kubernetes_deployment" "externaldns" {
               optional = true
             }
           }
-
+          env {
+            name = "EXTERNAL_DNS_PIHOLE_PASSWORD"
+            value_from {
+              secret_key_ref {
+                name = var.create_pihole_secret ? kubernetes_secret.pihole[0].metadata[0].name : var.pihole_secret_name
+                key  = "PIHOLE_PASSWORD"
+              }
+            }
+          }
           args = var.container_args
         }
 
@@ -113,5 +121,18 @@ resource "kubernetes_deployment" "externaldns" {
         }
       }
     }
+  }
+}
+
+resource "kubernetes_secret" "pihole" {
+  count = var.create_pihole_secret ? 1 : 0
+
+  metadata {
+    name      = var.pihole_secret_name
+    namespace = var.namespace
+  }
+
+  data = {
+    PIHOLE_PASSWORD = var.pihole_password
   }
 }

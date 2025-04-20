@@ -1,6 +1,10 @@
 module "externaldns" {
   count  = contains(local.workload, "externaldns") ? 1 : 0
   source = "../modules/apps/externaldns"
+
+  create_pihole_secret = terraform.workspace == "sandbox" ? true : false
+  pihole_password      = terraform.workspace == "sandbox" ? local.secrets_json["kv/cluster-secret-store/secrets/EXTERNAL_DNS_PIHOLE_PASSWORD"]["EXTERNAL_DNS_PIHOLE_PASSWORD"] : ""
+
 }
 
 module "cert_manager" {
