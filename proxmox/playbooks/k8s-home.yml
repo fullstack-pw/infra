@@ -1,0 +1,168 @@
+---
+- name: Install Single-Node K3s for Home Services
+  hosts: "{{ target_hosts | default('home') }}"
+  become: true
+  gather_facts: yes
+  vars:
+    vault_addr: "{{ vault_addr | default('https://vault.fullstack.pw') }}"
+    adjectives:
+      - "cozy"
+      - "comfy"
+      - "homey"
+      - "snug"
+      - "warm"
+      - "secure"
+      - "smart"
+      - "connected"
+      - "peaceful"
+      - "tranquil"
+    nouns:
+      - "haven"
+      - "nest"
+      - "abode"
+      - "shelter"
+      - "dwelling"
+      - "retreat"
+      - "sanctuary"
+      - "hearth"
+      - "den"
+      - "cottage"
+  tasks:
+    - name: Set random cluster name if no explicit name provided
+      set_fact:
+        random_adjective: "{{ adjectives | random }}"
+        random_noun: "{{ nouns | random }}"
+      run_once: true
+      when: explicit_cluster_name is not defined
+
+    - name: Lock in final cluster name
+      set_fact:
+        cluster_name: "{{ explicit_cluster_name | default(random_adjective + '-' + random_noun) }}"
+      run_once: true
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install basic dependencies
+      apt:
+        name:
+          - curl
+          - apt-transport-https
+          - ca-certificates
+          - python3
+          - python3-venv
+        state: present
+
+    - name: Create /mnt/home directory
+      file:
+        path: /mnt/home
+        state: directory
+        mode: '0755'
+
+    - name: Install K3s with custom local-path storage directory
+      shell: |
+        curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--default-local-storage-path=/mnt/home" sh -s -
+      args:
+        executable: /bin/bash
+      register: k3s_install
+      failed_when: k3s_install.rc != 0
+
+    - name: Wait for K3s service file to exist
+      wait_for:
+        path: /etc/systemd/system/k3s.service
+        state: present
+        timeout: 30
+      register: service_file
+      failed_when: false
+
+    - name: Daemon reload if service file exists
+      systemd:
+        daemon_reload: yes
+      when: service_file is succeeded
+      failed_when: false
+
+    - name: Check K3s service status
+      command: systemctl status k3s
+      register: k3s_status
+      changed_when: false
+      failed_when: false
+      
+    - name: Start K3s service using systemctl
+      command: systemctl start k3s
+      when: k3s_status.rc != 0
+      changed_when: true
+      failed_when: false
+      
+    - name: Enable K3s service using systemctl
+      command: systemctl enable k3s
+      changed_when: true
+      failed_when: false
+
+    - name: Display node token
+      shell: cat /var/lib/rancher/k3s/server/node-token
+      register: node_token
+      changed_when: false
+
+    - debug:
+        msg: "Node token for {{ inventory_hostname }}: {{ node_token.stdout }}"
+
+    - name: Fetch kubeconfig
+      shell: cat /etc/rancher/k3s/k3s.yaml
+      register: kubeconfig_content
+      changed_when: false
+
+    - name: Debug cluster name and inventory hostname
+      debug:
+        msg: 
+          - "Inventory hostname: {{ inventory_hostname }}"
+          - "Using cluster name: {{ cluster_name }}"
+
+    - name: Create local temp directory
+      delegate_to: localhost
+      become: false
+      file:
+        path: ./tmp
+        state: directory
+      run_once: true
+
+    - name: Create kubeconfig with server address substituted
+      delegate_to: localhost
+      become: false
+      copy:
+        content: "{{ kubeconfig_content.stdout | replace('127.0.0.1', inventory_hostname) | replace('default', cluster_name) }}"
+        dest: "./tmp/{{ cluster_name }}-kubeconfig"
+      run_once: true
+
+    - name: Copy kubeconfig update script to controller
+      delegate_to: localhost
+      become: false
+      copy:
+        src: "{{ playbook_dir }}/../scripts/update_kubeconfig.py"
+        dest: "./tmp/update_kubeconfig.py"
+        mode: '0755'
+      run_once: true
+      register: script_copy
+
+    - name: Install Python requirements
+      delegate_to: localhost
+      become: false
+      command: pip install --user pyyaml hvac
+      run_once: true
+      when: script_copy is succeeded
+
+    - name: Update kubeconfig in Vault using Python script
+      delegate_to: localhost
+      become: false
+      command: >
+        python3 ./tmp/update_kubeconfig.py
+        --cluster-name "{{ cluster_name }}"
+        --kubeconfig-file "./tmp/{{ cluster_name }}-kubeconfig"
+        --vault-addr "{{ vault_addr }}"
+        --vault-token "{{ vault_token }}"
+        --host-address "{{ inventory_hostname }}"
+      register: vault_update_result
+      run_once: true
+      when: script_copy is succeeded and vault_token is defined and vault_token != ""
+      ignore_errors: yes

@@ -1,7 +1,7 @@
 variable "namespace" {
   description = "Kubernetes namespace to deploy ExternalDNS"
   type        = string
-  default     = "default"
+  default     = "external-dns"
 }
 
 variable "replicas" {
@@ -33,4 +33,17 @@ variable "container_args" {
     "--provider=pihole",
     "--pihole-server=http://192.168.1.3",
   ]
+}
+
+variable "create_pihole_secret" {
+  description = "Whether to create a secret for PiHole password"
+  type        = bool
+  default     = false
+}
+
+variable "pihole_password" {
+  description = "Password for the PiHole API"
+  type        = string
+  default     = ""
+  sensitive   = true
 }

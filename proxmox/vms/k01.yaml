@@ -1,5 +1,5 @@
 name: k01.fullstack.pw
-target_node: node01
+target_node: node03
 cores: 1
 sockets: 4
 memory: 8192
@@ -12,8 +12,8 @@ disks:
     iso: null
   - slot: scsi0
     type: disk
-    size: 32G
-    storage: local-lvm
+    size: 42G
+    storage: data2
     format: raw
 network:
   bridge: vmbr0

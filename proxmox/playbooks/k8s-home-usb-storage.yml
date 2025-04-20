@@ -1,0 +1,74 @@
+---
+- name: Configure USB Drive for Immich
+  hosts: "{{ target_hosts | default('node02.yaml') }}"
+  become: true
+  gather_facts: yes
+  vars:
+    usb_device: "/dev/sdc"
+    mount_point: "/mnt/home"
+    filesystem: "ext4"
+    immich_dirs:
+      - "library"
+      - "uploads"
+      - "thumbs"
+      - "profile"
+      - "machine-learning"
+      - "backups"
+
+  tasks:
+    - name: Check if USB drive exists
+      stat:
+        path: "{{ usb_device }}"
+      register: device_stat
+      
+    - name: Fail if USB drive not found
+      fail:
+        msg: "USB drive {{ usb_device }} not found. Please connect the drive and verify the device path."
+      when: not device_stat.stat.exists
+
+    - name: Check if USB drive is already formatted
+      command: blkid {{ usb_device }}
+      register: blkid_result
+      failed_when: false
+      changed_when: false
+
+    - name: Format USB drive with ext4
+      command: mkfs.ext4 -F {{ usb_device }}
+      when: blkid_result.rc != 0 or "ext4" not in blkid_result.stdout
+
+    - name: Create mount point directory
+      file:
+        path: "{{ mount_point }}"
+        state: directory
+        mode: '0755'
+
+    - name: Get USB drive UUID
+      command: blkid -s UUID -o value {{ usb_device }}
+      register: usb_uuid
+      changed_when: false
+
+    - name: Add USB drive to fstab for persistent mounting
+      mount:
+        path: "{{ mount_point }}"
+        src: "UUID={{ usb_uuid.stdout }}"
+        fstype: "{{ filesystem }}"
+        opts: "defaults,nofail"
+        state: mounted
+
+    - name: Create Immich data directories
+      file:
+        path: "{{ mount_point }}/{{ item }}"
+        state: directory
+        mode: '0755'
+        owner: 1001
+        group: 1001
+      loop: "{{ immich_dirs }}"
+
+    - name: Get mount point details
+      command: df -h {{ mount_point }}
+      register: mount_details
+      changed_when: false
+
+    - name: Show mount details
+      debug:
+        msg: "USB drive mounted at {{ mount_point }} with {{ mount_details.stdout_lines[1] }}"

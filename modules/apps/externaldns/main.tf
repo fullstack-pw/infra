@@ -4,6 +4,17 @@
  * This module deploys ExternalDNS to manage DNS records from Kubernetes resources.
  */
 
+module "namespace" {
+  source = "../../base/namespace"
+
+  create = true
+  name   = var.namespace
+  labels = {
+    "kubernetes.io/metadata.name" = var.namespace
+  }
+  needs_secrets = true
+}
+
 resource "kubernetes_service_account" "externaldns" {
   automount_service_account_token = false
   metadata {
@@ -92,7 +103,15 @@ resource "kubernetes_deployment" "externaldns" {
               optional = true
             }
           }
-
+          env {
+            name = "EXTERNAL_DNS_PIHOLE_PASSWORD"
+            value_from {
+              secret_key_ref {
+                name = var.create_pihole_secret ? kubernetes_secret.pihole[0].metadata[0].name : var.pihole_secret_name
+                key  = "PIHOLE_PASSWORD"
+              }
+            }
+          }
           args = var.container_args
         }
 
@@ -102,5 +121,18 @@ resource "kubernetes_deployment" "externaldns" {
         }
       }
     }
+  }
+}
+
+resource "kubernetes_secret" "pihole" {
+  count = var.create_pihole_secret ? 1 : 0
+
+  metadata {
+    name      = var.pihole_secret_name
+    namespace = var.namespace
+  }
+
+  data = {
+    PIHOLE_PASSWORD = var.pihole_password
   }
 }

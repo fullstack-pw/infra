@@ -1,6 +1,10 @@
 module "externaldns" {
   count  = contains(local.workload, "externaldns") ? 1 : 0
   source = "../modules/apps/externaldns"
+
+  create_pihole_secret = terraform.workspace == "sandbox" ? true : false
+  pihole_password      = terraform.workspace == "sandbox" ? local.secrets_json["kv/cluster-secret-store/secrets/EXTERNAL_DNS_PIHOLE_PASSWORD"]["EXTERNAL_DNS_PIHOLE_PASSWORD"] : ""
+
 }
 
 module "cert_manager" {
@@ -16,9 +20,13 @@ module "external_secrets" {
   source = "../modules/apps/external-secrets"
 
   install_crd = var.config[terraform.workspace].install_crd
+  secret_data = local.secret_data
+  vault_token = local.secrets_json["kv/cluster-secret-store/secrets/VAULT_TOKEN"]["VAULT_TOKEN"]
 
-  namespace_selectors = {
-    "kubernetes.io/metadata.name" = var.config[terraform.workspace].externalsecret
+  namespace_selector_type = "label"
+  namespace_selector_label = {
+    key   = "cluster-secrets"
+    value = "true"
   }
 }
 
@@ -27,7 +35,7 @@ module "github_runner" {
   count  = contains(local.workload, "github_runner") ? 1 : 0
   source = "../modules/apps/github-runner"
 
-  github_token = local.secrets_json["kv/cluster-secret-store/secrets/GITHUB_PAT"]["GITHUB_PAT"]
+  github_token = local.secrets_json["kv/cluster-secret-store/secrets/github_token"]["github_token"]
   install_crd  = var.config[terraform.workspace].install_crd
 }
 
@@ -105,4 +113,4 @@ module "harbor" {
   external_database_password = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
   external_redis_password    = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
 }
-#
+
