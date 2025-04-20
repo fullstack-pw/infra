@@ -1,3 +1,9 @@
+## [1.1.3](https://github.com/fullstack-pw/infra/compare/v1.1.2...v1.1.3) (2025-04-20)
+
+### Bug Fixes
+
+* **refactor:** multiple fixes and add k8s-home [ansible k8s-home] ([#75](https://github.com/fullstack-pw/infra/issues/75)) ([0ffbe8d](https://github.com/fullstack-pw/infra/commit/0ffbe8db45747b7aaf4b19254bc816be1d3db43d))
+
 ## [1.1.2](https://github.com/fullstack-pw/infra/compare/v1.1.1...v1.1.2) (2025-04-16)
 
 ### Bug Fixes
