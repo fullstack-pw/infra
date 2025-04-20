@@ -19,7 +19,7 @@ variable "release_name" {
 variable "chart_version" {
   description = "PostgreSQL Helm chart version"
   type        = string
-  default     = "16.6.3"
+  default     = "12.5.8"
 }
 
 variable "timeout" {
@@ -28,11 +28,7 @@ variable "timeout" {
   default     = 300
 }
 
-variable "postgres_version" {
-  description = "PostgreSQL version to deploy"
-  type        = string
-  default     = "latest"
-}
+
 
 # Credentials
 variable "generate_credentials" {
@@ -226,8 +222,12 @@ variable "preserve_existing_vault_data" {
 }
 
 variable "registry" {
-  default = "harbor.fullstack.pw"
+  default = "docker.io"
 }
 variable "repository" {
-  default = "library/postgres"
+  default = "bitnami/postgresql"
+}
+
+variable "postgres_version" {
+  default = "15.4.0"
 }
