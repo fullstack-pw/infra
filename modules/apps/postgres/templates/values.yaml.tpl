@@ -1,5 +1,7 @@
 ## PostgreSQL values for Helm chart
 image:
+  registry: ${registry}
+  repository: ${repository}
   tag: ${pg_version}
 
 global:

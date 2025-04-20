@@ -6,7 +6,8 @@ variable "workload" {
       "externaldns",
       "cert_manager",
       "external_secrets",
-      "observability-box"
+      "observability-box",
+      "immich"
     ]
     dev = [
       "externaldns",

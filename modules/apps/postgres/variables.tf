@@ -19,7 +19,7 @@ variable "release_name" {
 variable "chart_version" {
   description = "PostgreSQL Helm chart version"
   type        = string
-  default     = "12.5.8"
+  default     = "16.6.3"
 }
 
 variable "timeout" {
@@ -31,7 +31,7 @@ variable "timeout" {
 variable "postgres_version" {
   description = "PostgreSQL version to deploy"
   type        = string
-  default     = "15.4.0"
+  default     = "latest"
 }
 
 # Credentials
@@ -223,4 +223,11 @@ variable "preserve_existing_vault_data" {
   description = "Preserve existing data in the Vault secret when adding the PostgreSQL password"
   type        = bool
   default     = true
+}
+
+variable "registry" {
+  default = "harbor.fullstack.pw"
+}
+variable "repository" {
+  default = "library/postgres"
 }

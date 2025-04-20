@@ -114,3 +114,16 @@ module "harbor" {
   external_redis_password    = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
 }
 
+module "immich" {
+  count  = contains(local.workload, "immich") ? 1 : 0
+  source = "../modules/apps/immich"
+
+  redis         = "redis.fullstack.pw"
+  redis_pass    = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
+  db_hostname   = "postgres.fullstack.pw"
+  db_user       = "admin"
+  db_name       = "immich"
+  db_pass       = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
+  immich_domain = "immich.fullstack.pw"
+
+}
