@@ -9,4 +9,4 @@ COPY --from=builder /usr/share/postgresql/15/extension/vector* /opt/bitnami/post
 
 USER 1001
 
-ENV POSTGRESQL_EXTRA_FLAGS="-c shared_preload_libraries=vectors.so"
+ENV POSTGRESQL_EXTRA_FLAGS="-c shared_preload_libraries=vector.so"
