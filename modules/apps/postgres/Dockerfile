@@ -5,8 +5,8 @@ FROM bitnami/postgresql:15.4.0
 USER root
 
 # Copy the pgvecto.rs extension files from the builder image
-COPY --from=builder /usr/lib/postgresql/15/lib/pgvecto-rs.so /opt/bitnami/postgresql/lib/
-COPY --from=builder /usr/share/postgresql/15/extension/pgvecto-rs* /opt/bitnami/postgresql/share/extension/
+COPY --from=builder /usr/lib/postgresql/15/lib/vectors.so /opt/bitnami/postgresql/lib/
+COPY --from=builder /usr/share/postgresql/15/extension/vectors* /opt/bitnami/postgresql/share/extension/
 
 # Install necessary dependencies for pgvecto.rs
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -19,4 +19,4 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 USER 1001
 
 # Configure PostgreSQL to preload the pgvecto.rs library
-ENV POSTGRESQL_EXTRA_FLAGS="-c shared_preload_libraries=pgvecto-rs.so"
+ENV POSTGRESQL_EXTRA_FLAGS="-c shared_preload_libraries=vectors.so"
