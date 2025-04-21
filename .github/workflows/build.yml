@@ -8,15 +8,28 @@ on:
   pull_request:
     branches: [main]
     paths: ["**/Dockerfile"]
+
 jobs:
   build:
     runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for all tags and branches
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Get version tag
+        id: get_version
+        run: |
+          # Get the latest tag
+          VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          # Strip 'v' prefix if it exists
+          VERSION=${VERSION#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
 
       - name: Expose HARBOR_KEY to the Workflow
         run: echo "HARBOR_KEY=${HARBOR_KEY}" >> $GITHUB_ENV
@@ -41,7 +54,13 @@ jobs:
             
             echo "Building $DOCKERFILE as registry.fullstack.pw/library/$IMAGE_NAME:latest"
             
-            # Build and push
-            docker build -t registry.fullstack.pw/library/$IMAGE_NAME:latest -f "$DOCKERFILE" "$DIR"
+            # Build with both tags
+            docker build \
+              -t registry.fullstack.pw/library/$IMAGE_NAME:latest \
+              -t registry.fullstack.pw/library/$IMAGE_NAME:${{ steps.get_version.outputs.version }} \
+              -f "$DOCKERFILE" "$DIR"
+            
+            # Push both tags
             docker push registry.fullstack.pw/library/$IMAGE_NAME:latest
+            docker push registry.fullstack.pw/library/$IMAGE_NAME:${{ steps.get_version.outputs.version }}
           done
