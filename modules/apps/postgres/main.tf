@@ -67,25 +67,26 @@ module "values" {
     {
       path = "${path.module}/templates/values.yaml.tpl"
       vars = {
-        postgres_username    = local.postgres_username
-        postgres_password    = module.credentials.password
-        postgres_database    = local.postgres_database
-        pg_version           = var.postgres_version
-        persistence_enabled  = var.persistence_enabled
-        storage_class        = var.persistence_storage_class
-        persistence_size     = var.persistence_size
-        memory_request       = var.memory_request
-        cpu_request          = var.cpu_request
-        memory_limit         = var.memory_limit
-        cpu_limit            = var.cpu_limit
-        enable_metrics       = var.enable_metrics
-        service_type         = var.service_type
-        service_port         = var.service_port
-        replication_enabled  = var.replication_enabled
-        replication_replicas = var.replication_replicas
-        ha_enabled           = var.high_availability_enabled
-        registry             = var.registry
-        repository           = var.repository
+        pg_version                         = var.postgres_version
+        postgres_username                  = local.postgres_username
+        postgres_password                  = module.credentials.password
+        postgres_database                  = local.postgres_database
+        persistence_enabled                = var.persistence_enabled
+        storage_class                      = var.persistence_storage_class
+        persistence_size                   = var.persistence_size
+        memory_request                     = var.memory_request
+        cpu_request                        = var.cpu_request
+        memory_limit                       = var.memory_limit
+        cpu_limit                          = var.cpu_limit
+        enable_metrics                     = var.enable_metrics
+        service_type                       = var.service_type
+        service_port                       = var.service_port
+        registry                           = var.registry
+        repository                         = var.repository
+        replication_enabled                = var.replication_enabled
+        replication_replicas               = var.replication_replicas
+        replication_synchronousCommit      = var.replication_synchronousCommit
+        replication_numSynchronousReplicas = var.replication_numSynchronousReplicas
       }
     }
   ]
