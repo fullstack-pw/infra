@@ -67,5 +67,6 @@ spec:
         storage: ${STORAGE_SIZE}
     storageClassName: ${STORAGE_CLASS}
   source:
-    http:
-      url: "${IMAGE_URL}"
+    pvc:
+      namespace: vm-templates
+      name: ubuntu-2204-base-image

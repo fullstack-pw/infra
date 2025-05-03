@@ -38,6 +38,34 @@ if ! kubectl api-resources | grep -q datavolume; then
   exit 1
 fi
 
+# Check if base image exists
+if ! kubectl get datavolume -n vm-templates ubuntu-2204-base-image &>/dev/null; then
+  echo -e "${YELLOW}Base image not found. Creating base Ubuntu image (this will take some time but only happens once)...${NC}"
+  kubectl create namespace vm-templates --dry-run=client -o yaml | kubectl apply -f -
+  cat <<EOF | kubectl apply -f -
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: ubuntu-2204-base-image
+  namespace: vm-templates
+spec:
+  pvc:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 10Gi
+    storageClassName: ${STORAGE_CLASS}
+  source:
+    http:
+      url: "${IMAGE_URL}"
+EOF
+
+  echo -e "${YELLOW}Waiting for base image to be ready...${NC}"
+  kubectl wait --for=condition=Ready -n vm-templates datavolume/ubuntu-2204-base-image --timeout=15m
+  echo -e "${GREEN}Base image created and ready.${NC}"
+fi
+
 # Create namespace
 kubectl create namespace ${SESSION_NAMESPACE}
 
