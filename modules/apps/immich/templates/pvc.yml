@@ -11,3 +11,39 @@ spec:
       storage: 1100Gi
   storageClassName: local-path
   volumeMode: Filesystem
+# ---
+# apiVersion: v1
+# kind: PersistentVolume
+# metadata:
+#   name: immich-external-drive
+# spec:
+#   capacity:
+#     storage: 200Gi
+#   volumeMode: Filesystem
+#   accessModes:
+#     - ReadWriteOnce
+#   persistentVolumeReclaimPolicy: Retain
+#   storageClassName: local-storage
+#   local:
+#     path: /mnt/home/photo-hd
+#   nodeAffinity:
+#     required:
+#       nodeSelectorTerms:
+#       - matchExpressions:
+#         - key: kubernetes.io/hostname
+#           operator: In
+#           values:
+#           - k8s-home
+# ---
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: immich-external-drive
+#   namespace: immich
+# spec:
+#   accessModes:
+#     - ReadWriteOnce
+#   storageClassName: local-storage
+#   resources:
+#     requests:
+#       storage: 200Gi

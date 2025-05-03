@@ -1,0 +1,153 @@
+---
+- name: Initialize Kubernetes Cluster
+  hosts: control_plane
+  become: true
+  vars:
+    kubernetes_version: "1.33.0"
+    pod_network_cidr: "192.168.0.0/16"  # For Calico
+    control_plane_endpoint: "192.168.1.21:6443"  # First node as initial endpoint
+    token_file: "/tmp/k8s_token"
+    certificate_key_file: "/tmp/k8s_cert_key"
+  tasks:
+    # Initialize the first control plane node
+    - name: Initialize Kubernetes control plane on the first node
+      shell: >
+        kubeadm init 
+        --control-plane-endpoint="{{ control_plane_endpoint }}" 
+        --upload-certs 
+        --pod-network-cidr={{ pod_network_cidr }}
+        --kubernetes-version={{ kubernetes_version }}
+      register: kubeadm_init
+      when: inventory_hostname == groups['control_plane'][0]
+      args:
+        creates: /etc/kubernetes/admin.conf
+
+    # Extract the join command, token, and certificate key
+    - name: Get join command for control plane nodes
+      shell: kubeadm token create --print-join-command
+      register: join_command
+      when: inventory_hostname == groups['control_plane'][0]
+
+    - name: Get certificate key
+      shell: kubeadm init phase upload-certs --upload-certs | tail -n 1
+      register: certificate_key
+      when: inventory_hostname == groups['control_plane'][0]
+
+    # Share the join information with other nodes
+    - name: Save join command
+      copy:
+        content: "{{ join_command.stdout }}"
+        dest: "{{ token_file }}"
+      delegate_to: "{{ groups['control_plane'][0] }}"
+      when: inventory_hostname == groups['control_plane'][0]
+
+    - name: Save certificate key
+      copy:
+        content: "{{ certificate_key.stdout }}"
+        dest: "{{ certificate_key_file }}"
+      delegate_to: "{{ groups['control_plane'][0] }}"
+      when: inventory_hostname == groups['control_plane'][0]
+
+    # Fetch the join information to local controller
+    - name: Fetch join command
+      fetch:
+        src: "{{ token_file }}"
+        dest: /tmp/k8s_token
+        flat: yes
+      when: inventory_hostname == groups['control_plane'][0]
+
+    - name: Fetch certificate key
+      fetch:
+        src: "{{ certificate_key_file }}"
+        dest: /tmp/k8s_cert_key
+        flat: yes
+      when: inventory_hostname == groups['control_plane'][0]
+
+    # Join the additional control plane nodes
+    - name: Join additional control plane nodes
+      shell: >
+        {{ lookup('file', '/tmp/k8s_token') }}
+        --control-plane
+        --certificate-key
+        {{ lookup('file', '/tmp/k8s_cert_key') }}
+      args:
+        creates: /etc/kubernetes/kubelet.conf
+      when: inventory_hostname != groups['control_plane'][0]
+
+    # Set up kubeconfig for root user
+    - name: Create .kube directory for root
+      file:
+        path: /root/.kube
+        state: directory
+        mode: '0755'
+
+    - name: Copy admin.conf to root's .kube/config
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /root/.kube/config
+        remote_src: yes
+        owner: root
+        group: root
+        mode: '0644'
+      args:
+        creates: /root/.kube/config
+
+    # Set up kubeconfig for the regular user
+    - name: Create .kube directory for suporte user
+      file:
+        path: /home/suporte/.kube
+        state: directory
+        owner: suporte
+        group: suporte
+        mode: '0755'
+
+    - name: Copy admin.conf to suporte user's .kube/config
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /home/suporte/.kube/config
+        remote_src: yes
+        owner: suporte
+        group: suporte
+        mode: '0644'
+      args:
+        creates: /home/suporte/.kube/config
+
+- name: Install Cilium CNI
+  hosts: "{{ groups['control_plane'][0] }}"
+  become: true
+  tasks:
+    - name: Create Cilium manifest directory
+      file:
+        path: /opt/cilium
+        state: directory
+        mode: '0755'
+
+    - name: Download Cilium CLI
+      get_url:
+        url: https://github.com/cilium/cilium-cli/releases/latest/download/cilium-linux-amd64.tar.gz
+        dest: /tmp/cilium-cli.tar.gz
+        mode: '0644'
+
+    - name: Extract Cilium CLI
+      unarchive:
+        src: /tmp/cilium-cli.tar.gz
+        dest: /usr/local/bin/
+        remote_src: yes
+
+    - name: Install Cilium
+      shell: cilium install --version 1.14.5
+      args:
+        creates: /opt/cilium/.cilium-installed
+
+    - name: Mark Cilium as installed
+      file:
+        path: /opt/cilium/.cilium-installed
+        state: touch
+        mode: '0644'
+
+    - name: Wait for Cilium to be ready
+      shell: cilium status --wait
+      register: wait_result
+      retries: 10
+      delay: 30
+      until: wait_result.rc == 0

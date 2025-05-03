@@ -127,3 +127,8 @@ module "immich" {
   immich_domain = "immich.fullstack.pw"
 
 }
+
+module "kubevirt" {
+  count  = contains(local.workload, "kubevirt") ? 1 : 0
+  source = "../modules/apps/kubevirt"
+}

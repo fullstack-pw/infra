@@ -1,0 +1,179 @@
+---
+- name: Kubernetes Node Setup
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    kubernetes_version: "1.33.0-1.1"
+    container_runtime: containerd
+    kube_bench_version: "0.10.1"
+
+  tasks:
+    # Disable swap
+    - name: Disable swap
+      command: swapoff -a
+      changed_when: false
+
+    - name: Remove swap from fstab
+      replace:
+        path: /etc/fstab
+        regexp: '^([^#].*\sswap\s+sw\s+.*)$'
+        replace: '# \1'
+
+    # Load required kernel modules
+    - name: Load kernel modules for containerd
+      modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - overlay
+        - br_netfilter
+
+    - name: Persist kernel modules
+      copy:
+        dest: "/etc/modules-load.d/{{ item.file }}.conf"
+        content: "{{ item.module }}"
+      loop:
+        - { file: 'containerd', module: 'overlay' }
+        - { file: 'br_netfilter', module: 'br_netfilter' }
+
+    # Configure kernel parameters
+    - name: Set kernel parameters for Kubernetes
+      sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        state: present
+        sysctl_file: /etc/sysctl.d/99-kubernetes-cri.conf
+      loop:
+        - { name: 'net.bridge.bridge-nf-call-iptables', value: '1' }
+        - { name: 'net.bridge.bridge-nf-call-ip6tables', value: '1' }
+        - { name: 'net.ipv4.ip_forward', value: '1' }
+
+    # Install required packages
+    - name: Install required packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - software-properties-common
+        state: present
+        update_cache: true
+
+    # Install containerd
+    - name: Add Docker repository key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+        filename: docker
+
+    - name: Install containerd
+      apt:
+        name: containerd.io
+        state: present
+        update_cache: true
+
+    # Configure containerd to use systemd cgroup driver
+    - name: Create containerd config directory
+      file:
+        path: /etc/containerd
+        state: directory
+        mode: '0755'
+
+    - name: Generate default containerd config
+      shell: containerd config default > /etc/containerd/config.toml
+      args:
+        creates: /etc/containerd/config.toml
+
+    - name: Configure containerd to use systemd cgroup driver
+      replace:
+        path: /etc/containerd/config.toml
+        regexp: 'SystemdCgroup = false'
+        replace: 'SystemdCgroup = true'
+
+    - name: Restart containerd
+      systemd:
+        name: containerd
+        state: restarted
+        daemon_reload: true
+        enabled: true
+
+    # Install Kubernetes components
+    - name: Add Kubernetes apt key
+      apt_key:
+        url: https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key
+        keyring: /etc/apt/trusted.gpg.d/k8s.gpg
+        state: present
+
+    - name: Add Kubernetes repository
+      apt_repository:
+        repo: "deb [signed-by=/etc/apt/trusted.gpg.d/k8s.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /"
+        state: present
+        filename: kubernetes
+
+    - name: Install Kubernetes components
+      apt:
+        name:
+          - kubelet={{ kubernetes_version }}
+          - kubeadm={{ kubernetes_version }}
+          - kubectl={{ kubernetes_version }}
+        state: present
+        update_cache: true
+
+    - name: Hold Kubernetes packages
+      dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop:
+        - kubelet
+        - kubeadm
+        - kubectl
+
+# Install kube-bench (CIS benchmark)
+    - name: Download kube-bench Debian package
+      get_url:
+        url: "https://github.com/aquasecurity/kube-bench/releases/download/v{{ kube_bench_version }}/kube-bench_{{ kube_bench_version }}_linux_amd64.deb"
+        dest: "/tmp/kube-bench_{{ kube_bench_version }}_linux_amd64.deb"
+        mode: '0644'
+
+    - name: Install kube-bench
+      apt:
+        deb: "/tmp/kube-bench_{{ kube_bench_version }}_linux_amd64.deb"
+        state: present
+        force: yes
+      
+    # Check components are installed correctly
+    - name: Verify kube-bench installation
+      command: kube-bench version
+      register: kube_bench_version_check
+      changed_when: false
+
+    - name: Verify kubelet is installed
+      command: kubelet --version
+      register: kubelet_version
+      changed_when: false
+      
+    - name: Verify kubeadm is installed
+      command: kubeadm version
+      register: kubeadm_version
+      changed_when: false
+      
+    - name: Verify kubectl is installed
+      command: kubectl version --client
+      register: kubectl_version
+      changed_when: false
+
+    - name: Print installation results
+      debug:
+        msg: 
+          - "Kubelet version: {{ kubelet_version.stdout }}"
+          - "Kubeadm version: {{ kubeadm_version.stdout }}"
+          - "Kubectl client version: {{ kubectl_version.stdout }}"
+          - "Kube-bench version: {{ kube_bench_version_check.stdout }}"

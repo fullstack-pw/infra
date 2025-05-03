@@ -231,7 +231,7 @@ variable "repository" {
 }
 
 variable "postgres_version" {
-  default = "1.2.0"
+  default = "1.2.3"
 }
 # registry.fullstack.pw/library/postgres:1.2.0
 # docker.io/bitnami/postgresql:15.4.0

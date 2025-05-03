@@ -5,7 +5,7 @@ env:
   DB_USERNAME: ${db_user}
   DB_DATABASE_NAME: ${db_name}
   DB_PASSWORD: ${db_pass}
-  IMMICH_MACHINE_LEARNING_URL: "http://immich-ml.immich.svc.cluster.local:3003"
+  IMMICH_MACHINE_LEARNING_URL: "http://immich-machine-learning.immich.svc.cluster.local:3003"
 
 image:
   tag: v1.119.0
@@ -45,3 +45,9 @@ machine-learning:
       type: emptyDir
       accessMode: ReadWriteMany
       storageClass: local-path
+
+# persistence:
+#   config:
+#     enabled: true
+#     mountPath: /mnt/media/videos
+#     existingClaim: immich-external-drive

@@ -36,6 +36,12 @@ variable "workload" {
       "vault",
       "harbor"
     ]
+    sandboxy = [
+      "externaldns",
+      "cert_manager",
+      "external_secrets",
+      "kubevirt"
+    ]
     tools = [
       "externaldns",
       "cert_manager",
@@ -75,6 +81,11 @@ variable "config" {
     }
     sandbox = {
       kubernetes_context = "sandbox"
+      install_crd        = true
+      cert_manager_crd   = true
+    }
+    sandboxy = {
+      kubernetes_context = "sandboxy"
       install_crd        = true
       cert_manager_crd   = true
     }

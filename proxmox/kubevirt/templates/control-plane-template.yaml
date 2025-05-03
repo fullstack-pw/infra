@@ -1,0 +1,71 @@
+# Control Plane VM for KillerKoda CKS Environment
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: ${CONTROL_PLANE_VM_NAME}
+  namespace: ${SESSION_NAMESPACE}
+  labels:
+    app: killerkoda
+    role: control-plane
+    session: ${SESSION_ID}
+    k8s-version: "${K8S_VERSION}"
+spec:
+  running: true
+  template:
+    metadata:
+      labels:
+        app: killerkoda
+        role: control-plane
+        session: ${SESSION_ID}
+    spec:
+      domain:
+        cpu:
+          cores: ${CPU_CORES}
+        resources:
+          requests:
+            memory: ${MEMORY}
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              bridge: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: ${CONTROL_PLANE_VM_NAME}-rootdisk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            secretRef:
+              name: ${CONTROL_PLANE_VM_NAME}
+            networkData: |
+              version: 2
+              ethernets:
+                enp1s0:
+                  dhcp4: true
+                  dhcp-identifier: mac
+---
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: ${CONTROL_PLANE_VM_NAME}-rootdisk
+  namespace: ${SESSION_NAMESPACE}
+spec:
+  pvc:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${STORAGE_SIZE}
+    storageClassName: ${STORAGE_CLASS}
+  source:
+    http:
+      url: "${IMAGE_URL}"

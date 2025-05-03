@@ -1,0 +1,91 @@
+#cloud-config
+hostname: ${WORKER_VM_NAME}
+manage_etc_hosts: true
+package_update: true
+package_upgrade: true
+packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gnupg
+  - lsb-release
+  - net-tools
+  - ipvsadm
+  - jq
+  - ncat
+  - vim
+  - nano
+  - software-properties-common
+
+write_files:
+  # Load kernel modules for containerd
+  - path: /etc/modules-load.d/containerd.conf
+    owner: root:root
+    permissions: "0644"
+    content: |
+      overlay
+      br_netfilter
+
+  # Kubernetes sysctl settings
+  - path: /etc/sysctl.d/99-kubernetes-cri.conf
+    owner: root:root
+    permissions: "0644"
+    content: |
+      net.bridge.bridge-nf-call-iptables = 1
+      net.bridge.bridge-nf-call-ip6tables = 1
+      net.ipv4.ip_forward = 1
+
+runcmd:
+  # Disable swap
+  - swapoff -a
+  - sed -i '/swap/s/^/#/' /etc/fstab
+
+  # Load kernel modules
+  - modprobe overlay
+  - modprobe br_netfilter
+
+  # Apply sysctl settings
+  - sysctl --system
+
+  # Install Docker repo for containerd
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+  - echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+  # Install containerd
+  - apt-get update
+  - apt-get install -y containerd.io
+
+  # Configure containerd
+  - mkdir -p /etc/containerd
+  - containerd config default > /etc/containerd/config.toml
+  - sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml
+  - systemctl restart containerd
+  - systemctl enable containerd
+
+  # Install Kubernetes repository
+  - mkdir -p /etc/apt/keyrings
+  - curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/k8s.gpg
+  - echo "deb [signed-by=/etc/apt/trusted.gpg.d/k8s.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /" | tee /etc/apt/sources.list.d/kubernetes.list
+
+  # Install Kubernetes components
+  - apt-get update
+  - apt-get install -y kubelet=1.33.0-1.1 kubeadm=1.33.0-1.1
+  - apt-mark hold kubelet kubeadm
+
+  # Install kube-bench for CIS benchmarking
+  - curl -L -o /tmp/kube-bench.deb https://github.com/aquasecurity/kube-bench/releases/download/v0.10.1/kube-bench_0.10.1_linux_amd64.deb
+  - dpkg -i /tmp/kube-bench.deb
+
+  # Wait for control plane to become available
+  - until nc -z ${CONTROL_PLANE_ENDPOINT} 6443; do echo "Waiting for control plane ${CONTROL_PLANE_ENDPOINT}..."; sleep 10; done
+  - echo "${CONTROL_PLANE_IP} ${CONTROL_PLANE_VM_NAME}" >> /etc/hosts
+  # Join the Kubernetes cluster
+  - eval $JOIN_COMMAND --ignore-preflight-errors=NumCPU,Mem
+  - echo "${JOIN}"
+
+users:
+  - name: suporte
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFpSnkZ/nO64XpBZl+lcKHAEd8vCwbpKVxsXYvPuXI+C pedro@fedora
