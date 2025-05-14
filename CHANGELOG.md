@@ -1,3 +1,9 @@
+## [1.2.1](https://github.com/fullstack-pw/infra/compare/v1.2.0...v1.2.1) (2025-05-14)
+
+### Bug Fixes
+
+* **k8s:** home ([#77](https://github.com/fullstack-pw/infra/issues/77)) ([2a80617](https://github.com/fullstack-pw/infra/commit/2a80617304ae4c436d78d2f83266d3217c7e3aca))
+
 ## [1.2.0](https://github.com/fullstack-pw/infra/compare/v1.1.3...v1.2.0) (2025-04-20)
 
 ### Features
