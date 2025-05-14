@@ -157,9 +157,9 @@ Built from base modules to provide complete solutions:
 
 The homelab runs on:
 
-- **NODE01**: Acer Nitro (i7-4710HQ, 16GB RAM)
-- **NODE02**: HP ED800 G3 Mini (i7-7700T, 32GB RAM)
-- **Lenovo Legion**: For ephemeral CI/CD runners
+- **NODE01 (old notebook)**: Acer Nitro (i7-4710HQ, 16GB RAM)
+- **NODE02 (mini pc)**: HP ED800 G3 Mini (i7-7700T, 32GB RAM)
+- **NODE03 (home server)**: X99 2x Xeon E5-2699-V3 2.3Ghz 18-Core 128GB RAM
 
 ## Network Architecture
 
