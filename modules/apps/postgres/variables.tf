@@ -28,11 +28,7 @@ variable "timeout" {
   default     = 300
 }
 
-variable "postgres_version" {
-  description = "PostgreSQL version to deploy"
-  type        = string
-  default     = "15.4.0"
-}
+
 
 # Credentials
 variable "generate_credentials" {
@@ -101,13 +97,13 @@ variable "cpu_request" {
 variable "memory_limit" {
   description = "Memory limit for PostgreSQL pods"
   type        = string
-  default     = "512Mi"
+  default     = "2048Mi"
 }
 
 variable "cpu_limit" {
   description = "CPU limit for PostgreSQL pods"
   type        = string
-  default     = "500m"
+  default     = "5000m"
 }
 
 # Metrics
@@ -177,7 +173,7 @@ variable "cert_manager_cluster_issuer" {
 variable "replication_enabled" {
   description = "Enable PostgreSQL replication"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "replication_replicas" {
@@ -186,11 +182,13 @@ variable "replication_replicas" {
   default     = 1
 }
 
-variable "high_availability_enabled" {
-  description = "Enable high availability for PostgreSQL"
-  type        = bool
-  default     = false
+variable "replication_synchronousCommit" {
+  default = "on"
 }
+variable "replication_numSynchronousReplicas" {
+  default = 1
+}
+
 
 variable "additional_set_values" {
   description = "Additional values to set in the Helm release"
@@ -224,3 +222,27 @@ variable "preserve_existing_vault_data" {
   type        = bool
   default     = true
 }
+
+variable "registry" {
+  default = "registry.fullstack.pw"
+}
+variable "repository" {
+  default = "library/postgres"
+}
+
+variable "postgres_version" {
+  default = "1.2.3"
+}
+# registry.fullstack.pw/library/postgres:1.2.0
+# docker.io/bitnami/postgresql:15.4.0
+
+# variable "registry" {
+#   default = "docker.io"
+# }
+# variable "repository" {
+#   default = "bitnami/postgresql"
+# }
+
+# variable "postgres_version" {
+#   default = "15.4.0"
+# }

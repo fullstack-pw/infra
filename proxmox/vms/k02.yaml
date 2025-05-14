@@ -12,7 +12,7 @@ disks:
     iso: null
   - slot: scsi0
     type: disk
-    size: 42G
+    size: 142G
     storage: data2
     format: raw
 network:

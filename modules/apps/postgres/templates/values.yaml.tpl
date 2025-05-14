@@ -1,6 +1,8 @@
 ## PostgreSQL values for Helm chart
 image:
-  tag: ${pg_version}
+  registry: ${registry}
+  repository: ${repository}
+  tag: "${pg_version}"
 
 global:
   postgresql:
@@ -49,10 +51,10 @@ primary:
 architecture: replication
 
 replication:
-  enabled: true
+  enabled: ${replication_enabled}
   replicas: ${replication_replicas}
-  synchronousCommit: "on"
-  numSynchronousReplicas: ${ha_enabled ? replication_replicas - 1 : 0}
+  synchronousCommit: ${replication_synchronousCommit}
+  numSynchronousReplicas: ${replication_numSynchronousReplicas}
 %{else}
 architecture: standalone
 %{endif}

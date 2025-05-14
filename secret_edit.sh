@@ -25,7 +25,7 @@ if ! grep -q "sops:" "$SECRET_FILE"; then
   echo
   if [[ $REPLY =~ ^[Yy]$ ]]; then
     # Open the file for editing
-    ${EDITOR:-vim} "$SECRET_FILE"
+    vim "$SECRET_FILE"
     
     # Encrypt the file
     echo "Encrypting the file..."
@@ -33,7 +33,7 @@ if ! grep -q "sops:" "$SECRET_FILE"; then
     echo "File encrypted and saved."
   else
     # Just open for editing without encrypting
-    ${EDITOR:-vim} "$SECRET_FILE"
+    vim "$SECRET_FILE"
   fi
 else
   # File is already encrypted, use SOPS to edit

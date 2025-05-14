@@ -12,7 +12,16 @@ terraform {
       source  = "hashicorp/vault"
       version = "~> 3.0"
     }
+    kubectl = {
+      source  = "gavinbunney/kubectl"
+      version = "1.19.0"
+    }
   }
+}
+
+provider "kubectl" {
+  config_path    = var.kubeconfig_path
+  config_context = var.config[terraform.workspace].kubernetes_context
 }
 
 provider "kubernetes" {
