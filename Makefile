@@ -5,7 +5,7 @@
 SHELL := /bin/bash
 
 # Configuration
-ENVIRONMENTS := dev stg prod sandbox tools home
+ENVIRONMENTS := dev stg prod sandbox sandboxy tools home
 DEFAULT_ENV := sandbox
 TERRAFORM_DIR := clusters
 PROXMOX_DIR := proxmox
