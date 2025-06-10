@@ -1,1 +1,2 @@
 enable snapshot featuregate
+enable vmexport featuregate

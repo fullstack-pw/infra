@@ -128,9 +128,29 @@ module "immich" {
 
 }
 
+module "kubevirt_operator" {
+  count  = contains(local.workload, "kubevirt") ? 1 : 0
+  source = "../modules/apps/kubevirt-operator"
+
+}
+
 module "kubevirt" {
   count  = contains(local.workload, "kubevirt") ? 1 : 0
   source = "../modules/apps/kubevirt"
+
+  namespace          = "kubevirt"
+  create_kubevirt_cr = true
+  create_cdi_cr      = true
+
+  # Enable snapshot and VM export features
+  kubevirt_feature_gates = ["Snapshot", "VMExport"]
+  cdi_feature_gates      = ["HonorWaitForFirstConsumer"]
+
+  # Optional: Enable CDI upload proxy
+  enable_cdi_uploadproxy_ingress = true
+  cdi_uploadproxy_host           = "cdi-uploadproxy.fullstack.pw"
+
+  depends_on = [module.kubevirt_operator]
 }
 
 module "longhorn" {
