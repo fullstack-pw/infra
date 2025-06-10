@@ -1,0 +1,125 @@
+---
+- name: Prepare Node for Longhorn Installation
+  hosts: "{{ target_hosts | default('sandboxy') }}"
+  become: true
+  gather_facts: yes
+
+  vars:
+    longhorn_requirements:
+      - open-iscsi
+      - nfs-common
+      - util-linux
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install Longhorn system requirements
+      apt:
+        name: "{{ longhorn_requirements }}"
+        state: present
+        update_cache: yes
+
+    - name: Ensure open-iscsi service is started and enabled
+      systemd:
+        name: iscsid
+        state: started
+        enabled: yes
+
+    - name: Check if multipathd is installed
+      command: which multipathd
+      register: multipathd_check
+      failed_when: false
+      changed_when: false
+
+    - name: Disable multipathd if present (conflicts with Longhorn)
+      systemd:
+        name: multipathd
+        state: stopped
+        enabled: no
+      when: multipathd_check.rc == 0
+
+    - name: Create multipathd blacklist configuration
+      copy:
+        dest: /etc/multipath.conf
+        content: |
+          blacklist {
+              devnode "^sd[a-z0-9]+"
+          }
+        mode: '0644'
+      when: multipathd_check.rc == 0
+
+    - name: Check kernel modules required by Longhorn
+      shell: |
+        modprobe iscsi_tcp
+        modprobe nvme_tcp
+      register: modprobe_result
+      failed_when: false
+      changed_when: false
+
+    - name: Ensure required kernel modules are loaded at boot
+      copy:
+        dest: /etc/modules-load.d/longhorn.conf
+        content: |
+          iscsi_tcp
+          nvme_tcp
+        mode: '0644'
+
+    - name: Verify that required commands are available
+      command: "{{ item }}"
+      register: command_check
+      failed_when: command_check.rc != 0
+      changed_when: false
+      loop:
+        - "iscsiadm --version"
+        - "which mkfs.ext4"
+        - "which mount"
+        - "which umount"
+
+    - name: Check available disk space in /var/lib/longhorn (if exists)
+      stat:
+        path: /var/lib/longhorn
+      register: longhorn_dir
+
+    - name: Create Longhorn data directory
+      file:
+        path: /var/lib/longhorn
+        state: directory
+        mode: '0755'
+      when: not longhorn_dir.stat.exists
+
+    - name: Get filesystem information for Longhorn directory
+      shell: df -h /var/lib/longhorn
+      register: disk_space
+      changed_when: false
+
+    - name: Display disk space information
+      debug:
+        msg: "Available disk space for Longhorn: {{ disk_space.stdout_lines }}"
+
+    - name: Install Longhorn environment check script
+      get_url:
+        url: https://raw.githubusercontent.com/longhorn/longhorn/v1.8.1/scripts/environment_check.sh
+        dest: /tmp/longhorn_environment_check.sh
+        mode: '0755'
+
+    - name: Run Longhorn environment check
+      shell: /tmp/longhorn_environment_check.sh
+      register: env_check
+      failed_when: false
+
+    - name: Display environment check results
+      debug:
+        var: env_check.stdout_lines
+
+    - name: Verify node is ready for Longhorn
+      fail:
+        msg: "Node failed Longhorn environment check. Please review the output above."
+      when: env_check.rc != 0
+
+    - name: Clean up environment check script
+      file:
+        path: /tmp/longhorn_environment_check.sh
+        state: absent

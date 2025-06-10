@@ -12,7 +12,7 @@ nested_disks:
     scsi0:
       disk:
         storage: local-lvm
-        size: 100G
+        size: 300G
         format: raw
   ide:
     ide1:

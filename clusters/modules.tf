@@ -132,3 +132,11 @@ module "kubevirt" {
   count  = contains(local.workload, "kubevirt") ? 1 : 0
   source = "../modules/apps/kubevirt"
 }
+
+module "longhorn" {
+  count  = contains(local.workload, "longhorn") ? 1 : 0
+  source = "../modules/apps/longhorn"
+
+  replica_count = 1 # Single node cluster
+  ingress_host  = "longhorn.fullstack.pw"
+}

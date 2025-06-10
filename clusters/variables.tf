@@ -40,7 +40,8 @@ variable "workload" {
       "externaldns",
       "cert_manager",
       "external_secrets",
-      "kubevirt"
+      "kubevirt",
+      "longhorn"
     ]
     tools = [
       "externaldns",

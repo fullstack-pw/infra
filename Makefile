@@ -10,6 +10,7 @@ DEFAULT_ENV := sandbox
 TERRAFORM_DIR := clusters
 PROXMOX_DIR := proxmox
 MODULES_DIR := modules
+EXTRA_ARGS ?=
 
 # Colors for pretty output
 CYAN := \033[0;36m
@@ -98,11 +99,11 @@ plan:
 			echo -e "\n#########################################################" | tee -a plan.txt; \
 			echo -e "##\n##   Planning changes for $${env} environment..." | tee -a plan.txt; \
 			echo -e "##\n#########################################################" | tee -a plan.txt; \
-			terraform plan -no-color -out=$${env}.tfplan && terraform show -no-color $${env}.tfplan >> plan.txt && cd .. || cd ..; \
+			terraform plan $(EXTRA_ARGS) -no-color -out=$${env}.tfplan && terraform show -no-color $${env}.tfplan >> plan.txt && cd .. || cd ..; \
 		done; \
 	else \
 		echo -e "${CYAN}Planning changes for $(ENV) environment...${NC}"; \
-		cd $(TERRAFORM_DIR) && terraform workspace select $(ENV) && terraform plan -no-color -out=$(ENV).tfplan && terraform show -no-color $(ENV).tfplan >> plan.txt; \
+		cd $(TERRAFORM_DIR) && terraform workspace select $(ENV) && terraform plan $(EXTRA_ARGS) -no-color -out=$(ENV).tfplan && terraform show -no-color $(ENV).tfplan >> plan.txt; \
 	fi
 
 # Apply changes for all environments or a specific one
@@ -118,7 +119,7 @@ apply:
 			if [ -f "$${env}.tfplan" ]; then \
 				terraform apply $${env}.tfplan && cd .. || cd ..; \
 			else \
-				terraform apply -auto-approve && cd .. || cd ..; \
+				terraform apply $(EXTRA_ARGS) -auto-approve && cd .. || cd ..; \
 			fi; \
 		done; \
 	else \
@@ -127,10 +128,10 @@ apply:
 		if [ -f "$(ENV).tfplan" ]; then \
 			terraform apply $(ENV).tfplan; \
 		else \
-			terraform apply -auto-approve; \
+			terraform apply $(EXTRA_ARGS) -auto-approve; \
 		fi; \
 	fi
-
+	
 # Destroy resources in a specific environment
 .PHONY: destroy
 destroy:
@@ -256,18 +257,18 @@ install-age:
 		echo "age is already installed."; \
 	fi
 
-# Install deps
-install-deps:
-	@echo "Installing deps..."
-	@if ! python -c "import pyyaml" &> /dev/null; then \
-		echo "Installing pyyaml..."; \
-			pip3 install pyyaml; \
-	else \
-		echo "pyyaml is already installed."; \
-	fi
+# # Install deps
+# install-deps:
+# 	@echo "Installing deps..."
+# 	@if ! python -c "import pyyaml" &> /dev/null; then \
+# 		echo "Installing pyyaml..."; \
+# 			pip3 install pyyaml; \
+# 	else \
+# 		echo "pyyaml is already installed."; \
+# 	fi
 
 # Combined target to install both tools and configure environment
-install-crypto-tools: install-sops install-age install-deps
+install-crypto-tools: install-sops install-age
 	@echo "Setting up SOPS environment variables..."
 	@echo "SOPS_AGE_KEY_FILE=/home/runner/.sops/keys/sops-key.txt" >> $(if $(GITHUB_ENV),$(GITHUB_ENV),${HOME}/.bashrc)
 	@echo "Crypto tools installation and setup complete."
