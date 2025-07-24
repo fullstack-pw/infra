@@ -112,6 +112,7 @@ module "harbor" {
 
   external_database_password = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
   external_redis_password    = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
+  #ingress_annotations        = var.config[terraform.workspace].harbor.ingress
 }
 
 module "immich" {
@@ -142,11 +143,9 @@ module "kubevirt" {
   create_kubevirt_cr = true
   create_cdi_cr      = true
 
-  # Enable snapshot and VM export features
   kubevirt_feature_gates = ["Snapshot", "VMExport"]
   cdi_feature_gates      = ["HonorWaitForFirstConsumer"]
 
-  # Optional: Enable CDI upload proxy
   enable_cdi_uploadproxy_ingress = true
   cdi_uploadproxy_host           = "cdi-uploadproxy.fullstack.pw"
 
@@ -157,6 +156,6 @@ module "longhorn" {
   count  = contains(local.workload, "longhorn") ? 1 : 0
   source = "../modules/apps/longhorn"
 
-  replica_count = 1 # Single node cluster
+  replica_count = 1
   ingress_host  = "longhorn.fullstack.pw"
 }

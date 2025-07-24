@@ -1,20 +1,17 @@
-name: haproxy.fullstack.pw
+name: haproxy
 target_node: node01
 cores: 1
 sockets: 1
 memory: 512
 cpu_type: x86-64-v2-AES
 onboot: true
-disks:
-- slot: ide2
-  format: null
-  type: cdrom
-  iso: local:iso/ubuntu-23.10-live-server-amd64.iso
-- slot: scsi0
-  format: raw
-  type: disk
-  size: "8G"
-  storage: "local-lvm"
+nested_disks:
+  scsi:
+    scsi0:
+      disk:
+        storage: local-lvm
+        size: 8G
+        format: raw
 network:
   bridge: vmbr0
   model: virtio

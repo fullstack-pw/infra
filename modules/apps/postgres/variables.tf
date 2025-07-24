@@ -173,7 +173,7 @@ variable "cert_manager_cluster_issuer" {
 variable "replication_enabled" {
   description = "Enable PostgreSQL replication"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "replication_replicas" {

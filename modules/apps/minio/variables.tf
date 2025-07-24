@@ -19,7 +19,7 @@ variable "create_namespace" {
 variable "chart_version" {
   description = "MinIO Helm chart version"
   type        = string
-  default     = "5.3.0"
+  default     = "5.4.0"
 }
 
 variable "timeout" {
@@ -111,7 +111,7 @@ variable "ingress_annotations" {
 variable "ingress_class_name" {
   description = "Ingress class name for MinIO API"
   type        = string
-  default     = "nginx"
+  default     = "traefik"
 }
 
 variable "ingress_host" {
@@ -151,7 +151,7 @@ variable "console_ingress_annotations" {
 variable "console_ingress_class_name" {
   description = "Ingress class name for MinIO Console"
   type        = string
-  default     = "nginx"
+  default     = "traefik"
 }
 
 variable "console_ingress_host" {

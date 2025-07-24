@@ -21,9 +21,9 @@ resource "proxmox_vm_qemu" "vm" {
   memory      = lookup(each.value, "memory", 1024)
   cpu_type    = lookup(each.value, "cpu_type", "host")
   onboot      = lookup(each.value, "onboot", true)
-
-  clone      = lookup(each.value, "clone", null)
-  full_clone = lookup(each.value, "full_clone", false)
+  tags        = "terraform"
+  clone       = lookup(each.value, "clone", null)
+  full_clone  = lookup(each.value, "full_clone", false)
 
   boot = lookup(each.value, "boot", null)
 

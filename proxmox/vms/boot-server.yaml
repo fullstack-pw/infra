@@ -5,16 +5,14 @@ sockets: 1
 memory: 1024
 cpu_type: host
 onboot: false
-clone: ubuntu24-cloudinit
+clone: null
 boot: order=scsi0
 scsihw: virtio-scsi-single
 define_connection_info: true
 agent: 1
 automatic_reboot: true
 vm_state: stopped
-full_clone: true
-
-# We need to use nested_disks for the nested disk structure
+full_clone: false
 nested_disks:
   scsi:
     scsi0:
@@ -26,9 +24,6 @@ nested_disks:
     ide1:
       cloudinit:
         storage: slowdata
-
-# Keep the original disks for reference
-# (You can delete this after everything works)
 disks:
   - slot: scsi0
     type: disk
@@ -39,7 +34,6 @@ disks:
     type: cdrom
     cloudinit: true
     storage: slowdata
-
 network:
   bridge: vmbr0
   model: virtio

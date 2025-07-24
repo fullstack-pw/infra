@@ -5,7 +5,7 @@ sockets: 2
 memory: 32768
 cpu_type: host
 onboot: false
-clone: ubuntu24-template
+clone: null
 boot: order=scsi0
 nested_disks:
   scsi:
@@ -29,7 +29,7 @@ sshkeys: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP+mJj63c+7o+Bu40wNnXwTpXkPTpGJA9O
 nameserver: 192.168.1.3
 vm_state: running
 serial: true
-full_clone: true
+full_clone: false
 agent: 1
 define_connection_info: true
 skip_ipv6: true

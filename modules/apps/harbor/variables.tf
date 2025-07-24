@@ -154,7 +154,7 @@ variable "ingress_enabled" {
 variable "ingress_class_name" {
   description = "Ingress class name for Harbor"
   type        = string
-  default     = "nginx"
+  default     = "traefik"
 }
 
 variable "ingress_annotations" {

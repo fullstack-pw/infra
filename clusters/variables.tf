@@ -31,10 +31,7 @@ variable "workload" {
       "externaldns",
       "cert_manager",
       "ingress_nginx",
-      "minio",
-      "observability",
-      "vault",
-      "harbor"
+      "observability"
     ]
     sandboxy = [
       "externaldns",
@@ -50,9 +47,12 @@ variable "workload" {
       "postgres",
       "redis",
       "nats",
-      "observability-box",
+      #"observability-box",
       "gitlab_runner",
-      "github_runner"
+      "github_runner",
+      "harbor",
+      "minio",
+      "vault"
     ]
   }
 }
