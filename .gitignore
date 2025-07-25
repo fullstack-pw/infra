@@ -22,3 +22,4 @@ secrets/**/*.plaintext.*
 .sops/keys/
 
 node_modules
+proxmox/scripts/talos-configs/*

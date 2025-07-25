@@ -9,20 +9,20 @@ CLUSTER_NAME="testing"
 TALOS_VERSION="v1.10.3"
 
 # Node IPs
-CONTROL_PLANE_IPS=(
+CONTROL_PLANE_IP=(
     "192.168.1.233"  # cp01
     "192.168.1.232"  # cp02  
     "192.168.1.235"  # cp03
 )
 
-WORKER_IPS=(
+WORKER_IP=(
     "192.168.1.238"  # w01
     "192.168.1.231"  # w02
     "192.168.1.236"  # w03
 )
 
 # Cluster endpoint (use first control plane IP)
-CLUSTER_ENDPOINT="192.168.1.233"  # UPDATE THIS
+CLUSTER_ENDPOINT="k8s.fullstack.pw"
 CONFIG_DIR="./talos-configs"
 
 # Colors for output
@@ -55,7 +55,6 @@ install_talosctl() {
     fi
 }
 
-# Generate Talos configurations
 generate_configs() {
     log "Generating Talos configurations..."
     
@@ -67,7 +66,7 @@ generate_configs() {
         --with-examples=false \
         --with-docs=false
     
-    # Create patch file for additional configuration
+    # Create patch file for worker nodes (base)
     cat > "$CONFIG_DIR/patch.yaml" << 'EOF'
 cluster:
   allowSchedulingOnControlPlanes: false
@@ -84,14 +83,17 @@ machine:
       - 8.8.8.8
   install:
     disk: /dev/sda
-    wipe: false
+    wipe: true
   kubelet:
     extraArgs:
       rotate-server-certificates: true
 EOF
 
-    # Create specific patch for control plane with etcd configuration
-    cat > "$CONFIG_DIR/controlplane-patch.yaml" << EOF
+    # Create specific patches for each control plane
+    for i in "${!CONTROL_PLANE_IP[@]}"; do
+        cp_num=$((i+1))
+        
+        cat > "$CONFIG_DIR/controlplane-patch-${cp_num}.yaml" << EOF
 cluster:
   allowSchedulingOnControlPlanes: false
   etcd:
@@ -105,26 +107,56 @@ cluster:
       - 10.96.0.0/12
 machine:
   network:
+    hostname: cp0${cp_num}
     nameservers:
       - 192.168.1.3
       - 8.8.8.8
   install:
     disk: /dev/sda
-    wipe: false
+    wipe: true
   kubelet:
     extraArgs:
       rotate-server-certificates: true
 EOF
 
-    # Apply patches to control plane config
-    talosctl machineconfig patch "$CONFIG_DIR/controlplane.yaml" \
-        --patch @"$CONFIG_DIR/controlplane-patch.yaml" \
-        --output "$CONFIG_DIR/controlplane.yaml"
+        # Create specific config for this control plane
+        talosctl machineconfig patch "$CONFIG_DIR/controlplane.yaml" \
+            --patch @"$CONFIG_DIR/controlplane-patch-${cp_num}.yaml" \
+            --output "$CONFIG_DIR/controlplane-${cp_num}.yaml"
+    done
     
-    # Apply patches to worker config  
-    talosctl machineconfig patch "$CONFIG_DIR/worker.yaml" \
-        --patch @"$CONFIG_DIR/patch.yaml" \
-        --output "$CONFIG_DIR/worker.yaml"
+    # Create specific patches for each worker
+    for i in "${!WORKER_IP[@]}"; do
+        worker_num=$((i+1))
+        
+        cat > "$CONFIG_DIR/worker-patch-${worker_num}.yaml" << EOF
+cluster:
+  allowSchedulingOnControlPlanes: false
+  network:
+    dnsDomain: cluster.local
+    podSubnets:
+      - 10.244.0.0/16
+    serviceSubnets:
+      - 10.96.0.0/12
+machine:
+  network:
+    hostname: w0${worker_num}
+    nameservers:
+      - 192.168.1.3
+      - 8.8.8.8
+  install:
+    disk: /dev/sda
+    wipe: true
+  kubelet:
+    extraArgs:
+      rotate-server-certificates: true
+EOF
+
+        # Create specific config for this worker
+        talosctl machineconfig patch "$CONFIG_DIR/worker.yaml" \
+            --patch @"$CONFIG_DIR/worker-patch-${worker_num}.yaml" \
+            --output "$CONFIG_DIR/worker-${worker_num}.yaml"
+    done
 
     log "Base configurations generated and patched"
 }
@@ -165,15 +197,18 @@ wait_for_node() {
 configure_control_planes() {
     log "Configuring control plane nodes..."
     
-    for ip in "${CONTROL_PLANE_IPS[@]}"; do
-        log "Configuring control plane $ip..."
+    for i in "${!CONTROL_PLANE_IP[@]}"; do
+        cp_num=$((i+1))
+        ip="${CONTROL_PLANE_IP[$i]}"
+        
+        log "Configuring control plane $ip (cp0${cp_num})..."
         wait_for_node "$ip"
         
         log "Applying configuration to control plane $ip..."
         if talosctl apply-config --insecure \
             --nodes "$ip" \
             --endpoints "$ip" \
-            --file "$CONFIG_DIR/controlplane.yaml"; then
+            --file "$CONFIG_DIR/controlplane-${cp_num}.yaml"; then
             log "Configuration applied successfully to $ip"
         else
             error "Failed to apply configuration to $ip"
@@ -191,15 +226,18 @@ configure_control_planes() {
 configure_workers() {
     log "Configuring worker nodes..."
     
-    for ip in "${WORKER_IPS[@]}"; do
-        log "Configuring worker $ip..."
+    for i in "${!WORKER_IP[@]}"; do
+        worker_num=$((i+1))
+        ip="${WORKER_IP[$i]}"
+        
+        log "Configuring worker $ip (w0${worker_num})..."
         wait_for_node "$ip"
         
         log "Applying configuration to worker $ip..."
         if talosctl apply-config --insecure \
             --nodes "$ip" \
             --endpoints "$ip" \
-            --file "$CONFIG_DIR/worker.yaml"; then
+            --file "$CONFIG_DIR/worker-${worker_num}.yaml"; then
             log "Configuration applied successfully to $ip"
         else
             error "Failed to apply configuration to $ip"
@@ -221,8 +259,8 @@ bootstrap_cluster() {
     sleep 30
     
     talosctl bootstrap \
-        --nodes "${CONTROL_PLANE_IPS[0]}" \
-        --endpoints "${CONTROL_PLANE_IPS[0]}" \
+        --nodes "${CONTROL_PLANE_IP[0]}" \
+        --endpoints "${CONTROL_PLANE_IP[0]}" \
         --talosconfig "$CONFIG_DIR/talosconfig"
     
     log "Cluster bootstrapped"
@@ -238,8 +276,8 @@ wait_for_cluster() {
     while [ $attempt -le $max_attempts ]; do
         # Try different health checks
         if talosctl --talosconfig "$CONFIG_DIR/talosconfig" \
-           --nodes "${CONTROL_PLANE_IPS[0]}" \
-           --endpoints "${CONTROL_PLANE_IPS[0]}" \
+           --nodes "${CONTROL_PLANE_IP[0]}" \
+           --endpoints "${CONTROL_PLANE_IP[0]}" \
            health --wait-timeout=10s &>/dev/null; then
             log "Cluster is healthy"
             return 0
@@ -252,28 +290,28 @@ wait_for_cluster() {
             # Check if etcd is running
             log "Checking etcd status..."
             talosctl --talosconfig "$CONFIG_DIR/talosconfig" \
-                --nodes "${CONTROL_PLANE_IPS[0]}" \
-                --endpoints "${CONTROL_PLANE_IPS[0]}" \
+                --nodes "${CONTROL_PLANE_IP[0]}" \
+                --endpoints "${CONTROL_PLANE_IP[0]}" \
                 service etcd 2>/dev/null || log "etcd service check failed"
             
             # Check if kubelet is running
             log "Checking kubelet status..."
             talosctl --talosconfig "$CONFIG_DIR/talosconfig" \
-                --nodes "${CONTROL_PLANE_IPS[0]}" \
-                --endpoints "${CONTROL_PLANE_IPS[0]}" \
+                --nodes "${CONTROL_PLANE_IP[0]}" \
+                --endpoints "${CONTROL_PLANE_IP[0]}" \
                 service kubelet 2>/dev/null || log "kubelet service check failed"
                 
             # Check if we can reach the Kubernetes API
             log "Checking if Kubernetes API is accessible..."
             if talosctl --talosconfig "$CONFIG_DIR/talosconfig" \
-               --nodes "${CONTROL_PLANE_IPS[0]}" \
-               --endpoints "${CONTROL_PLANE_IPS[0]}" \
+               --nodes "${CONTROL_PLANE_IP[0]}" \
+               --endpoints "${CONTROL_PLANE_IP[0]}" \
                version 2>/dev/null; then
                 log "Talos API is responding, checking Kubernetes API..."
                 # Try to get kubeconfig and test it
                 if talosctl kubeconfig \
-                   --nodes "${CONTROL_PLANE_IPS[0]}" \
-                   --endpoints "${CONTROL_PLANE_IPS[0]}" \
+                   --nodes "${CONTROL_PLANE_IP[0]}" \
+                   --endpoints "${CONTROL_PLANE_IP[0]}" \
                    --talosconfig "$CONFIG_DIR/talosconfig" \
                    "$CONFIG_DIR/test-kubeconfig" 2>/dev/null; then
                     
@@ -300,14 +338,14 @@ wait_for_cluster() {
     # Final diagnostic dump
     log "=== Talos Version ==="
     talosctl --talosconfig "$CONFIG_DIR/talosconfig" \
-        --nodes "${CONTROL_PLANE_IPS[0]}" \
-        --endpoints "${CONTROL_PLANE_IPS[0]}" \
+        --nodes "${CONTROL_PLANE_IP[0]}" \
+        --endpoints "${CONTROL_PLANE_IP[0]}" \
         version 2>&1 || echo "Failed to get version"
     
     log "=== Service Status ==="
     talosctl --talosconfig "$CONFIG_DIR/talosconfig" \
-        --nodes "${CONTROL_PLANE_IPS[0]}" \
-        --endpoints "${CONTROL_PLANE_IPS[0]}" \
+        --nodes "${CONTROL_PLANE_IP[0]}" \
+        --endpoints "${CONTROL_PLANE_IP[0]}" \
         services 2>&1 || echo "Failed to get services"
     
     return 1
@@ -318,8 +356,8 @@ generate_kubeconfig() {
     log "Generating kubeconfig..."
     
     talosctl kubeconfig \
-        --nodes "${CONTROL_PLANE_IPS[0]}" \
-        --endpoints "${CONTROL_PLANE_IPS[0]}" \
+        --nodes "${CONTROL_PLANE_IP[0]}" \
+        --endpoints "${CONTROL_PLANE_IP[0]}" \
         --talosconfig "$CONFIG_DIR/talosconfig" \
         "$CONFIG_DIR/kubeconfig"
     
@@ -354,15 +392,15 @@ show_cluster_info() {
     echo "Cluster Information:"
     echo "  Name: $CLUSTER_NAME"
     echo "  Endpoint: https://${CLUSTER_ENDPOINT}:6443"
-    echo "  Control Planes: ${CONTROL_PLANE_IPS[*]}"
-    echo "  Workers: ${WORKER_IPS[*]}"
+    echo "  Control Planes: ${CONTROL_PLANE_IP[*]}"
+    echo "  Workers: ${WORKER_IP[*]}"
     echo
     echo "Configuration files:"
     echo "  Talos config: $CONFIG_DIR/talosconfig"
     echo "  Kubeconfig: $CONFIG_DIR/kubeconfig"
     echo
     echo "Useful commands:"
-    echo "  talosctl --talosconfig $CONFIG_DIR/talosconfig dashboard --nodes ${CONTROL_PLANE_IPS[0]}"
+    echo "  talosctl --talosconfig $CONFIG_DIR/talosconfig dashboard --nodes ${CONTROL_PLANE_IP[0]}"
     echo "  kubectl --kubeconfig $CONFIG_DIR/kubeconfig get nodes"
 }
 
@@ -370,7 +408,7 @@ show_cluster_info() {
 debug_nodes() {
     log "Debugging node connectivity..."
     
-    local all_ips=("${CONTROL_PLANE_IPS[@]}" "${WORKER_IPS[@]}")
+    local all_ips=("${CONTROL_PLANE_IP[@]}" "${WORKER_IP[@]}")
     
     for ip in "${all_ips[@]}"; do
         echo "Node $ip:"
@@ -404,7 +442,7 @@ reset_node() {
 reset_all_nodes() {
     log "Resetting all nodes..."
     
-    local all_ips=("${CONTROL_PLANE_IPS[@]}" "${WORKER_IPS[@]}")
+    local all_ips=("${CONTROL_PLANE_IP[@]}" "${WORKER_IP[@]}")
     
     for ip in "${all_ips[@]}"; do
         if timeout 2 nc -z "$ip" 50000 2>/dev/null; then
@@ -427,7 +465,7 @@ diagnose_cluster() {
         return 1
     fi
     
-    local first_cp="${CONTROL_PLANE_IPS[0]}"
+    local first_cp="${CONTROL_PLANE_IP[0]}"
     
     echo "=== Cluster Diagnostics ==="
     echo "Using control plane: $first_cp"
@@ -476,7 +514,6 @@ diagnose_cluster() {
         echo "Failed to get kubeconfig"
     fi
 }
-
 
 # Main execution
 main() {
