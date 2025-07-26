@@ -76,13 +76,11 @@ jobs:
         run: |
           PR_TITLE="${{ github.event.pull_request.title }}"
           COMMIT_MSG="${{ github.event.pull_request.head.label }} ${{ github.event.pull_request.body }}"
-          #COMBINED="TESTING COMMIT FROM PIPELINE [ansible k8s-tools]"
           COMBINED="$PR_TITLE $COMMIT_MSG"
 
           # Look for [ansible playbook-name] pattern in title or body
           if [[ $COMBINED =~ \[ansible[[:space:]]+([^\]]+)\] ]]; then
             PLAYBOOK="${BASH_REMATCH[1]}"
-            # Trim whitespace
             PLAYBOOK=$(echo $PLAYBOOK | xargs)
             echo "Found playbook: $PLAYBOOK"
             echo "ANSIBLE_PLAYBOOK=$PLAYBOOK" >> $GITHUB_ENV
@@ -95,10 +93,8 @@ jobs:
       - name: Update Ansible Inventory
         if: steps.apply.outcome == 'success'
         run: |
-          # Use the improved inventory script with better error handling
           chmod +x proxmox/update-inventory.sh
           ./proxmox/update-inventory.sh || echo "Warning: Inventory update script encountered issues but workflow will continue"
-          # Make sure new_hosts.txt exists even if the script failed
           touch proxmox/new_hosts.txt
 
       - name: Commit and Push Changes
@@ -109,25 +105,16 @@ jobs:
           OWNER=$(echo $OWNER_REPO | cut -d '/' -f 1)
           REPO=$(echo $OWNER_REPO | cut -d '/' -f 2)
 
-          # Configure git
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
-          # git checkout main
-          # git remote remove origin
-          # git remote add origin https://$GITHUB_PAT@github.com/${OWNER}/${REPO}.git
-          # git push --set-upstream origin main
-
-          # Add the updated files
           git add proxmox/k8s.ini proxmox/new_hosts.txt || true
 
-          # Check if there are changes to commit
           if git diff --quiet && git diff --staged --quiet; then
             echo "No changes to commit"
             echo "changes_made=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
-          # Prepare commit message
           COMMIT_MSG="Auto-update Ansible inventory"
           if [ -n "$ANSIBLE_TAG" ]; then
             COMMIT_MSG="$COMMIT_MSG $ANSIBLE_TAG"

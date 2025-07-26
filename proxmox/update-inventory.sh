@@ -117,6 +117,55 @@ for i in "${!NAMES[@]}"; do
     fi
 done
 
+# Add Talos cluster group logic
+add_talos_cluster_groups() {
+    local vm_name=$1
+    local ip=$2
+    
+    # Handle testing cluster specifically
+    if [[ $vm_name =~ ^k8s-testing-(cp|w)[0-9]+$ ]]; then
+        local role
+        if [[ $vm_name =~ cp[0-9]+$ ]]; then
+            role="control_plane"
+        else
+            role="workers"  
+        fi
+        
+        # Add to testing_control_plane or testing_workers group
+        if ! grep -q "^\[testing_${role}\]" $INVENTORY_FILE; then
+            echo "[testing_${role}]" >> $INVENTORY_FILE
+        fi
+        
+        # Add host to the appropriate group section
+        sed -i "/^\[testing_${role}\]/a $vm_name" $INVENTORY_FILE
+    fi
+}
+
+# Add HAProxy handling
+add_haproxy_entry() {
+    local vm_name=$1
+    local ip=$2
+    
+    if [[ $vm_name =~ ^haproxy- ]]; then
+        # Extract cluster name from HAProxy VM name
+        local cluster_name=$(echo $vm_name | sed 's/^haproxy-//')
+        
+        # Add HAProxy entry if not exists
+        if ! grep -q "^$vm_name " $INVENTORY_FILE; then
+            # Add to individual hosts section (at the top)
+            sed -i "/^# Individual hosts/a $vm_name ansible_host=$ip ansible_user=suporte" $INVENTORY_FILE
+        fi
+        
+        # Create/update HAProxy group for this cluster
+        if ! grep -q "^\[haproxy_${cluster_name}\]" $INVENTORY_FILE; then
+            echo "" >> $INVENTORY_FILE
+            echo "[haproxy_${cluster_name}]" >> $INVENTORY_FILE
+            echo "$vm_name" >> $INVENTORY_FILE
+        fi
+    fi
+}
+
+
 # Cleanup
 rm -f tf_output.json
 
