@@ -6,6 +6,7 @@ on:
     paths:
       - "proxmox/**"
       - "clusters/**"
+      - "secrets/**"
       - ".github/workflows/terraform-*.yml"
 
 permissions:
@@ -28,6 +29,7 @@ jobs:
               - 'proxmox/**'
             clusters:
               - 'clusters/**'
+              - 'secrets/**'
 
   plan-proxmox:
     needs: detect-changes

@@ -8,6 +8,7 @@ on:
     paths:
       - "proxmox/**"
       - "clusters/**"
+      - "secrets/**"
 
 permissions:
   contents: read
@@ -30,6 +31,7 @@ jobs:
               - 'proxmox/**'
             clusters:
               - 'clusters/**'
+              - 'secrets/**'
 
   apply-proxmox:
     needs: detect-changes
