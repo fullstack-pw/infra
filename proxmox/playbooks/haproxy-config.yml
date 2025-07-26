@@ -1,0 +1,46 @@
+---
+- name: Configure HAProxy for Kubernetes clusters
+  hosts: "{{ target_hosts | default('haproxy') }}"
+  become: true
+  vars:
+    haproxy_clusters: []  # Will be populated dynamically
+  
+  tasks:
+    - name: Install HAProxy
+      apt:
+        name: haproxy
+        state: present
+        update_cache: yes
+
+    - name: Create HAProxy configuration
+      template:
+        src: "{{ playbook_dir }}/../templates/haproxy.cfg.j2"
+        dest: /etc/haproxy/haproxy.cfg
+        backup: yes
+        owner: root
+        group: root
+        mode: '0644'
+      notify: restart haproxy
+
+    - name: Enable and start HAProxy
+      systemd:
+        name: haproxy
+        enabled: yes
+        state: started
+
+    - name: Open firewall ports
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - "8404"  # Stats
+        - "6443"  # Kubernetes API
+        - "80"    # HTTP
+        - "443"   # HTTPS
+
+  handlers:
+    - name: restart haproxy
+      systemd:
+        name: haproxy
+        state: restarted
