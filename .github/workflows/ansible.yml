@@ -86,6 +86,44 @@ jobs:
           fi
         if: env.PLAYBOOK_PATH != ''
 
+      - name: Determine playbook type and run
+        run: |
+          echo "Detected playbook: ${{ needs.detect-ansible-command.outputs.playbook }}"
+
+          # Handle different playbook types
+          PLAYBOOK_NAME="${{ needs.detect-ansible-command.outputs.playbook }}"
+
+          if [[ $PLAYBOOK_NAME =~ ^talos-(.+)$ ]]; then
+            # Talos cluster bootstrap
+            CLUSTER_NAME="${BASH_REMATCH[1]}"
+            echo "Bootstrapping Talos cluster: $CLUSTER_NAME"
+            
+            # First configure HAProxy if it exists
+            if ansible-inventory -i proxmox/k8s.ini --list | grep -q "haproxy-${CLUSTER_NAME}"; then
+              echo "Configuring HAProxy for cluster: $CLUSTER_NAME"
+              ansible-playbook proxmox/playbooks/haproxy-config.yml -i proxmox/k8s.ini -e "target_hosts=haproxy-${CLUSTER_NAME}"
+            fi
+            
+            # Then bootstrap Talos
+            ansible-playbook proxmox/playbooks/talos-bootstrap.yml -i proxmox/k8s.ini -e "target_hosts=$CLUSTER_NAME"
+            
+          elif [[ $PLAYBOOK_NAME =~ ^k8s-(.+)$ ]]; then
+            # K3s cluster setup  
+            CLUSTER_NAME="${BASH_REMATCH[1]}"
+            echo "Setting up K3s cluster: $CLUSTER_NAME"
+            ansible-playbook proxmox/playbooks/k8s.yml -i proxmox/k8s.ini -e "target_hosts=$CLUSTER_NAME"
+            
+          else
+            # Direct playbook execution
+            echo "Running direct playbook: $PLAYBOOK_NAME"
+            PLAYBOOK_PATH="proxmox/playbooks/${PLAYBOOK_NAME}.yml"
+            if [ -f "$PLAYBOOK_PATH" ]; then
+              ansible-playbook $PLAYBOOK_PATH -i proxmox/k8s.ini
+            else
+              echo "Playbook not found: $PLAYBOOK_PATH"
+              exit 1
+            fi
+          fi
       - name: Run Ansible Playbook
         run: |
           echo "Running playbook: $PLAYBOOK_PATH"

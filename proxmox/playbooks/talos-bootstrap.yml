@@ -1,0 +1,124 @@
+---
+- name: Bootstrap Talos Cluster with Load Balancer
+  hosts: localhost
+  gather_facts: false
+  vars:
+    cluster_name: "{{ target_hosts | default('testing') }}"
+    talos_version: "v1.10.3"
+    config_dir: "./talos-configs/{{ cluster_name }}"
+    # Dynamic cluster endpoint using HAProxy
+    cluster_endpoint: "haproxy-{{ cluster_name }}.fullstack.pw"
+    haproxy_vm_name: "haproxy-{{ cluster_name }}"
+  
+  tasks:
+    - name: Get cluster node IPs from inventory
+      set_fact:
+        control_plane_ips: "{{ groups[cluster_name + '_control_plane'] | map('extract', hostvars, 'ansible_host') | list }}"
+        worker_ips: "{{ groups[cluster_name + '_workers'] | map('extract', hostvars, 'ansible_host') | list }}"
+        haproxy_ip: "{{ hostvars[haproxy_vm_name]['ansible_host'] | default('') }}"
+      delegate_to: localhost
+
+    - name: Configure HAProxy for this cluster
+      include_tasks: configure_haproxy.yml
+      when: haproxy_ip != ""
+
+    - name: Create local config directory
+      file:
+        path: "{{ config_dir }}"
+        state: directory
+
+    - name: Install talosctl locally
+      shell: |
+        if ! command -v talosctl &> /dev/null; then
+          curl -sL https://talos.dev/install | sh
+          export PATH=$PATH:$HOME/.local/bin
+        fi
+
+    - name: Wait for HAProxy to be ready
+      wait_for:
+        host: "{{ haproxy_ip }}"
+        port: 6443
+        timeout: 60
+      when: haproxy_ip != ""
+
+    - name: Generate Talos configs with dynamic endpoint
+      shell: |
+        cd {{ config_dir }}
+        talosctl gen config {{ cluster_name }} https://{{ cluster_endpoint }}:6443 \
+          --output-dir . \
+          --with-examples=false \
+          --with-docs=false
+
+    - name: Create control plane patches
+      template:
+        src: "{{ playbook_dir }}/../templates/controlplane-patch.yaml.j2" 
+        dest: "{{ config_dir }}/controlplane-patch-{{ item }}.yaml"
+      loop: "{{ range(1, control_plane_ips|length + 1) | list }}"
+
+    - name: Create worker patches
+      template:
+        src: "{{ playbook_dir }}/../templates/worker-patch.yaml.j2"
+        dest: "{{ config_dir }}/worker-patch-{{ item }}.yaml"
+      loop: "{{ range(1, worker_ips|length + 1) | list }}"
+
+    - name: Apply control plane configurations
+      shell: |
+        talosctl apply-config \
+          --nodes {{ control_plane_ips[item-1] }} \
+          --endpoints {{ control_plane_ips[item-1] }} \
+          --insecure \
+          --file {{ config_dir }}/controlplane-{{ item }}.yaml
+      loop: "{{ range(1, control_plane_ips|length + 1) | list }}"
+
+    - name: Apply worker configurations
+      shell: |
+        talosctl apply-config \
+          --nodes {{ worker_ips[item-1] }} \
+          --endpoints {{ worker_ips[item-1] }} \
+          --insecure \
+          --file {{ config_dir }}/worker-{{ item }}.yaml
+      loop: "{{ range(1, worker_ips|length + 1) | list }}"
+
+    - name: Bootstrap etcd
+      shell: |
+        sleep 60
+        talosctl bootstrap \
+          --nodes {{ control_plane_ips[0] }} \
+          --endpoints {{ control_plane_ips[0] }} \
+          --talosconfig {{ config_dir }}/talosconfig
+
+    - name: Wait for cluster to be ready
+      shell: |
+        timeout 600 talosctl health \
+          --nodes {{ control_plane_ips[0] }} \
+          --endpoints {{ control_plane_ips[0] }} \
+          --talosconfig {{ config_dir }}/talosconfig
+
+    - name: Generate kubeconfig
+      shell: |
+        talosctl kubeconfig \
+          --nodes {{ control_plane_ips[0] }} \
+          --endpoints {{ control_plane_ips[0] }} \
+          --talosconfig {{ config_dir }}/talosconfig \
+          {{ config_dir }}/kubeconfig
+
+    - name: Test cluster access via load balancer
+      shell: |
+        kubectl --kubeconfig {{ config_dir }}/kubeconfig get nodes
+      register: cluster_nodes
+
+    - name: Display cluster status
+      debug:
+        msg: |
+          Talos cluster '{{ cluster_name }}' is ready!
+          Endpoint: https://{{ cluster_endpoint }}:6443
+          Control Planes: {{ control_plane_ips | join(', ') }}
+          Workers: {{ worker_ips | join(', ') }}
+          HAProxy: {{ haproxy_ip }}
+          
+          Cluster nodes:
+          {{ cluster_nodes.stdout }}
+
+# Separate task file for HAProxy configuration
+- name: Configure HAProxy for cluster
+  include: configure_haproxy.yml

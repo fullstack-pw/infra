@@ -1,5 +1,5 @@
 data "local_file" "yaml_files" {
-  for_each = fileset("${path.module}/vms", "*.yaml")
+  for_each = setsubtract(fileset("${path.module}/vms", "*.yaml"), ["k8s-home.yaml"])
   filename = "${path.module}/vms/${each.key}"
 }
 
@@ -7,7 +7,6 @@ locals {
   vm_configs = {
     for file, content in data.local_file.yaml_files :
     file => yamldecode(content.content)
-    if !contains([], file)
   }
 }
 
