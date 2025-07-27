@@ -213,7 +213,7 @@ if [ ${#NAMES[@]} -gt 0 ]; then
         ip="${IPS[i]}"
         
         # Clean up IP (remove any extra formatting)
-        ip=$(echo $ip | sed 's/ip=//g' | cut -d',' -f1)
+        ip=$(echo $ip | sed 's/ip=//g' | cut -d',' -f1 | cut -d'/' -f1)
         
         echo "Processing VM: $name with IP: $ip"
         
