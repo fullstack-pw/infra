@@ -7,7 +7,7 @@ locals {
   vm_configs = {
     for file, content in data.local_file.yaml_files :
     file => yamldecode(content.content)
-    if !contains([], file)
+    if !contains(["k8s-home.yml"], file)
   }
 }
 
