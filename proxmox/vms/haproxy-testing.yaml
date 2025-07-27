@@ -5,7 +5,7 @@ sockets: 1
 memory: 1024
 cpu_type: host
 onboot: false
-clone: ubuntu-24.04-template
+clone: ubuntu24-cloudinit
 boot: order=scsi0
 nested_disks:
   scsi:
