@@ -109,29 +109,27 @@ jobs:
 
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
+          # Add the updated files
           git add proxmox/k8s.ini proxmox/new_hosts.txt || true
 
+          # Check if there are changes to commit
           if git diff --quiet && git diff --staged --quiet; then
             echo "No changes to commit"
             echo "changes_made=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
-          COMMIT_MSG="Auto-update Ansible inventory"
+          # Use ansible tag as commit message if present
           if [ -n "$ANSIBLE_TAG" ]; then
-            COMMIT_MSG="$COMMIT_MSG $ANSIBLE_TAG"
+            COMMIT_MSG="$ANSIBLE_TAG"
+          else
+            COMMIT_MSG="Auto-update Ansible inventory"
           fi
 
-          TOKEN_START=${GITHUB_PAT:0:4}
-          echo "Token starts with: $TOKEN_START"
-
-          echo "git commit"
+          echo "git commit with message: $COMMIT_MSG"
           git commit -m "$COMMIT_MSG"
-
-          echo "git push"
           git push
 
-          echo "::notice::Successfully pushed inventory changes"
           echo "changes_made=true" >> $GITHUB_OUTPUT
 
   apply-clusters:

@@ -1,0 +1,26 @@
+name: haproxy-testing
+target_node: node01
+cores: 1
+sockets: 1
+memory: 1024
+cpu_type: x86-64-v2-AES
+onboot: true
+nested_disks:
+  scsi:
+    scsi0:
+      disk:
+        storage: local-lvm
+        size: 8G
+        format: raw
+network:
+  bridge: vmbr0
+  model: virtio
+  firewall: true
+ipconfig0: "ip=192.168.1.24/24,gw=192.168.1.1"
+template: null
+vm_state: stopped
+serial: true
+full_clone: true
+agent: 1
+define_connection_info: true
+skip_ipv6: true

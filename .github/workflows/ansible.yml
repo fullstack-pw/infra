@@ -124,7 +124,6 @@ jobs:
               exit 1
             fi
           fi
-
       - name: Run Ansible Playbook
         run: |
           echo "Running playbook: $PLAYBOOK_PATH"
