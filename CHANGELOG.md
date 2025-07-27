@@ -1,3 +1,9 @@
+## [1.2.4](https://github.com/fullstack-pw/infra/compare/v1.2.3...v1.2.4) (2025-07-27)
+
+### Bug Fixes
+
+* **ansible:** inventory ([#81](https://github.com/fullstack-pw/infra/issues/81)) ([9e6a960](https://github.com/fullstack-pw/infra/commit/9e6a960fc6a791a24878a4f6309fb7481478bb84))
+
 ## [1.2.3](https://github.com/fullstack-pw/infra/compare/v1.2.2...v1.2.3) (2025-07-27)
 
 ### Bug Fixes
