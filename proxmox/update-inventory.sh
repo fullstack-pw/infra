@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Script to add new hosts to Ansible inventory based on Terraform output
-# This script only adds new hosts without restructuring the inventory
+# Script to manage Ansible inventory based on Terraform output
+# Handles both adding new hosts and removing destroyed ones
 
 set -e
 
@@ -14,6 +14,9 @@ if [ ! -f "$INVENTORY_FILE" ]; then
     echo "Error: Inventory file $INVENTORY_FILE not found"
     exit 1
 fi
+
+# Backup inventory before changes
+cp "$INVENTORY_FILE" "${INVENTORY_FILE}.backup"
 
 # Parse Terraform output
 echo "Getting Terraform outputs..."
@@ -43,136 +46,232 @@ else
         echo "Using $FIRST_KEY for VM data extraction"
         VM_DATA=$(jq -c --arg key "$FIRST_KEY" '.[$key] | to_entries | map({key: .key, ip: .value})' tf_output.json)
     else
-        echo "Error: Could not find VM IP information in Terraform output"
-        cat tf_output.json
-        exit 1
+        echo "No VM data found in Terraform output - possibly all VMs destroyed"
+        VM_DATA='[]'
     fi
 fi
 
 # Extract VM names and IPs from the VM_DATA
 echo "Extracting VM names and IPs..."
-VM_NAMES=$(echo "$VM_DATA" | jq -r '[.[] | .key]')
-VM_IPS=$(echo "$VM_DATA" | jq -r '[.[] | .ip]')
+if [ "$VM_DATA" != "[]" ]; then
+    VM_NAMES=$(echo "$VM_DATA" | jq -r '[.[] | .key]')
+    VM_IPS=$(echo "$VM_DATA" | jq -r '[.[] | .ip]')
 
-echo "Debug - VM Names:"
-echo "$VM_NAMES" | jq '.'
-echo "Debug - VM IPs:"
-echo "$VM_IPS" | jq '.'
+    echo "Debug - VM Names:"
+    echo "$VM_NAMES" | jq '.'
+    echo "Debug - VM IPs:"
+    echo "$VM_IPS" | jq '.'
 
-# Create arrays from JSON outputs
-readarray -t NAMES < <(echo "$VM_NAMES" | jq -r '.[]')
-readarray -t IPS < <(echo "$VM_IPS" | jq -r '.[]')
+    # Create arrays from JSON outputs
+    readarray -t NAMES < <(echo "$VM_NAMES" | jq -r '.[]')
+    readarray -t IPS < <(echo "$VM_IPS" | jq -r '.[]')
+else
+    echo "No VMs found in terraform output"
+    NAMES=()
+    IPS=()
+fi
 
-echo "Debug - Names array contents:"
-printf '%s\n' "${NAMES[@]}"
-echo "Debug - IPs array contents:"
-printf '%s\n' "${IPS[@]}"
+# Get current VMs from inventory (excluding comments and group headers)
+CURRENT_VMS=$(grep -E '^[a-zA-Z0-9-]+ ansible_host=' "$INVENTORY_FILE" | awk '{print $1}' | sort)
+NEW_VMS=()
+if [ ${#NAMES[@]} -gt 0 ]; then
+    printf '%s\n' "${NAMES[@]}" | sort > /tmp/new_vms.txt
+    NEW_VMS=($(cat /tmp/new_vms.txt))
+fi
 
-# Track new hosts
-> "$NEW_HOSTS_FILE"
-
-# Initialize a flag to check if we found new hosts
-FOUND_NEW_HOSTS=false
-
-# Check for new hosts and add them to NEW_HOSTS_FILE
-for i in "${!NAMES[@]}"; do
-    NAME="${NAMES[$i]}"
-    IP="${IPS[$i]}"
-    
-    # Skip if IP is empty, null, or "Unknown"
-    if [ -z "$IP" ] || [ "$IP" == "null" ] || [ "$IP" == "Unknown" ]; then
-        echo "Skipping $NAME - IP not provisioned yet"
-        continue
-    fi
-    
-    # Extract clean IP if it's in format like 'ip=192.168.1.12/24,gw=192.168.1.1'
-    if [[ "$IP" == *"ip="* ]]; then
-        CLEAN_IP=$(echo "$IP" | grep -o 'ip=[^,/]*' | cut -d= -f2)
-        if [ -n "$CLEAN_IP" ]; then
-            echo "Extracted clean IP $CLEAN_IP from $IP"
-            IP="$CLEAN_IP"
-        fi
-    fi
-    
-    # Format host entry as in the original inventory (checking if name already has .yaml)
-    if [[ "$NAME" == *".yaml" ]]; then
-        HOST_ENTRY="${NAME} ${IP} ansible_user=suporte"
+# Determine VMs to remove (exist in inventory but not in terraform)
+VMS_TO_REMOVE=()
+if [ -n "$CURRENT_VMS" ]; then
+    echo "$CURRENT_VMS" > /tmp/current_vms.txt
+    if [ ${#NEW_VMS[@]} -gt 0 ]; then
+        VMS_TO_REMOVE=($(comm -23 /tmp/current_vms.txt /tmp/new_vms.txt))
     else
-        HOST_ENTRY="${NAME}.yaml ${IP} ansible_user=suporte"
+        # If no new VMs, all current VMs should be removed
+        VMS_TO_REMOVE=($(cat /tmp/current_vms.txt))
     fi
-    
-    # Check if this host is already in the inventory
-    if ! grep -q "$IP.*ansible_user=suporte" "$INVENTORY_FILE"; then
-        echo "New host detected: $NAME at $IP"
-        echo "$IP,$NAME" >> "$NEW_HOSTS_FILE"
-        FOUND_NEW_HOSTS=true
-        
-        # Create a temporary file with the new host at the beginning
-        TMP_FILE=$(mktemp)
-        echo "$HOST_ENTRY" > "$TMP_FILE"
-        cat "$INVENTORY_FILE" >> "$TMP_FILE"
-        
-        # Replace the original inventory with the updated one
-        mv "$TMP_FILE" "$INVENTORY_FILE"
-    fi
-done
+fi
 
-# Add Talos cluster group logic
-add_talos_cluster_groups() {
+# Function to remove VM from inventory
+remove_vm_from_inventory() {
     local vm_name=$1
-    local ip=$2
+    echo "Removing $vm_name from inventory..."
     
-    # Handle testing cluster specifically
-    if [[ $vm_name =~ ^k8s-testing-(cp|w)[0-9]+$ ]]; then
-        local role
-        if [[ $vm_name =~ cp[0-9]+$ ]]; then
-            role="control_plane"
-        else
-            role="workers"  
-        fi
-        
-        # Add to testing_control_plane or testing_workers group
-        if ! grep -q "^\[testing_${role}\]" $INVENTORY_FILE; then
-            echo "[testing_${role}]" >> $INVENTORY_FILE
-        fi
-        
-        # Add host to the appropriate group section
-        sed -i "/^\[testing_${role}\]/a $vm_name" $INVENTORY_FILE
-    fi
+    # Remove the host line
+    sed -i "/^${vm_name} ansible_host=/d" "$INVENTORY_FILE"
+    
+    # Remove from group sections (but not group headers)
+    sed -i "/^\[.*\]$/!s/^${vm_name}$//g" "$INVENTORY_FILE"
+    
+    # Remove empty lines that might have been created
+    sed -i '/^$/N;/^\n$/d' "$INVENTORY_FILE"
 }
 
-# Add HAProxy handling
+# Function to add HAProxy entry
 add_haproxy_entry() {
     local vm_name=$1
     local ip=$2
     
     if [[ $vm_name =~ ^haproxy- ]]; then
+        echo "Adding HAProxy VM: $vm_name"
         # Extract cluster name from HAProxy VM name
         local cluster_name=$(echo $vm_name | sed 's/^haproxy-//')
         
-        # Add HAProxy entry if not exists
-        if ! grep -q "^$vm_name " $INVENTORY_FILE; then
-            # Add to individual hosts section (at the top)
-            sed -i "/^# Individual hosts/a $vm_name ansible_host=$ip ansible_user=suporte" $INVENTORY_FILE
+        # Add to individual hosts section if not exists
+        if ! grep -q "^$vm_name " "$INVENTORY_FILE"; then
+            # Add after the "# Individual hosts" comment
+            sed -i "/^# Individual hosts/a $vm_name ansible_host=$ip ansible_user=suporte" "$INVENTORY_FILE"
         fi
         
         # Create/update HAProxy group for this cluster
-        if ! grep -q "^\[haproxy_${cluster_name}\]" $INVENTORY_FILE; then
-            echo "" >> $INVENTORY_FILE
-            echo "[haproxy_${cluster_name}]" >> $INVENTORY_FILE
-            echo "$vm_name" >> $INVENTORY_FILE
+        if ! grep -q "^\[haproxy_${cluster_name}\]" "$INVENTORY_FILE"; then
+            echo "" >> "$INVENTORY_FILE"
+            echo "[haproxy_${cluster_name}]" >> "$INVENTORY_FILE"
+            echo "$vm_name" >> "$INVENTORY_FILE"
         fi
     fi
 }
 
+# Function to add Talos cluster groups
+add_talos_cluster_groups() {
+    local vm_name=$1
+    local ip=$2
+    
+    # Handle testing cluster specifically (adjust pattern as needed)
+    if [[ $vm_name =~ ^k8s-([^-]+)-(cp|w)[0-9]+$ ]]; then
+        local cluster_name="${BASH_REMATCH[1]}"
+        local node_type="${BASH_REMATCH[2]}"
+        
+        echo "Adding Talos node: $vm_name to cluster: $cluster_name"
+        
+        local group_name
+        if [[ $node_type == "cp" ]]; then
+            group_name="${cluster_name}_control_plane"
+        else
+            group_name="${cluster_name}_workers"
+        fi
+        
+        # Add to individual hosts section if not exists
+        if ! grep -q "^$vm_name " "$INVENTORY_FILE"; then
+            sed -i "/^# Individual hosts/a $vm_name ansible_host=$ip ansible_user=suporte" "$INVENTORY_FILE"
+        fi
+        
+        # Create group if not exists
+        if ! grep -q "^\[${group_name}\]" "$INVENTORY_FILE"; then
+            echo "" >> "$INVENTORY_FILE"
+            echo "[${group_name}]" >> "$INVENTORY_FILE"
+            echo "$vm_name" >> "$INVENTORY_FILE"
+        else
+            # Add to existing group if not already there
+            if ! grep -A 20 "^\[${group_name}\]" "$INVENTORY_FILE" | grep -q "^$vm_name$"; then
+                sed -i "/^\[${group_name}\]/a $vm_name" "$INVENTORY_FILE"
+            fi
+        fi
+        
+        # Also add to main cluster group
+        if ! grep -q "^\[${cluster_name}\]" "$INVENTORY_FILE"; then
+            echo "" >> "$INVENTORY_FILE"
+            echo "[${cluster_name}]" >> "$INVENTORY_FILE"
+            echo "$vm_name" >> "$INVENTORY_FILE"
+        else
+            if ! grep -A 20 "^\[${cluster_name}\]" "$INVENTORY_FILE" | grep -q "^$vm_name$"; then
+                sed -i "/^\[${cluster_name}\]/a $vm_name" "$INVENTORY_FILE"
+            fi
+        fi
+    fi
+}
 
-# Cleanup
-rm -f tf_output.json
+# Function to clean empty groups
+clean_empty_groups() {
+    echo "Cleaning empty groups..."
+    # Remove groups that have no members (group header followed immediately by another group header or EOF)
+    sed -i '/^\[.*\]$/{
+        N
+        /^\[.*\]\n\[.*\]$/d
+        /^\[.*\]\n$/d
+    }' "$INVENTORY_FILE"
+}
 
-if [ "$FOUND_NEW_HOSTS" = true ]; then
-    echo "Inventory file updated with new hosts: $INVENTORY_FILE"
-    echo "New hosts detected:"
+# Remove VMs that no longer exist
+if [ ${#VMS_TO_REMOVE[@]} -gt 0 ]; then
+    echo "Removing VMs that no longer exist..."
+    for vm_name in "${VMS_TO_REMOVE[@]}"; do
+        if [ -n "$vm_name" ]; then
+            remove_vm_from_inventory "$vm_name"
+        fi
+    done
+fi
+
+# Clear new_hosts.txt
+> "$NEW_HOSTS_FILE"
+
+# Add new VMs and update existing ones
+if [ ${#NAMES[@]} -gt 0 ]; then
+    echo "Processing VMs from terraform output..."
+    
+    for i in "${!NAMES[@]}"; do
+        name="${NAMES[i]}"
+        ip="${IPS[i]}"
+        
+        # Clean up IP (remove any extra formatting)
+        ip=$(echo $ip | sed 's/ip=//g' | cut -d',' -f1)
+        
+        echo "Processing VM: $name with IP: $ip"
+        
+        # Skip if IP is malformed
+        if [[ ! $ip =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Warning: Skipping $name - invalid IP format: $ip"
+            continue
+        fi
+        
+        # Check if this is a new VM
+        if ! grep -q "^$name " "$INVENTORY_FILE"; then
+            echo "New VM detected: $name"
+            echo "$ip,$name" >> "$NEW_HOSTS_FILE"
+        fi
+        
+        # Handle different VM types
+        if [[ $name =~ ^haproxy- ]]; then
+            add_haproxy_entry "$name" "$ip"
+        elif [[ $name =~ ^k8s-([^-]+)-(cp|w)[0-9]+$ ]]; then
+            add_talos_cluster_groups "$name" "$ip"
+        else
+            # Handle regular VMs (existing logic)
+            echo "Adding regular VM: $name"
+            # Check if entry exists, if not add it
+            if ! grep -q "^$name " "$INVENTORY_FILE"; then
+                sed -i "/^# Individual hosts/a $name ansible_host=$ip ansible_user=suporte" "$INVENTORY_FILE"
+            else
+                # Update existing entry
+                sed -i "s/^$name ansible_host=.*/$name ansible_host=$ip ansible_user=suporte/" "$INVENTORY_FILE"
+            fi
+        fi
+    done
+else
+    echo "No VMs to process"
+fi
+
+# Clean up empty groups
+clean_empty_groups
+
+# Clean up temporary files
+rm -f /tmp/current_vms.txt /tmp/new_vms.txt
+
+# Validate final inventory
+if ansible-inventory -i "$INVENTORY_FILE" --list > /dev/null 2>&1; then
+    echo "✅ Inventory validation successful"
+else
+    echo "❌ Inventory validation failed, restoring backup"
+    mv "${INVENTORY_FILE}.backup" "$INVENTORY_FILE"
+    exit 1
+fi
+
+# Remove backup if everything went well
+rm -f "${INVENTORY_FILE}.backup"
+
+echo "Inventory update completed successfully"
+if [ -s "$NEW_HOSTS_FILE" ]; then
+    echo "New hosts added:"
     cat "$NEW_HOSTS_FILE"
 else
-    echo "No new hosts detected. Inventory remains unchanged."
+    echo "No new hosts were added"
 fi
