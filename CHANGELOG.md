@@ -1,3 +1,19 @@
+## [1.2.3](https://github.com/fullstack-pw/infra/compare/v1.2.2...v1.2.3) (2025-07-27)
+
+### Bug Fixes
+
+* **ansible:** inventory ([#80](https://github.com/fullstack-pw/infra/issues/80)) ([382dc60](https://github.com/fullstack-pw/infra/commit/382dc60589f82a36c81c8be575c3359b8515be18))
+
+## [1.2.2](https://github.com/fullstack-pw/infra/compare/v1.2.1...v1.2.2) (2025-07-27)
+
+### Bug Fixes
+
+* **ansible:** inventory ([#79](https://github.com/fullstack-pw/infra/issues/79)) ([1c66acc](https://github.com/fullstack-pw/infra/commit/1c66acce74291468cb2d7164e949c277ab712609))
+
+### Chores
+
+* **talos:** first integration ([#78](https://github.com/fullstack-pw/infra/issues/78)) ([c9e2fe6](https://github.com/fullstack-pw/infra/commit/c9e2fe6b7e191f5cabe5f1150128eeed61395657))
+
 ## [1.2.1](https://github.com/fullstack-pw/infra/compare/v1.2.0...v1.2.1) (2025-05-14)
 
 ### Bug Fixes
