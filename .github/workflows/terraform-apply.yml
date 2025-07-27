@@ -15,7 +15,21 @@ permissions:
   pull-requests: write
 
 jobs:
+  wait-for-release:
+    if: github.event.pull_request.merged == true
+    runs-on: self-hosted
+    steps:
+      - name: Wait for Release Workflow
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          check-name: "Release"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+          allowed-conclusions: success,failure,cancelled,skipped
+
   detect-changes:
+    needs: wait-for-release
     if: github.event.pull_request.merged == true
     runs-on: self-hosted
     outputs:
