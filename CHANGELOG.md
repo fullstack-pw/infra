@@ -1,3 +1,9 @@
+## [1.2.7](https://github.com/fullstack-pw/infra/compare/v1.2.6...v1.2.7) (2025-07-29)
+
+### Tasks
+
+* **bootstrap:** talos ([#86](https://github.com/fullstack-pw/infra/issues/86)) ([102d7a4](https://github.com/fullstack-pw/infra/commit/102d7a453ae2a13bf816737d7d13ffb5d4323391))
+
 ## [1.2.6](https://github.com/fullstack-pw/infra/compare/v1.2.5...v1.2.6) (2025-07-29)
 
 ### Tasks
