@@ -19,14 +19,57 @@ jobs:
     if: github.event.pull_request.merged == true
     runs-on: self-hosted
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Wait for Release Workflow
-        uses: lewagon/wait-on-check-action@v1.3.4
-        with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
-          check-name: "Release"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 10
-          allowed-conclusions: success,failure,cancelled,skipped
+        run: |
+          echo "Waiting for Release workflow to complete..."
+
+          MAX_WAIT=300
+          WAIT_INTERVAL=10
+          ELAPSED=0
+          REF="${{ github.event.pull_request.merge_commit_sha }}"
+          REPO="${{ github.repository }}"
+
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            echo "Checking Release workflow status... (elapsed: ${ELAPSED}s)"
+            
+            RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/$REPO/actions/runs?head_sha=$REF")
+            
+            RELEASE_RUN=$(echo "$RESPONSE" | jq -r '.workflow_runs[] | select(.name == "Release") | {status: .status, conclusion: .conclusion}')
+            
+            if [ "$RELEASE_RUN" != "null" ] && [ "$RELEASE_RUN" != "" ]; then
+              STATUS=$(echo "$RELEASE_RUN" | jq -r '.status')
+              CONCLUSION=$(echo "$RELEASE_RUN" | jq -r '.conclusion')
+              
+              echo "Release workflow - Status: $STATUS, Conclusion: $CONCLUSION"
+              
+              if [ "$STATUS" = "completed" ]; then
+                case "$CONCLUSION" in
+                  success|failure|cancelled|skipped)
+                    echo "Release workflow completed with conclusion: $CONCLUSION"
+                    exit 0
+                    ;;
+                  *)
+                    echo "Release workflow completed with unexpected conclusion: $CONCLUSION"
+                    exit 1
+                    ;;
+                esac
+              fi
+            else
+              echo "No Release workflow found for commit $REF yet..."
+            fi
+            
+            echo "Waiting ${WAIT_INTERVAL}s for Release workflow..."
+            sleep $WAIT_INTERVAL
+            ELAPSED=$((ELAPSED + WAIT_INTERVAL))
+          done
+
+          echo "Timeout waiting for Release workflow after ${MAX_WAIT}s"
+          exit 1
 
   detect-changes:
     needs: wait-for-release

@@ -67,7 +67,6 @@ variable "cloud_init_credentials" {
   }
 }
 
-# Proxmox ISO Configuration
 variable "proxmox_isos" {
   description = "Details about available Proxmox ISOs"
   type = map(object({
