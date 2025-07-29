@@ -1,5 +1,5 @@
 data "local_file" "yaml_files" {
-  for_each = setsubtract(fileset("${path.module}/vms", "*.yaml"), ["k8s-home.yaml"])
+  for_each = setsubtract(fileset("${path.module}/vms", "*.yaml"), ["k8s-home.yaml", "boot-server.yaml"])
   filename = "${path.module}/vms/${each.key}"
 }
 
