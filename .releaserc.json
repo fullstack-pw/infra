@@ -46,10 +46,6 @@
                         "release": false
                     },
                     {
-                        "type": "chore",
-                        "release": false
-                    },
-                    {
                         "type": "test",
                         "release": false
                     }
@@ -101,10 +97,6 @@
                         {
                             "type": "ci",
                             "section": "Continuous Integration"
-                        },
-                        {
-                            "type": "chore",
-                            "section": "Chores"
                         },
                         {
                             "type": "revert",
