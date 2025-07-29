@@ -13,6 +13,10 @@
                         "release": "minor"
                     },
                     {
+                        "type": "chore",
+                        "release": "patch"
+                    },
+                    {
                         "type": "fix",
                         "release": "patch"
                     },
@@ -61,6 +65,10 @@
                         {
                             "type": "feat",
                             "section": "Features"
+                        },
+                        {
+                            "type": "chore",
+                            "section": "Tasks"
                         },
                         {
                             "type": "fix",
