@@ -89,8 +89,6 @@ variable "proxmox_isos" {
     }
   }
 }
-
-# Templates
 variable "vm_templates" {
   description = "Available VM templates for cloning"
   type        = map(string)
