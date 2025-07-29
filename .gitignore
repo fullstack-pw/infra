@@ -23,3 +23,4 @@ secrets/**/*.plaintext.*
 
 node_modules
 proxmox/scripts/talos-configs/*
+tf_output.json

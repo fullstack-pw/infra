@@ -41,6 +41,27 @@
         timeout: 60
       when: haproxy_ip != ""
 
+    - name: Add HAProxy DNS record to Pi-hole
+      uri:
+        url: "http://192.168.1.3/admin/api.php"
+        method: POST
+        body_format: form-urlencoded
+        body:
+          auth: "{{ lookup('env', 'PIHOLE_PASSWORD') }}"
+          action: "add"
+          domain: "{{ cluster_endpoint }}"
+          ip: "{{ haproxy_ip }}"
+        status_code: [200, 409]  # 409 if record already exists
+      when: haproxy_ip != ""
+      register: dns_result
+      retries: 3
+      delay: 5
+
+    - name: Verify DNS record creation
+      debug:
+        msg: "DNS record for {{ cluster_endpoint }} -> {{ haproxy_ip }} {{ 'created successfully' if dns_result.status == 200 else 'already exists' }}"
+      when: haproxy_ip != "" and dns_result is defined
+
     - name: Generate Talos configs with dynamic endpoint
       shell: |
         cd {{ config_dir }}

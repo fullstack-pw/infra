@@ -106,27 +106,27 @@ remove_vm_from_inventory() {
     sed -i '/^$/N;/^\n$/d' "$INVENTORY_FILE"
 }
 
-# Function to add HAProxy entry
+# Function to add haproxy entries
 add_haproxy_entry() {
     local vm_name=$1
     local ip=$2
     
-    if [[ $vm_name =~ ^haproxy- ]]; then
-        echo "Adding HAProxy VM: $vm_name"
-        # Extract cluster name from HAProxy VM name
-        local cluster_name=$(echo $vm_name | sed 's/^haproxy-//')
-        
-        # Add to individual hosts section if not exists
-        if ! grep -q "^$vm_name " "$INVENTORY_FILE"; then
-            # Add after the "# Individual hosts" comment
-            sed -i "/^# Individual hosts/a $vm_name ansible_host=$ip ansible_user=suporte" "$INVENTORY_FILE"
-        fi
-        
-        # Create/update HAProxy group for this cluster
-        if ! grep -q "^\[haproxy_${cluster_name}\]" "$INVENTORY_FILE"; then
-            echo "" >> "$INVENTORY_FILE"
-            echo "[haproxy_${cluster_name}]" >> "$INVENTORY_FILE"
-            echo "$vm_name" >> "$INVENTORY_FILE"
+    echo "Adding HAProxy: $vm_name"
+    
+    # Add to individual hosts section if not exists
+    if ! grep -q "^$vm_name " "$INVENTORY_FILE"; then
+        sed -i "/^# Individual hosts/a $vm_name ansible_host=$ip ansible_user=suporte" "$INVENTORY_FILE"
+    fi
+    
+    # Add to haproxy group
+    if ! grep -q "^\[haproxy\]" "$INVENTORY_FILE"; then
+        echo "" >> "$INVENTORY_FILE"
+        echo "[haproxy]" >> "$INVENTORY_FILE"
+        echo "$vm_name" >> "$INVENTORY_FILE"
+    else
+        # Add to existing group if not already there
+        if ! grep -A 20 "^\[haproxy\]" "$INVENTORY_FILE" | grep -q "^$vm_name$"; then
+            sed -i "/^\[haproxy\]/a $vm_name" "$INVENTORY_FILE"
         fi
     fi
 }
@@ -136,10 +136,11 @@ add_talos_cluster_groups() {
     local vm_name=$1
     local ip=$2
     
-    # Handle testing cluster specifically (adjust pattern as needed)
-    if [[ $vm_name =~ ^k8s-([^-]+)-(cp|w)[0-9]+$ ]]; then
+    # Handle new talos naming convention: talos-CLUSTERNAME-CLUSTERFUNCTION-number
+    if [[ $vm_name =~ ^talos-([^-]+)-(cp|worker)([0-9]+)$ ]]; then
         local cluster_name="${BASH_REMATCH[1]}"
         local node_type="${BASH_REMATCH[2]}"
+        local node_number="${BASH_REMATCH[3]}"
         
         echo "Adding Talos node: $vm_name to cluster: $cluster_name"
         
@@ -175,6 +176,34 @@ add_talos_cluster_groups() {
         else
             if ! grep -A 20 "^\[${cluster_name}\]" "$INVENTORY_FILE" | grep -q "^$vm_name$"; then
                 sed -i "/^\[${cluster_name}\]/a $vm_name" "$INVENTORY_FILE"
+            fi
+        fi
+    fi
+}
+
+# Function to add K3s single-machine cluster groups
+add_k3s_single_machine_groups() {
+    local vm_name=$1
+    local ip=$2
+    
+    # Handle VMs starting with k8s that are NOT talos clusters
+    if [[ $vm_name =~ ^k8s-([^-]+)$ ]] || [[ $vm_name =~ ^k8s-([^-]+)-[0-9]+$ ]]; then
+        echo "Adding K3s single-machine cluster: $vm_name"
+        
+        # Add to individual hosts section if not exists
+        if ! grep -q "^$vm_name " "$INVENTORY_FILE"; then
+            sed -i "/^# Individual hosts/a $vm_name ansible_host=$ip ansible_user=suporte" "$INVENTORY_FILE"
+        fi
+        
+        # Add to k3s group
+        if ! grep -q "^\[k3s\]" "$INVENTORY_FILE"; then
+            echo "" >> "$INVENTORY_FILE"
+            echo "[k3s]" >> "$INVENTORY_FILE"
+            echo "$vm_name" >> "$INVENTORY_FILE"
+        else
+            # Add to existing group if not already there
+            if ! grep -A 20 "^\[k3s\]" "$INVENTORY_FILE" | grep -q "^$vm_name$"; then
+                sed -i "/^\[k3s\]/a $vm_name" "$INVENTORY_FILE"
             fi
         fi
     fi
@@ -229,11 +258,13 @@ if [ ${#NAMES[@]} -gt 0 ]; then
             echo "$ip,$name" >> "$NEW_HOSTS_FILE"
         fi
         
-        # Handle different VM types
+# Handle different VM types
         if [[ $name =~ ^haproxy- ]]; then
             add_haproxy_entry "$name" "$ip"
-        elif [[ $name =~ ^k8s-([^-]+)-(cp|w)[0-9]+$ ]]; then
+        elif [[ $name =~ ^talos-([^-]+)-(cp|worker)([0-9]+)$ ]]; then
             add_talos_cluster_groups "$name" "$ip"
+        elif [[ $name =~ ^k8s-([^-]+)$ ]]; then
+            add_k3s_single_machine_groups "$name" "$ip"
         else
             # Handle regular VMs (existing logic)
             echo "Adding regular VM: $name"
@@ -242,7 +273,7 @@ if [ ${#NAMES[@]} -gt 0 ]; then
                 sed -i "/^# Individual hosts/a $name ansible_host=$ip ansible_user=suporte" "$INVENTORY_FILE"
             else
                 # Update existing entry
-                sed -i "s/^$name ansible_host=.*/$name ansible_host=$ip ansible_user=suporte/" "$INVENTORY_FILE"
+                sed -i "s/^$name ansible_host=.* ansible_user=suporte/$name ansible_host=$ip ansible_user=suporte/" "$INVENTORY_FILE"
             fi
         fi
     done
