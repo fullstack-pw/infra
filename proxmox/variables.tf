@@ -45,7 +45,6 @@ variable "vm_defaults" {
   }
 }
 
-# SSH Keys for Cloud-Init VMs
 variable "ssh_keys" {
   description = "SSH public keys to add to cloud-init VMs"
   type        = list(string)

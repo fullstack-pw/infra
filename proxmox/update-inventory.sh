@@ -288,10 +288,28 @@ clean_empty_groups
 rm -f /tmp/current_vms.txt /tmp/new_vms.txt
 
 # Validate final inventory
-if ansible-inventory -i "$INVENTORY_FILE" --list > /dev/null 2>&1; then
+echo "Validating inventory file..."
+if [ ! -f "$INVENTORY_FILE" ]; then
+    echo "❌ Inventory validation failed - file does not exist"
+    mv "${INVENTORY_FILE}.backup" "$INVENTORY_FILE"
+    exit 1
+fi
+
+# Show inventory content for debugging
+echo "Current inventory content:"
+cat "$INVENTORY_FILE"
+
+# Try ansible-inventory validation with detailed error output
+VALIDATION_OUTPUT=$(ansible-inventory -i "$INVENTORY_FILE" --list 2>&1)
+VALIDATION_EXIT_CODE=$?
+
+if [ $VALIDATION_EXIT_CODE -eq 0 ]; then
     echo "✅ Inventory validation successful"
 else
-    echo "❌ Inventory validation failed, restoring backup"
+    echo "❌ Inventory validation failed with exit code: $VALIDATION_EXIT_CODE"
+    echo "Validation error output:"
+    echo "$VALIDATION_OUTPUT"
+    echo "Restoring backup..."
     mv "${INVENTORY_FILE}.backup" "$INVENTORY_FILE"
     exit 1
 fi
