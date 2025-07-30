@@ -53,8 +53,6 @@ variable "ssh_keys" {
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP+mJj63c+7o+Bu40wNnXwTpXkPTpGJA9OIprmNoljKI pedro@pedro-Legion-5-16IRX9"
   ]
 }
-
-# Cloud-Init Credentials
 variable "cloud_init_credentials" {
   description = "Default credentials for cloud-init VMs"
   type = object({
