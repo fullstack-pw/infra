@@ -137,18 +137,18 @@ add_talos_cluster_groups() {
     local ip=$2
     
     # Handle new talos naming convention: talos-CLUSTERNAME-CLUSTERFUNCTION-number
-    if [[ $vm_name =~ ^talos-([^-]+)-(cp|worker)([0-9]+)$ ]]; then
+    if [[ $vm_name =~ ^talos-([^-]+)-(cp|w)([0-9]+)$ ]]; then
         local cluster_name="${BASH_REMATCH[1]}"
         local node_type="${BASH_REMATCH[2]}"
         local node_number="${BASH_REMATCH[3]}"
         
-        echo "Adding Talos node: $vm_name to cluster: $cluster_name"
+        echo "Adding Talos node $vm_name to Talos group"
         
         local group_name
         if [[ $node_type == "cp" ]]; then
-            group_name="${cluster_name}_control_plane"
+            group_name="talos_control_plane"
         else
-            group_name="${cluster_name}_workers"
+            group_name="talos_workers"
         fi
         
         # Add to individual hosts section if not exists
@@ -165,17 +165,6 @@ add_talos_cluster_groups() {
             # Add to existing group if not already there
             if ! grep -A 20 "^\[${group_name}\]" "$INVENTORY_FILE" | grep -q "^$vm_name$"; then
                 sed -i "/^\[${group_name}\]/a $vm_name" "$INVENTORY_FILE"
-            fi
-        fi
-        
-        # Also add to main cluster group
-        if ! grep -q "^\[${cluster_name}\]" "$INVENTORY_FILE"; then
-            echo "" >> "$INVENTORY_FILE"
-            echo "[${cluster_name}]" >> "$INVENTORY_FILE"
-            echo "$vm_name" >> "$INVENTORY_FILE"
-        else
-            if ! grep -A 20 "^\[${cluster_name}\]" "$INVENTORY_FILE" | grep -q "^$vm_name$"; then
-                sed -i "/^\[${cluster_name}\]/a $vm_name" "$INVENTORY_FILE"
             fi
         fi
     fi
@@ -306,9 +295,9 @@ if [ ${#NAMES[@]} -gt 0 ]; then
         fi
         
 # Handle different VM types
-        if [[ $name =~ ^haproxy- ]]; then
+        if [[ $name =~ haproxy ]]; then
             add_haproxy_entry "$name" "$ip"
-        elif [[ $name =~ ^talos-([^-]+)-(cp|worker)([0-9]+)$ ]]; then
+        elif [[ $name =~ ^talos-([^-]+)-(cp|w)([0-9]+)$ ]]; then
             add_talos_cluster_groups "$name" "$ip"
         elif [[ $name =~ ^k8s-([^-]+)$ ]]; then
             add_k3s_single_machine_groups "$name" "$ip"
