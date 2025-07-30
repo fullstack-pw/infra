@@ -209,15 +209,62 @@ add_k3s_single_machine_groups() {
     fi
 }
 
-# Function to clean empty groups
+# Function to clean empty groups - minimal approach
 clean_empty_groups() {
     echo "Cleaning empty groups..."
-    # Remove groups that have no members (group header followed immediately by another group header or EOF)
-    sed -i '/^\[.*\]$/{
-        N
-        /^\[.*\]\n\[.*\]$/d
-        /^\[.*\]\n$/d
-    }' "$INVENTORY_FILE"
+    # Remove only truly empty groups (group header followed immediately by another group header or end of file)
+    # But be more careful about it
+    python3 -c "
+import re
+import sys
+
+with open('$INVENTORY_FILE', 'r') as f:
+    lines = f.readlines()
+
+result = []
+i = 0
+while i < len(lines):
+    line = lines[i].strip()
+    
+    # If this is a group header
+    if re.match(r'^\[.*\]$', line):
+        # Look ahead to see if this group is empty
+        j = i + 1
+        has_members = False
+        
+        # Check following lines until next group or end
+        while j < len(lines):
+            next_line = lines[j].strip()
+            if re.match(r'^\[.*\]$', next_line):  # Next group found
+                break
+            elif next_line and not next_line.startswith('#') and not next_line.startswith('ansible_'):
+                has_members = True
+                break
+            j += 1
+        
+        # Only add group if it has members or is [all:vars]
+        if has_members or '[all:vars]' in line:
+            result.append(lines[i])
+            # Add all lines until next group
+            k = i + 1
+            while k < len(lines):
+                if re.match(r'^\[.*\]$', lines[k].strip()) and k != i:
+                    break
+                result.append(lines[k])
+                k += 1
+            i = k
+        else:
+            # Skip empty group
+            while i + 1 < len(lines) and not re.match(r'^\[.*\]$', lines[i + 1].strip()):
+                i += 1
+            i += 1
+    else:
+        result.append(lines[i])
+        i += 1
+
+with open('$INVENTORY_FILE', 'w') as f:
+    f.writelines(result)
+"
 }
 
 # Remove VMs that no longer exist

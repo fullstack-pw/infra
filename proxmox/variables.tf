@@ -21,8 +21,6 @@ variable "network_config" {
     k8s = "192.168.1.4"
   }
 }
-
-# Default resource allocations
 variable "vm_defaults" {
   description = "Default values for VM resources"
   type = object({
