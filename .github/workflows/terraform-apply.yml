@@ -149,6 +149,11 @@ jobs:
             echo "ANSIBLE_TAG=" >> $GITHUB_ENV
           fi
 
+      - name: Install Ansible for Inventory Validation
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install ansible
+
       - name: Update Ansible Inventory
         if: steps.apply.outcome == 'success'
         run: |
