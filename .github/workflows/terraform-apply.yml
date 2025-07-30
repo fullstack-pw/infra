@@ -171,7 +171,7 @@ jobs:
 
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
-          # Add the updated files
+          git pull
           git add proxmox/k8s.ini proxmox/new_hosts.txt || true
 
           # Check if there are changes to commit
