@@ -1,3 +1,9 @@
+## [1.2.13](https://github.com/fullstack-pw/infra/compare/v1.2.12...v1.2.13) (2025-08-01)
+
+### Tasks
+
+* **talos:** bootstrap [ansible talos-testing] ([b1c9fd5](https://github.com/fullstack-pw/infra/commit/b1c9fd51a8f85225d4631525b7e820e89d16acc8))
+
 ## [1.2.12](https://github.com/fullstack-pw/infra/compare/v1.2.11...v1.2.12) (2025-07-30)
 
 ### Tasks
