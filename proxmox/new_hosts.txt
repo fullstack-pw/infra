@@ -1,0 +1,7 @@
+192.168.1.22,talos-testing-cp01
+192.168.1.23,talos-testing-cp02
+192.168.1.24,talos-testing-cp03
+192.168.1.28,talos-testing-haproxy
+192.168.1.25,talos-testing-w01
+192.168.1.26,talos-testing-w02
+192.168.1.27,talos-testing-w03
