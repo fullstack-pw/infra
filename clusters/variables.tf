@@ -54,6 +54,11 @@ variable "workload" {
       "minio",
       "vault"
     ]
+    cluster-api = [
+      "externaldns",
+      "cert_manager",
+      "external_secrets"
+    ]
   }
 }
 
@@ -94,6 +99,11 @@ variable "config" {
       kubernetes_context = "tools"
       install_crd        = true
       cert_manager_crd   = true
+    }
+    cluster-api = {
+      kubernetes_context = "connected-hearth"
+      install_crd        = false
+      cert_manager_crd   = false
     }
   }
 }
