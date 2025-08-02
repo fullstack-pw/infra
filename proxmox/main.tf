@@ -23,6 +23,7 @@ resource "proxmox_vm_qemu" "vm" {
   tags        = "terraform"
   clone       = lookup(each.value, "clone", null)
   full_clone  = lookup(each.value, "full_clone", false)
+  args        = lookup(each.value, "args", null)
 
   boot = lookup(each.value, "boot", null)
 
