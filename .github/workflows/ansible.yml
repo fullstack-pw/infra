@@ -87,7 +87,9 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_rsa
+          echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_ed25519
 
           # Check if we have new hosts to limit execution to
           if [ -f "proxmox/new_hosts.txt" ] && [ -s "proxmox/new_hosts.txt" ]; then
