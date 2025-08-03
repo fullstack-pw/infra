@@ -51,7 +51,7 @@ class KubeconfigUpdater:
             raise
     
     def read_kubeconfig_file(self, file_path: str, host_address: str = None) -> str:
-        """Read kubeconfig file and optionally replace localhost"""
+        """Read kubeconfig file and optionally replace localhost/cluster-api"""
         if not Path(file_path).exists():
             raise FileNotFoundError(f"Kubeconfig file not found: {file_path}")
             
@@ -59,9 +59,10 @@ class KubeconfigUpdater:
             content = f.read()
             
         if host_address:
-            self.logger.info(f"Replacing 127.0.0.1/localhost with {host_address}")
+            self.logger.info(f"Replacing server addresses with {host_address}")
             content = content.replace('127.0.0.1', host_address)
             content = content.replace('localhost', host_address)
+            content = content.replace('cluster-api', host_address)
             
         return content
     
@@ -105,29 +106,47 @@ class KubeconfigUpdater:
             existing_yaml = yaml.safe_load(existing)
             new_yaml = yaml.safe_load(new)
             
-            # Update names in new config
-            for section in ['clusters', 'contexts', 'users']:
+            # Get the original context name from new config to preserve it
+            original_context_name = None
+            if 'contexts' in new_yaml and new_yaml['contexts']:
+                original_context_name = new_yaml['contexts'][0]['name']
+            
+            # Update cluster and user names to match our cluster_name
+            for section in ['clusters', 'users']:
                 if section in new_yaml and new_yaml[section]:
                     for item in new_yaml[section]:
                         item['name'] = cluster_name
-                        
-                    # Update context references
-                    if section == 'contexts':
-                        for item in new_yaml[section]:
-                            if 'context' in item:
-                                item['context']['cluster'] = cluster_name
-                                item['context']['user'] = cluster_name
+            
+            # For contexts: keep original name but update cluster/user references
+            if 'contexts' in new_yaml and new_yaml['contexts']:
+                for item in new_yaml['contexts']:
+                    # Keep the original context name (e.g., 'cluster-api')
+                    if original_context_name:
+                        item['name'] = original_context_name
+                    
+                    # Update references to use our cluster_name
+                    if 'context' in item:
+                        item['context']['cluster'] = cluster_name
+                        item['context']['user'] = cluster_name
             
             # Merge sections
             for section in ['clusters', 'contexts', 'users']:
                 if section not in existing_yaml:
                     existing_yaml[section] = []
                     
-                # Remove existing entries for this cluster
-                existing_yaml[section] = [
-                    item for item in existing_yaml[section] 
-                    if item.get('name') != cluster_name
-                ]
+                if section == 'contexts':
+                    # For contexts, remove by original context name
+                    context_name_to_remove = original_context_name or cluster_name
+                    existing_yaml[section] = [
+                        item for item in existing_yaml[section] 
+                        if item.get('name') != context_name_to_remove
+                    ]
+                else:
+                    # For clusters and users, remove by cluster_name
+                    existing_yaml[section] = [
+                        item for item in existing_yaml[section] 
+                        if item.get('name') != cluster_name
+                    ]
                 
                 # Add new entries
                 if section in new_yaml and new_yaml[section]:
@@ -137,11 +156,13 @@ class KubeconfigUpdater:
             existing_yaml.setdefault('apiVersion', 'v1')
             existing_yaml.setdefault('kind', 'Config')
             
-            # Update current-context if provided
+            # Update current-context to use the original context name
             if 'current-context' in new_yaml:
                 existing_yaml['current-context'] = new_yaml['current-context']
+            elif original_context_name:
+                existing_yaml['current-context'] = original_context_name
             
-            self.logger.info(f"Successfully merged config for cluster: {cluster_name}")
+            self.logger.info(f"Successfully merged config for cluster: {cluster_name} (context: {original_context_name})")
             return yaml.dump(existing_yaml, default_flow_style=False)
             
         except Exception as e:
