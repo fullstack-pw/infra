@@ -1,268 +1,249 @@
 #!/usr/bin/env python3
 """
 Script to update kubeconfig in Vault with a new cluster configuration.
-Uses hvac library instead of vault CLI binary.
+Simple and focused: merge kubeconfig and update vault secret.
 """
-import os
+
 import sys
-import json
+import logging
 import argparse
 from pathlib import Path
 
-# Check and install required dependencies
 try:
     import yaml
-except ImportError:
-    print("PyYAML not found. Attempting to install...")
-    try:
-        import subprocess
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "pyyaml"])
-        import yaml
-        print("PyYAML successfully installed")
-    except Exception as e:
-        print(f"Failed to install PyYAML: {e}")
-        sys.exit(1)
-
-try:
     import hvac
-except ImportError:
-    print("HVAC (Hashicorp Vault client) not found. Attempting to install...")
-    try:
-        import subprocess
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "hvac"])
-        import hvac
-        print("HVAC successfully installed")
-    except Exception as e:
-        print(f"Failed to install HVAC: {e}")
-        sys.exit(1)
+except ImportError as e:
+    print(f"Missing required dependency: {e}")
+    print("Install with: pip install pyyaml hvac")
+    sys.exit(1)
 
 
-def get_vault_client(vault_addr, vault_token):
-    """Create and return an authenticated Vault client"""
-    try:
-        client = hvac.Client(url=vault_addr, token=vault_token)
-        if client.is_authenticated():
-            print(f"Successfully authenticated to Vault at {vault_addr}")
-            return client
-        else:
-            print(f"Failed to authenticate to Vault at {vault_addr}")
-            return None
-    except Exception as e:
-        print(f"Error connecting to Vault: {e}")
-        return None
-
-
-def get_existing_kubeconfig(client, path="kv/gitlab-runner", key="KUBECONFIG"):
-    """Retrieve existing kubeconfig from Vault using hvac"""
-    if not client:
-        print("No valid Vault client provided")
-        return None
+class KubeconfigUpdater:
+    """Simple kubeconfig updater for Vault"""
     
-    print(f"Retrieving existing kubeconfig from Vault at {path}")
-    
-    try:
-        # Extract mount point and path
-        mount_point, secret_path = path.split('/', 1) if '/' in path else (path, '')
+    def __init__(self, vault_addr: str, vault_token: str):
+        self.vault_addr = vault_addr
+        self.vault_token = vault_token
+        self.client = None
+        self._setup_logging()
         
-        # Read the secret
+    def _setup_logging(self):
+        """Setup basic logging"""
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(levelname)s: %(message)s'
+        )
+        self.logger = logging.getLogger(__name__)
+        
+    def _get_vault_client(self) -> hvac.Client:
+        """Create and return authenticated Vault client"""
+        if self.client:
+            return self.client
+            
         try:
+            self.client = hvac.Client(url=self.vault_addr, token=self.vault_token)
+            if not self.client.is_authenticated():
+                raise Exception("Failed to authenticate to Vault")
+            self.logger.info("Successfully authenticated to Vault")
+            return self.client
+        except Exception as e:
+            self.logger.error(f"Vault connection failed: {e}")
+            raise
+    
+    def read_kubeconfig_file(self, file_path: str, host_address: str = None) -> str:
+        """Read kubeconfig file and optionally replace localhost"""
+        if not Path(file_path).exists():
+            raise FileNotFoundError(f"Kubeconfig file not found: {file_path}")
+            
+        with open(file_path, 'r') as f:
+            content = f.read()
+            
+        if host_address:
+            self.logger.info(f"Replacing 127.0.0.1/localhost with {host_address}")
+            content = content.replace('127.0.0.1', host_address)
+            content = content.replace('localhost', host_address)
+            
+        return content
+    
+    def get_vault_secret(self, vault_path: str, key: str = "KUBECONFIG") -> str:
+        """Get existing kubeconfig from Vault"""
+        client = self._get_vault_client()
+        
+        # Parse vault path (mount_point/secret_path)
+        if '/' not in vault_path:
+            raise ValueError(f"Invalid vault path format: {vault_path}. Expected: mount_point/secret_path")
+            
+        mount_point, secret_path = vault_path.split('/', 1)
+        
+        try:
+            self.logger.info(f"Reading secret from {vault_path}")
             secret = client.secrets.kv.v2.read_secret_version(
                 path=secret_path,
                 mount_point=mount_point
             )
+            
             if secret and 'data' in secret and 'data' in secret['data']:
                 kubeconfig = secret['data']['data'].get(key)
                 if kubeconfig:
-                    print(f"Successfully retrieved existing kubeconfig from Vault")
-                    # Print the first 100 chars to verify
-                    print(f"Kubeconfig starts with: {kubeconfig[:100]}...")
+                    self.logger.info("Found existing kubeconfig in Vault")
                     return kubeconfig
-                else:
-                    print(f"No kubeconfig found in Vault at {path}")
-            else:
-                print(f"No data found in Vault response for {path}")
-                print(f"Vault response structure: {secret.keys() if secret else 'None'}")
-            return None
+                    
         except hvac.exceptions.InvalidPath:
-            print(f"Secret not found at {mount_point}/{secret_path}")
-            return None
+            self.logger.info("No existing secret found - will create new one")
+        except Exception as e:
+            self.logger.warning(f"Error reading from Vault: {e}")
             
-    except Exception as e:
-        print(f"Error reading from Vault: {e}")
-        print(f"Checking if secret engine exists...")
-        try:
-            # List mounts to check if the secret engine exists
-            mounts = client.sys.list_mounted_secrets_engines()
-            print(f"Available secret engines: {list(mounts.keys())}")
-            
-            if f"{mount_point}/" in mounts:
-                print(f"Secret engine {mount_point} exists")
-            else:
-                print(f"Secret engine {mount_point} does not exist")
-        except Exception as mount_error:
-            print(f"Error listing secret engines: {mount_error}")
         return None
-
-
-def update_vault_kubeconfig(client, kubeconfig, path="kv/gitlab-runner", key="KUBECONFIG"):
-    """Update kubeconfig in Vault using hvac"""
-    if not client:
-        print("No valid Vault client provided")
-        return False
     
-    print(f"Updating kubeconfig in Vault at {path}")
-    
-    try:
-        # Extract mount point and path
-        mount_point, secret_path = path.split('/', 1) if '/' in path else (path, '')
-        
-        # Prepare the data to write
-        secret_data = {key: kubeconfig}
-        
-        # Try to read existing data to merge with new data
+    def merge_kubeconfig(self, existing: str, new: str, cluster_name: str) -> str:
+        """Merge new cluster config into existing kubeconfig"""
+        if not existing:
+            self.logger.info("No existing config - using new config")
+            return new
+            
         try:
-            existing_secret = client.secrets.kv.v2.read_secret_version(
+            existing_yaml = yaml.safe_load(existing)
+            new_yaml = yaml.safe_load(new)
+            
+            # Update names in new config
+            for section in ['clusters', 'contexts', 'users']:
+                if section in new_yaml and new_yaml[section]:
+                    for item in new_yaml[section]:
+                        item['name'] = cluster_name
+                        
+                    # Update context references
+                    if section == 'contexts':
+                        for item in new_yaml[section]:
+                            if 'context' in item:
+                                item['context']['cluster'] = cluster_name
+                                item['context']['user'] = cluster_name
+            
+            # Merge sections
+            for section in ['clusters', 'contexts', 'users']:
+                if section not in existing_yaml:
+                    existing_yaml[section] = []
+                    
+                # Remove existing entries for this cluster
+                existing_yaml[section] = [
+                    item for item in existing_yaml[section] 
+                    if item.get('name') != cluster_name
+                ]
+                
+                # Add new entries
+                if section in new_yaml and new_yaml[section]:
+                    existing_yaml[section].extend(new_yaml[section])
+            
+            # Ensure required fields
+            existing_yaml.setdefault('apiVersion', 'v1')
+            existing_yaml.setdefault('kind', 'Config')
+            
+            # Update current-context if provided
+            if 'current-context' in new_yaml:
+                existing_yaml['current-context'] = new_yaml['current-context']
+            
+            self.logger.info(f"Successfully merged config for cluster: {cluster_name}")
+            return yaml.dump(existing_yaml, default_flow_style=False)
+            
+        except Exception as e:
+            self.logger.error(f"Error merging configs: {e}")
+            self.logger.info("Using new config only")
+            return new
+    
+    def update_vault_secret(self, vault_path: str, kubeconfig: str, key: str = "KUBECONFIG") -> bool:
+        """Update kubeconfig in Vault secret"""
+        client = self._get_vault_client()
+        
+        # Parse vault path
+        mount_point, secret_path = vault_path.split('/', 1)
+        
+        try:
+            # Get existing secret data to preserve other keys
+            secret_data = {key: kubeconfig}
+            
+            try:
+                existing = client.secrets.kv.v2.read_secret_version(
+                    path=secret_path,
+                    mount_point=mount_point
+                )
+                if existing and 'data' in existing and 'data' in existing['data']:
+                    existing_data = existing['data']['data']
+                    existing_data.update(secret_data)
+                    secret_data = existing_data
+            except hvac.exceptions.InvalidPath:
+                pass  # Secret doesn't exist, use new data
+            
+            # Write secret
+            client.secrets.kv.v2.create_or_update_secret(
                 path=secret_path,
+                secret=secret_data,
                 mount_point=mount_point
             )
-            if existing_secret and 'data' in existing_secret and 'data' in existing_secret['data']:
-                # Merge existing data with new data
-                existing_data = existing_secret['data']['data']
-                print(f"Retrieved existing data with keys: {list(existing_data.keys())}")
-                existing_data.update(secret_data)
-                secret_data = existing_data
-        except hvac.exceptions.InvalidPath:
-            # Secret doesn't exist yet, just use the new data
-            print(f"Creating new secret at {mount_point}/{secret_path}")
-        
-        # Write the secret
-        client.secrets.kv.v2.create_or_update_secret(
-            path=secret_path,
-            secret=secret_data,
-            mount_point=mount_point
-        )
-        
-        print(f"Successfully updated kubeconfig in Vault at {path}")
-        return True
-        
-    except Exception as e:
-        print(f"Error updating Vault: {e}")
-        return False
-
-
-def merge_kubeconfig(existing_config, new_config, cluster_name):
-    """Merge the new cluster config into the existing kubeconfig"""
-    if not existing_config:
-        print("No existing kubeconfig, using the new one directly")
-        return new_config
-    
-    print(f"Merging kubeconfig for cluster: {cluster_name}")
-    
-    try:
-        existing_yaml = yaml.safe_load(existing_config)
-        new_yaml = yaml.safe_load(new_config)
-        
-        # Update cluster name, context, and user references
-        for section in ['clusters', 'contexts', 'users']:
-            if section in new_yaml and len(new_yaml[section]) > 0:
-                item = new_yaml[section][0]
-                print(f"Updating {section} name to {cluster_name}")
-                item['name'] = cluster_name
-                
-                # For contexts, also update the references
-                if section == 'contexts' and 'context' in item:
-                    item['context']['cluster'] = cluster_name
-                    item['context']['user'] = cluster_name
-        
-        # Merge the sections
-        for section in ['clusters', 'contexts', 'users']:
-            if section not in existing_yaml:
-                existing_yaml[section] = []
             
-            # Remove any existing entries with the same name
-            existing_yaml[section] = [
-                item for item in existing_yaml[section] 
-                if item.get('name') != cluster_name
-            ]
+            self.logger.info(f"Successfully updated secret at {vault_path}")
+            return True
             
-            # Add the new entries
-            if section in new_yaml:
-                existing_yaml[section].extend(new_yaml[section])
-        
-        # Ensure apiVersion and kind are set
-        if 'apiVersion' not in existing_yaml:
-            existing_yaml['apiVersion'] = new_yaml.get('apiVersion', 'v1')
-        if 'kind' not in existing_yaml:
-            existing_yaml['kind'] = new_yaml.get('kind', 'Config')
-        
-        # Keep current-context if it exists
-        if 'current-context' not in existing_yaml and 'current-context' in new_yaml:
-            existing_yaml['current-context'] = new_yaml['current-context']
-        
-        print("Successfully merged kubeconfig")
-        return yaml.dump(existing_yaml, default_flow_style=False)
+        except Exception as e:
+            self.logger.error(f"Failed to update Vault secret: {e}")
+            return False
     
-    except Exception as e:
-        print(f"Error merging kubeconfig: {e}")
-        print("Falling back to using the new config only")
-        return new_config
-
-
-def update_cluster_secret_store(client, kubeconfig):
-    """Update the cluster-secret-store with the same kubeconfig"""
-    path = "kv/cluster-secret-store/secrets/KUBECONFIG"
-    print(f"Updating cluster secret store at {path}")
-    return update_vault_kubeconfig(client, kubeconfig, path, "KUBECONFIG")
+    def update_kubeconfig(self, kubeconfig_file: str, vault_path: str, 
+                         cluster_name: str, host_address: str = None, 
+                         vault_key: str = "KUBECONFIG") -> bool:
+        """Main method to update kubeconfig in Vault"""
+        try:
+            # Read new kubeconfig
+            new_config = self.read_kubeconfig_file(kubeconfig_file, host_address)
+            
+            # Get existing config from Vault
+            existing_config = self.get_vault_secret(vault_path, vault_key)
+            
+            # Merge configs
+            merged_config = self.merge_kubeconfig(existing_config, new_config, cluster_name)
+            
+            # Update Vault
+            return self.update_vault_secret(vault_path, merged_config, vault_key)
+            
+        except Exception as e:
+            self.logger.error(f"Update failed: {e}")
+            return False
 
 
 def main():
     parser = argparse.ArgumentParser(description='Update kubeconfig in Vault')
-    parser.add_argument('--cluster-name', required=True, help='Name of the Kubernetes cluster')
-    parser.add_argument('--kubeconfig-file', required=True, help='Path to the new kubeconfig file')
-    parser.add_argument('--vault-addr', required=True, help='Vault server address')
-    parser.add_argument('--vault-token', required=True, help='Vault token')
-    parser.add_argument('--host-address', help='Host address to replace 127.0.0.1 with')
+    parser.add_argument('--cluster-name', required=True, 
+                       help='Name of the Kubernetes cluster')
+    parser.add_argument('--kubeconfig-file', required=True, 
+                       help='Path to the kubeconfig file to merge')
+    parser.add_argument('--vault-path', required=True,
+                       help='Vault secret path (format: mount_point/secret_path)')
+    parser.add_argument('--vault-addr', required=True, 
+                       help='Vault server address')
+    parser.add_argument('--vault-token', required=True, 
+                       help='Vault token')
+    parser.add_argument('--vault-key', default='KUBECONFIG',
+                       help='Key name in vault secret (default: KUBECONFIG)')
+    parser.add_argument('--host-address', 
+                       help='Host address to replace 127.0.0.1 with')
+    parser.add_argument('--debug', action='store_true',
+                       help='Enable debug logging')
     
     args = parser.parse_args()
     
-    print(f"Starting kubeconfig update for cluster: {args.cluster_name}")
-    print(f"Using kubeconfig file: {args.kubeconfig_file}")
-    print(f"Vault address: {args.vault_addr}")
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
     
-    # Create Vault client
-    client = get_vault_client(args.vault_addr, args.vault_token)
-    if not client:
-        print("Failed to create Vault client. Exiting.")
-        sys.exit(1)
+    # Create updater and run
+    updater = KubeconfigUpdater(args.vault_addr, args.vault_token)
     
-    # Read the new kubeconfig
-    try:
-        with open(args.kubeconfig_file, 'r') as f:
-            new_kubeconfig = f.read()
-            
-            # Replace localhost with the host address if provided
-            if args.host_address:
-                print(f"Replacing 127.0.0.1/localhost with {args.host_address}")
-                new_kubeconfig = new_kubeconfig.replace('127.0.0.1', args.host_address)
-                new_kubeconfig = new_kubeconfig.replace('localhost', args.host_address)
-    except Exception as e:
-        print(f"Error reading kubeconfig file: {e}")
-        sys.exit(1)
+    success = updater.update_kubeconfig(
+        kubeconfig_file=args.kubeconfig_file,
+        vault_path=args.vault_path,
+        cluster_name=args.cluster_name,
+        host_address=args.host_address,
+        vault_key=args.vault_key
+    )
     
-    # Get existing kubeconfig from Vault
-    existing_kubeconfig = get_existing_kubeconfig(client)
-    
-    # Merge kubeconfigs
-    merged_kubeconfig = merge_kubeconfig(existing_kubeconfig, new_kubeconfig, args.cluster_name)
-    
-    # Update Vault with merged kubeconfig
-    if update_vault_kubeconfig(client, merged_kubeconfig):
-        # Also update the cluster-secret-store
-        update_cluster_secret_store(client, merged_kubeconfig)
-        print("Successfully updated kubeconfig in Vault")
-    else:
-        print("Failed to update kubeconfig in Vault")
-        sys.exit(1)
+    sys.exit(0 if success else 1)
 
 
 if __name__ == "__main__":
