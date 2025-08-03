@@ -101,7 +101,7 @@ variable "config" {
       cert_manager_crd   = true
     }
     cluster-api = {
-      kubernetes_context = "tranquil-abode"
+      kubernetes_context = "cluster-api"
       install_crd        = false
       cert_manager_crd   = false
     }
