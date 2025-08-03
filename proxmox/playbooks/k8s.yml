@@ -132,11 +132,6 @@
         host_ip: "{{ ansible_eth0.ipv4.address }}"
       run_once: true
 
-    - name: Debug host IP variable
-      debug:
-        msg: 
-          - "host IP variable: {{ host_ip }}"
-
     - name: Create kubeconfig with server address substituted
       delegate_to: localhost
       become: false

@@ -232,8 +232,7 @@ def main():
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
     
-    # Create updater and run
-    updater = KubeconfigUpdater(args.vault_addr, args.vault_token)
+    updater = KubeconfigUpdater(args.vault_addr, args.vault_token, args.host_address)
     
     success = updater.update_kubeconfig(
         kubeconfig_file=args.kubeconfig_file,
