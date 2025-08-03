@@ -136,7 +136,7 @@ class KubeconfigUpdater:
             
             # Update current-context if provided
             if 'current-context' in new_yaml:
-                existing_yaml['current-context'] = new_yaml['current-context']
+                existing_yaml['current-context'] = inventory_name
             
             self.logger.info(f"Successfully merged config for cluster: {cluster_name}")
             return yaml.dump(existing_yaml, default_flow_style=False)
