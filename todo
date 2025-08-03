@@ -1,3 +1,4 @@
 fixed manually kubeconfig vault secret
 added manually vault secret KUBEVIRT_SSH_KEY
 research openshift
+refactor KUBECONFIG on runners to pool of files (s3?)
