@@ -127,6 +127,16 @@
         state: directory
       run_once: true
 
+    - name: DEBUG - Check for replacement targets
+      delegate_to: localhost
+      become: false
+      debug:
+        msg: |
+          DEBUG:
+          - cluster_name variable: {{ cluster_name }}
+          - inventory_hostname variable: {{ inventory_hostname }}
+      run_once: true
+
     - name: Create kubeconfig with server address substituted
       delegate_to: localhost
       become: false
