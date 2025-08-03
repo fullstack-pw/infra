@@ -127,21 +127,16 @@
         state: directory
       run_once: true
 
-    - name: DEBUG - Check for replacement targets
-      delegate_to: localhost
-      become: false
-      debug:
-        msg: |
-          DEBUG:
-          - cluster_name variable: {{ cluster_name }}
-          - inventory_hostname variable: {{ inventory_hostname }}
+    - name: Set host IP variable
+      set_fact:
+        host_ip: "{{ ansible_default_ipv4.address }}"
       run_once: true
-
+      
     - name: Create kubeconfig with server address substituted
       delegate_to: localhost
       become: false
       copy:
-        content: "{{ kubeconfig_content.stdout | replace('127.0.0.1', inventory_hostname) | replace('default', cluster_name) }}"
+        content: "{{ kubeconfig_content.stdout | replace('127.0.0.1', host_ip) | replace('default', cluster_name) }}"
         dest: "./tmp/{{ cluster_name }}-kubeconfig"
       run_once: true
 
