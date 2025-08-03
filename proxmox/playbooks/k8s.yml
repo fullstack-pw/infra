@@ -166,7 +166,7 @@
         --kubeconfig-file "./tmp/{{ cluster_name }}-kubeconfig"
         --vault-addr "{{ vault_addr }}"
         --vault-token "{{ vault_token }}"
-        --host-address "{{ inventory_hostname }}"
+        --inventory-name "{{ inventory_hostname }}"
         --vault-path "kv/cluster-secret-store/secrets/KUBECONFIG"
       register: vault_update_result
       run_once: true
