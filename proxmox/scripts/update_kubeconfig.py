@@ -5,6 +5,7 @@ Simple and focused: merge kubeconfig and update vault secret.
 """
 
 import sys
+import os
 import logging
 import argparse
 from pathlib import Path
@@ -183,7 +184,7 @@ class KubeconfigUpdater:
             return False
     
     def update_kubeconfig(self, kubeconfig_file: str, vault_path: str, 
-                         cluster_name: str, 
+                         cluster_name: str, inventory_name: str, 
                          vault_key: str = "KUBECONFIG") -> bool:
         """Main method to update kubeconfig in Vault"""
         try:
@@ -194,7 +195,7 @@ class KubeconfigUpdater:
             existing_config = self.get_vault_secret(vault_path, vault_key)
             
             # Merge configs
-            merged_config = self.merge_kubeconfig(existing_config, new_config, cluster_name)
+            merged_config = self.merge_kubeconfig(existing_config, new_config, cluster_name, inventory_name)
             
             # Update Vault
             return self.update_vault_secret(vault_path, merged_config, vault_key)
@@ -214,8 +215,6 @@ def main():
                        help='Vault secret path (format: mount_point/secret_path)')
     parser.add_argument('--vault-addr', required=True, 
                        help='Vault server address')
-    parser.add_argument('--vault-token', required=True, 
-                       help='Vault token')
     parser.add_argument('--vault-key', default='KUBECONFIG',
                        help='Key name in vault secret (default: KUBECONFIG)')
     parser.add_argument('--inventory-name', required=True, 
@@ -228,8 +227,12 @@ def main():
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
     
-    # Create updater and run
-    updater = KubeconfigUpdater(args.vault_addr, args.vault_token)
+    vault_token = os.getenv('VAULT_TOKEN')
+    if not vault_token:
+        print("Error: VAULT_TOKEN environment variable is required")
+        sys.exit(1)
+
+    updater = KubeconfigUpdater(args.vault_addr, vault_token)
     
     success = updater.update_kubeconfig(
         kubeconfig_file=args.kubeconfig_file,
