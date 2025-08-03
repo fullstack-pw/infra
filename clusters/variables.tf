@@ -102,8 +102,8 @@ variable "config" {
     }
     cluster-api = {
       kubernetes_context = "cluster-api"
-      install_crd        = false
-      cert_manager_crd   = false
+      install_crd        = true
+      cert_manager_crd   = true
     }
   }
 }
