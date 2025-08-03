@@ -5,6 +5,7 @@ Simple and focused: merge kubeconfig and update vault secret.
 """
 
 import sys
+import os
 import logging
 import argparse
 from pathlib import Path
@@ -50,18 +51,13 @@ class KubeconfigUpdater:
             self.logger.error(f"Vault connection failed: {e}")
             raise
     
-    def read_kubeconfig_file(self, file_path: str, host_address: str = None) -> str:
+    def read_kubeconfig_file(self, file_path: str) -> str:
         """Read kubeconfig file and optionally replace localhost"""
         if not Path(file_path).exists():
             raise FileNotFoundError(f"Kubeconfig file not found: {file_path}")
             
         with open(file_path, 'r') as f:
             content = f.read()
-            
-        if host_address:
-            self.logger.info(f"Replacing 127.0.0.1/localhost with {host_address}")
-            content = content.replace('127.0.0.1', host_address)
-            content = content.replace('localhost', host_address)
             
         return content
     
@@ -95,7 +91,7 @@ class KubeconfigUpdater:
             
         return None
     
-    def merge_kubeconfig(self, existing: str, new: str, cluster_name: str) -> str:
+    def merge_kubeconfig(self, existing: str, new: str, cluster_name: str, inventory_name: str) -> str:
         """Merge new cluster config into existing kubeconfig"""
         if not existing:
             self.logger.info("No existing config - using new config")
@@ -117,6 +113,7 @@ class KubeconfigUpdater:
                             if 'context' in item:
                                 item['context']['cluster'] = cluster_name
                                 item['context']['user'] = cluster_name
+                                item['name'] = inventory_name
             
             # Merge sections
             for section in ['clusters', 'contexts', 'users']:
@@ -139,7 +136,7 @@ class KubeconfigUpdater:
             
             # Update current-context if provided
             if 'current-context' in new_yaml:
-                existing_yaml['current-context'] = new_yaml['current-context']
+                existing_yaml['current-context'] = inventory_name
             
             self.logger.info(f"Successfully merged config for cluster: {cluster_name}")
             return yaml.dump(existing_yaml, default_flow_style=False)
@@ -187,18 +184,18 @@ class KubeconfigUpdater:
             return False
     
     def update_kubeconfig(self, kubeconfig_file: str, vault_path: str, 
-                         cluster_name: str, host_address: str = None, 
+                         cluster_name: str, inventory_name: str, 
                          vault_key: str = "KUBECONFIG") -> bool:
         """Main method to update kubeconfig in Vault"""
         try:
             # Read new kubeconfig
-            new_config = self.read_kubeconfig_file(kubeconfig_file, host_address)
+            new_config = self.read_kubeconfig_file(kubeconfig_file)
             
             # Get existing config from Vault
             existing_config = self.get_vault_secret(vault_path, vault_key)
             
             # Merge configs
-            merged_config = self.merge_kubeconfig(existing_config, new_config, cluster_name)
+            merged_config = self.merge_kubeconfig(existing_config, new_config, cluster_name, inventory_name)
             
             # Update Vault
             return self.update_vault_secret(vault_path, merged_config, vault_key)
@@ -218,12 +215,10 @@ def main():
                        help='Vault secret path (format: mount_point/secret_path)')
     parser.add_argument('--vault-addr', required=True, 
                        help='Vault server address')
-    parser.add_argument('--vault-token', required=True, 
-                       help='Vault token')
     parser.add_argument('--vault-key', default='KUBECONFIG',
                        help='Key name in vault secret (default: KUBECONFIG)')
-    parser.add_argument('--host-address', 
-                       help='Host address to replace 127.0.0.1 with')
+    parser.add_argument('--inventory-name', required=True, 
+                       help='Fixed name to call the ephemeral cluster')
     parser.add_argument('--debug', action='store_true',
                        help='Enable debug logging')
     
@@ -232,14 +227,18 @@ def main():
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
     
-    # Create updater and run
-    updater = KubeconfigUpdater(args.vault_addr, args.vault_token)
+    vault_token = os.getenv('VAULT_TOKEN')
+    if not vault_token:
+        print("Error: VAULT_TOKEN environment variable is required")
+        sys.exit(1)
+
+    updater = KubeconfigUpdater(args.vault_addr, vault_token)
     
     success = updater.update_kubeconfig(
         kubeconfig_file=args.kubeconfig_file,
         vault_path=args.vault_path,
         cluster_name=args.cluster_name,
-        host_address=args.host_address,
+        inventory_name=args.inventory_name,
         vault_key=args.vault_key
     )
     

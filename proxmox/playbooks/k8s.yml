@@ -127,11 +127,16 @@
         state: directory
       run_once: true
 
+    - name: Set host IP variable
+      set_fact:
+        host_ip: "{{ ansible_eth0.ipv4.address }}"
+      run_once: true
+
     - name: Create kubeconfig with server address substituted
       delegate_to: localhost
       become: false
       copy:
-        content: "{{ kubeconfig_content.stdout | replace('127.0.0.1', inventory_hostname) | replace('default', cluster_name) }}"
+        content: "{{ kubeconfig_content.stdout | replace('127.0.0.1', host_ip) | replace('default', cluster_name) }}"
         dest: "./tmp/{{ cluster_name }}-kubeconfig"
       run_once: true
 
@@ -160,9 +165,10 @@
         --cluster-name "{{ cluster_name }}"
         --kubeconfig-file "./tmp/{{ cluster_name }}-kubeconfig"
         --vault-addr "{{ vault_addr }}"
-        --vault-token "{{ vault_token }}"
-        --host-address "{{ inventory_hostname }}"
+        --inventory-name "{{ inventory_hostname }}"
         --vault-path "kv/cluster-secret-store/secrets/KUBECONFIG"
+      environment:
+        VAULT_TOKEN: "{{ vault_token }}"
       register: vault_update_result
       run_once: true
       when: script_copy is succeeded and vault_token is defined and vault_token != ""
