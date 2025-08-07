@@ -55,13 +55,7 @@ jobs:
           PLAYBOOK="${{ needs.detect-ansible-command.outputs.playbook }}"
           echo "Processing playbook: $PLAYBOOK"
 
-          if [[ $PLAYBOOK =~ ^talos-(.+)$ ]]; then
-            # Talos cluster - use talos-bootstrap.yml
-            echo "Detected Talos cluster: ${BASH_REMATCH[1]}"
-            echo "PLAYBOOK_PATH=proxmox/playbooks/talos-bootstrap.yml" >> $GITHUB_ENV
-            echo "CLUSTER_NAME=${BASH_REMATCH[1]}" >> $GITHUB_ENV
-            echo "PLAYBOOK_TYPE=talos" >> $GITHUB_ENV
-          elif [[ $PLAYBOOK =~ ^k8s-(.+)$ ]]; then
+          if [[ $PLAYBOOK =~ ^k8s-(.+)$ ]]; then
             # K3s cluster - use k8s.yml
             echo "Detected K3s cluster: ${BASH_REMATCH[1]}"
             echo "PLAYBOOK_PATH=proxmox/playbooks/k8s.yml" >> $GITHUB_ENV
@@ -117,24 +111,7 @@ jobs:
 
           echo "Executing $PLAYBOOK_TYPE playbook: $PLAYBOOK_PATH"
 
-          if [[ "$PLAYBOOK_TYPE" == "talos" ]]; then
-            # Talos cluster bootstrap - run once for entire cluster
-            CLUSTER_NAME="${{ env.CLUSTER_NAME }}"
-            echo "Bootstrapping Talos cluster: $CLUSTER_NAME"
-            
-            # First configure HAProxy if it exists
-            if ansible-inventory -i proxmox/k8s.ini --list | jq -r '.all.children' | grep -q "haproxy"; then
-              HAPROXY_HOST="talos-${CLUSTER_NAME}-haproxy"
-              if ansible-inventory -i proxmox/k8s.ini --list | jq -r '._meta.hostvars | keys[]' | grep -q "$HAPROXY_HOST"; then
-                echo "Configuring HAProxy for cluster: $CLUSTER_NAME"
-                ansible-playbook proxmox/playbooks/haproxy-config.yml -i proxmox/k8s.ini -e "target_hosts=$HAPROXY_HOST"
-              fi
-            fi
-            
-            # Bootstrap entire Talos cluster
-            ansible-playbook $PLAYBOOK_PATH -i proxmox/k8s.ini -e "target_hosts=$CLUSTER_NAME"
-            
-          elif [[ "$PLAYBOOK_TYPE" == "k3s" ]]; then
+          if [[ "$PLAYBOOK_TYPE" == "k3s" ]]; then
             # K3s cluster setup - run once for cluster
             CLUSTER_NAME="${{ env.CLUSTER_NAME }}"
             echo "Setting up K3s cluster: $CLUSTER_NAME"
