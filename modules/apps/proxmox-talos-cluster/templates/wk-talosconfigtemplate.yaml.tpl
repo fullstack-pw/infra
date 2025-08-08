@@ -1,7 +1,8 @@
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
 kind: TalosConfigTemplate
 metadata:
-  name: talosconfig-workers
+  name: ${worker_talos_config_name}
+  namespace: ${namespace}
 spec:
   template:
     spec:
@@ -10,7 +11,7 @@ spec:
         - op: replace
           path: /machine/install
           value:
-            disk: /dev/sda
+            disk: ${install_disk}
         - op: add
           path: /machine/kubelet/extraArgs
           value:

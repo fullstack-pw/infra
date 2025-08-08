@@ -159,3 +159,17 @@ module "longhorn" {
   replica_count = 1
   ingress_host  = "longhorn.fullstack.pw"
 }
+
+module "proxmox_talos_clusters" {
+  count  = contains(keys(var.config[terraform.workspace]), "proxmox-talos-cluster") ? 1 : 0
+  source = "../modules/apps/proxmox-talos-cluster"
+
+  clusters = var.config[terraform.workspace].proxmox-talos-cluster
+
+  cluster_api_dependencies = []
+
+  create_proxmox_secret = true
+  proxmox_url           = element(split("/api2", local.secrets_json["kv/cluster-secret-store/secrets/PROXMOX_URL"]["PROXMOX_URL"]), 0)
+  proxmox_secret        = local.secrets_json["kv/cluster-secret-store/secrets/PROXMOX_SECRET"]["PROXMOX_SECRET"]
+  proxmox_token         = local.secrets_json["kv/cluster-secret-store/secrets/PROXMOX_TOKEN_ID"]["PROXMOX_TOKEN_ID"]
+}

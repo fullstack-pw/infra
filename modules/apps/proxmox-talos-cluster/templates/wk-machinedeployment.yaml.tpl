@@ -1,11 +1,11 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
-  name: machinedeploy-workers
-  namespace: default
+  name: ${worker_deployment_name}
+  namespace: ${namespace}
 spec:
-  clusterName: coffee-cluster
-  replicas: 3
+  clusterName: ${cluster_name}
+  replicas: ${wk_replicas}
   selector:
     matchLabels: null
   template:
@@ -14,10 +14,10 @@ spec:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
           kind: TalosConfigTemplate
-          name: talosconfig-workers
-      clusterName: coffee-cluster
+          name: ${worker_talos_config_name}
+      clusterName: ${cluster_name}
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
         kind: ProxmoxMachineTemplate
-        name: worker-template
-      version: v1.33.0
+        name: ${worker_template_name}
+      version: ${kubernetes_version}

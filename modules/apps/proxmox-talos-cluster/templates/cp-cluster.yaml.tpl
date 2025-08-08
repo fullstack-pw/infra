@@ -1,14 +1,14 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  name: coffee-cluster
-  namespace: default
+  name: ${cluster_name}
+  namespace: ${namespace}
 spec:
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
     kind: TalosControlPlane
-    name: talos-cp
+    name: ${talos_control_plane_name}
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
     kind: ProxmoxCluster
-    name: proxmox-cluster
+    name: ${proxmox_cluster_name}
