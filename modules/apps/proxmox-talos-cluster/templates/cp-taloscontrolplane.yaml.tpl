@@ -1,24 +1,25 @@
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
 kind: TalosControlPlane
 metadata:
-  name: talos-cp
+  name: ${talos_control_plane_name}
+  namespace: ${namespace}
 spec:
-  version: v1.33.0
-  replicas: 3
+  version: ${kubernetes_version}
+  replicas: ${cp_replicas}
   infrastructureTemplate:
     kind: ProxmoxMachineTemplate
     apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
-    name: control-plane-template
-    namespace: default
+    name: ${control_plane_template_name}
+    namespace: ${namespace}
   controlPlaneConfig:
     controlplane:
       configPatches:
         - op: replace
           path: /machine/install
           value:
-            disk: /dev/sda
+            disk: ${install_disk}
             extensions:
-              - image: ghcr.io/siderolabs/qemu-guest-agent:10.0.2
+              - image: ${qemu_guest_agent_image}
         - op: add
           path: /machine/install/extraKernelArgs
           value:
@@ -30,7 +31,7 @@ spec:
               - interface: eth0
                 dhcp: false
                 vip:
-                  ip: 192.168.1.19
+                  ip: ${control_plane_endpoint_ip}
         - op: add
           path: /machine/kubelet/extraArgs
           value:
@@ -40,8 +41,9 @@ spec:
           value:
             enabled: true
             manifests:
-              - https://raw.githubusercontent.com/siderolabs/talos-cloud-controller-manager/main/docs/deploy/cloud-controller-manager.yml
-              - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/main/deploy/standalone-install.yaml
+%{ for manifest in jsondecode(cloud_controller_manifests) ~}
+              - ${manifest}
+%{ endfor ~}
         - op: add
           path: /machine/kubelet/extraArgs/rotate-server-certificates
           value: "true"
