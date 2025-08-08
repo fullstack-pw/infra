@@ -179,15 +179,24 @@ resource "kubernetes_manifest" "cluster_api_manifests" {
 
   manifest = each.value
 
-  wait {
-    condition {
-      type   = "Ready"
-      status = "True"
+  dynamic "wait" {
+    for_each = contains([
+      "Cluster",
+      "ProxmoxCluster",
+      "TalosControlPlane",
+      "MachineDeployment"
+    ], each.value.kind) ? [1] : []
+
+    content {
+      condition {
+        type   = "Ready"
+        status = "True"
+      }
     }
   }
 
   depends_on = [
-    var.cluster_api_dependencies,
     kubernetes_secret.proxmox_credentials,
+    var.cluster_api_dependencies
   ]
 }
