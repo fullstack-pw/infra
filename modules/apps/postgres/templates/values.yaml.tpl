@@ -19,7 +19,6 @@ postgresql:
     - name: POSTGRESQL_EXTRA_FLAGS
       value: "-c listen_addresses=* -c max_connections=200"
 
-# Allow connections from all addresses
 primary:
   service:
     type: ${service_type}
@@ -31,7 +30,9 @@ primary:
       value: "error"
     - name: POSTGRESQL_SKIP_INITDB
       value: "false"
-  
+    - name: POSTGRESQL_WAL_LEVEL
+      value: logical
+
   persistence:
     enabled: ${persistence_enabled}
 %{if persistence_enabled && storage_class != ""}
