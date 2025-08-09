@@ -1,0 +1,189 @@
+---
+- name: Install and Configure Teleport
+  hosts: teleport
+  become: true
+  vars:
+    teleport_version: "16.4.8"
+    teleport_domain: "teleport.fullstack.pw"
+    teleport_cluster_name: "fullstack-pw"
+    github_org: "fullstack-pw"
+    minio_endpoint: "s3.fullstack.pw"
+    minio_bucket: "teleport-recordings"
+    
+  tasks:
+    - name: Update system packages
+      apt:
+        update_cache: true
+        upgrade: dist
+        autoremove: true
+
+    - name: Install required packages
+      apt:
+        name:
+          - wget
+          - curl
+          - ca-certificates
+          - gnupg
+          - software-properties-common
+          - apt-transport-https
+          - acl
+        state: present
+
+    - name: Add Teleport repository key
+      apt_key:
+        url: https://apt.releases.teleport.dev/gpg
+        state: present
+
+    - name: Add Teleport repository
+      apt_repository:
+        repo: "deb https://apt.releases.teleport.dev/ stable main"
+        state: present
+        update_cache: true
+
+    - name: Install Teleport
+      apt:
+        name: "teleport={{ teleport_version }}"
+        state: present
+
+    - name: Create teleport system user
+      user:
+        name: teleport
+        system: true
+        shell: /bin/false
+        home: /var/lib/teleport
+        createhome: true
+
+    - name: Create Teleport directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: teleport
+        group: teleport
+        mode: '0755'
+      loop:
+        - /etc/teleport
+        - /var/lib/teleport
+        - /var/log/teleport
+
+    - name: Generate Teleport configuration
+      template:
+        src: teleport.yaml.j2
+        dest: /etc/teleport.yaml
+        owner: teleport
+        group: teleport
+        mode: '0600'
+      notify: restart teleport
+
+    - name: Create systemd service override directory
+      file:
+        path: /etc/systemd/system/teleport.service.d
+        state: directory
+        mode: '0755'
+
+    - name: Create systemd service override
+      copy:
+        content: |
+          [Service]
+          ExecStart=
+          ExecStart=/usr/local/bin/teleport start --config=/etc/teleport.yaml --pid-file=/run/teleport.pid
+          PIDFile=/run/teleport.pid
+        dest: /etc/systemd/system/teleport.service.d/override.conf
+        mode: '0644'
+      notify:
+        - reload systemd
+        - restart teleport
+
+    - name: Install certbot for Let's Encrypt certificates
+      apt:
+        name: 
+          - certbot
+          - python3-certbot-dns-cloudflare
+        state: present
+
+    - name: Create Cloudflare credentials file
+      copy:
+        content: |
+          dns_cloudflare_email = {{ cloudflare_email }}
+          dns_cloudflare_api_key = {{ cloudflare_api_key }}
+        dest: /etc/letsencrypt/cloudflare.ini
+        mode: '0600'
+        owner: root
+        group: root
+
+    - name: Generate Let's Encrypt certificate
+      command: >
+        certbot certonly
+        --dns-cloudflare
+        --dns-cloudflare-credentials /etc/letsencrypt/cloudflare.ini
+        --email {{ cloudflare_email }}
+        --agree-tos
+        --non-interactive
+        --domains {{ teleport_domain }}
+      args:
+        creates: "/etc/letsencrypt/live/{{ teleport_domain }}/fullchain.pem"
+
+    - name: Set up certificate renewal cron job
+      cron:
+        name: "Renew Let's Encrypt certificates"
+        minute: "0"
+        hour: "2"
+        job: "/usr/bin/certbot renew --quiet && systemctl reload teleport"
+        user: root
+
+    - name: Copy certificates to Teleport directory
+      copy:
+        src: "/etc/letsencrypt/live/{{ teleport_domain }}/{{ item.src }}"
+        dest: "/var/lib/teleport/{{ item.dest }}"
+        owner: teleport
+        group: teleport
+        mode: '0600'
+        remote_src: true
+      loop:
+        - { src: "fullchain.pem", dest: "fullchain.pem" }
+        - { src: "privkey.pem", dest: "privkey.pem" }
+      notify: restart teleport
+
+    - name: Enable and start Teleport service
+      systemd:
+        name: teleport
+        enabled: true
+        state: started
+        daemon_reload: true
+
+    - name: Configure UFW firewall
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - "443"   # HTTPS/Web UI
+        - "3024"  # SSH proxy
+        - "3025"  # SSH reverse tunnel
+        - "3080"  # Web proxy
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+
+    - name: Display connection information
+      debug:
+        msg: |
+          Teleport has been installed and configured!
+          
+          Access URL: https://{{ teleport_domain }}
+          
+          To create the first user, run:
+          sudo tctl users add admin --roles=access,auditor,editor --logins=root,ubuntu
+          
+          To get the agent join token for Kubernetes clusters:
+          sudo tctl tokens add --type=kube
+
+  handlers:
+    - name: reload systemd
+      systemd:
+        daemon_reload: true
+
+    - name: restart teleport
+      systemd:
+        name: teleport
+        state: restarted
