@@ -19,7 +19,7 @@ variable "release_name" {
 variable "chart_version" {
   description = "PostgreSQL Helm chart version"
   type        = string
-  default     = "12.5.8"
+  default     = "16.2.0"
 }
 
 variable "timeout" {

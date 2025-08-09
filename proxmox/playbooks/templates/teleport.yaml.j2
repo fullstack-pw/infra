@@ -8,52 +8,41 @@ teleport:
     format:
       output: text
   ca_pin: ""
+  advertise_ip: {{ teleport_domain }}
   diag_addr: "0.0.0.0:3000"
+  storage:
+    type: postgresql
+    conn_string: postgresql://{{ postgres_user }}:{{ postgres_passwd }}@{{ postgres_host }}/teleport_backend
+    audit_events_uri:
+      - postgresql://{{ postgres_user }}:{{ postgres_passwd }}@{{ postgres_host }}/teleport_audit?retention_period=240h
+
+proxy_service:
+  proxy_protocol: off
+  listen_addr: 0.0.0.0:3023
+  web_listen_addr: 0.0.0.0:3080
+  tunnel_listen_addr: 0.0.0.0:3024
+  public_addr: "{{ teleport_domain }}:3080"
+  ssh_public_addr: "{{ teleport_domain }}:3023"
+  tunnel_public_addr: "{{ teleport_domain }}:3024"
+  https_keypairs:
+  - key_file: /var/lib/teleport/privkey.pem
+    cert_file: /var/lib/teleport/fullchain.pem
+  kube_public_addr: k8s.{{ teleport_domain }}
+  kube_listen_addr: 0.0.0.0:3026
+  mysql_public_addr: mysql.{{ teleport_domain }}
+  mysql_listen_addr: "0.0.0.0:3036"
+  postgres_public_addr: postgres.{{ teleport_domain }}
+  postgres_listen_addr: "0.0.0.0:5432"
+
 
 auth_service:
-  enabled: "yes"
-  listen_addr: 0.0.0.0:3025
   cluster_name: "{{ teleport_cluster_name }}"
-  proxy_listener_mode: multiplex
-  
-  # Session recording configuration
   session_recording: "node-sync"
   
   # Authentication settings
   authentication:
-    type: github
-    second_factor: "optional"
-    connector_name: github
-    webauthn:
-      rp_id: "{{ teleport_domain }}"
-
-  # GitHub SSO connector
-  github_connectors:
-  - id: github
-    display: "GitHub"
-    client_id: "{{ github_client_id }}"
-    client_secret: "{{ github_client_secret }}"
-    redirect_url: "https://{{ teleport_domain }}/v1/webapi/github/callback"
-    teams_to_roles:
-    - organization: "{{ github_org }}"
-      team: "*"
-      roles: ["access"]
-
-  # Storage configuration for audit logs and session recordings
-  storage:
-    audit_events_uri: "s3://{{ minio_bucket }}/events"
-    audit_sessions_uri: "s3://{{ minio_bucket }}/sessions"
-    region: us-east-1
-    bucket: "{{ minio_bucket }}"
-    endpoint: "https://{{ minio_endpoint }}"
-    access_key_id: "{{ minio_access_key }}"
-    secret_access_key: "{{ minio_secret_key }}"
-    force_path_style: true
-    disable_ssl: false
 
 ssh_service:
-  enabled: "yes"
-  listen_addr: 0.0.0.0:3022
   labels:
     env: production
     role: teleport-gateway
@@ -61,64 +50,3 @@ ssh_service:
   - name: hostname
     command: [hostname]
     period: 1m0s
-
-proxy_service:
-  enabled: "yes"
-  listen_addr: 0.0.0.0:3023
-  web_listen_addr: 0.0.0.0:3080
-  tunnel_listen_addr: 0.0.0.0:3024
-  public_addr: "{{ teleport_domain }}:443"
-  https_keypairs:
-  - key_file: /var/lib/teleport/privkey.pem
-    cert_file: /var/lib/teleport/fullchain.pem
-  
-  # Web applications to proxy
-  apps:
-  - name: "grafana"
-    uri: "https://grafana.fullstack.pw"
-    public_addr: "grafana.{{ teleport_domain }}"
-    labels:
-      type: "monitoring"
-      env: "production"
-  
-  - name: "prometheus" 
-    uri: "https://prometheus.fullstack.pw"
-    public_addr: "prometheus.{{ teleport_domain }}"
-    labels:
-      type: "monitoring"
-      env: "production"
-  
-  - name: "jaeger"
-    uri: "https://jaeger.fullstack.pw"
-    public_addr: "jaeger.{{ teleport_domain }}"
-    labels:
-      type: "monitoring"
-      env: "production"
-  
-  - name: "vault"
-    uri: "https://vault.fullstack.pw"
-    public_addr: "vault.{{ teleport_domain }}"
-    labels:
-      type: "security"
-      env: "production"
-  
-  - name: "minio"
-    uri: "https://minio.fullstack.pw"
-    public_addr: "minio.{{ teleport_domain }}"
-    labels:
-      type: "storage"
-      env: "production"
-  
-  - name: "registry"
-    uri: "https://registry.fullstack.pw"
-    public_addr: "registry.{{ teleport_domain }}"
-    labels:
-      type: "registry"
-      env: "production"
-  
-  - name: "immich"
-    uri: "https://immich.fullstack.pw"
-    public_addr: "immich.{{ teleport_domain }}"
-    labels:
-      type: "media"
-      env: "home"
