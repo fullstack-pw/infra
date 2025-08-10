@@ -3,7 +3,7 @@
   hosts: teleport
   become: true
   vars:
-    teleport_version: "17.6.0"
+    teleport_version: "17.7.1"
     teleport_edition: "oss"  # Community Edition
     teleport_domain: "teleport.fullstack.pw"
     teleport_cluster_name: "fullstack-pw"
@@ -39,7 +39,7 @@
       shell: |
         export TELEPORT_EDITION="{{ teleport_edition }}"
         export TELEPORT_VERSION="{{ teleport_version }}"
-        curl https://cdn.teleport.dev/install.sh | bash -s ${TELEPORT_VERSION} ${TELEPORT_EDITION}
+        curl https://cdn.teleport.dev/install.sh | bash -s ${TELEPORT_VERSION?} ${TELEPORT_EDITION?}
       args:
         creates: /usr/local/bin/teleport
 
@@ -50,25 +50,16 @@
         create: true
         mode: '0440'
 
-    - name: Create teleport system user
-      user:
-        name: teleport
-        system: true
-        shell: /bin/false
-        home: /var/lib/teleport
-        createhome: true
-
     - name: Create Teleport directories
       file:
         path: "{{ item }}"
         state: directory
-        owner: teleport
-        group: teleport
+        owner: root
+        group: root
         mode: '0755'
       loop:
         - /etc/teleport
         - /var/lib/teleport
-        - /var/log/teleport
 
     - name: Install certbot and dependencies
       apt:
@@ -90,18 +81,6 @@
         group: root
       when: cloudflare_api_token is defined
 
-    - name: Create Cloudflare credentials file (legacy API key)
-      copy:
-        content: |
-          # Cloudflare API credentials (legacy)
-          dns_cloudflare_email = {{ cloudflare_email }}
-          dns_cloudflare_api_key = {{ cloudflare_api_key }}
-        dest: /etc/letsencrypt/cloudflare.ini
-        mode: '0600'
-        owner: root
-        group: root
-      when: cloudflare_api_token is not defined and cloudflare_api_key is defined
-
     - name: Generate Let's Encrypt certificate
       command: >
         certbot certonly
@@ -118,8 +97,8 @@
       copy:
         src: "/etc/letsencrypt/live/{{ teleport_domain }}/{{ item.src }}"
         dest: "/var/lib/teleport/{{ item.dest }}"
-        owner: teleport
-        group: teleport
+        owner: root
+        group: root
         mode: '0600'
         remote_src: true
       loop:
@@ -142,37 +121,11 @@
       template:
         src: teleport.yaml.j2
         dest: /etc/teleport.yaml
-        owner: teleport
-        group: teleport
+        owner: root
+        group: root
         mode: '0600'
         backup: true
       notify: restart teleport
-
-    - name: Create systemd service file for Teleport
-      copy:
-        content: |
-          [Unit]
-          Description=Teleport SSH Service
-          After=network.target
-
-          [Service]
-          Type=simple
-          Restart=on-failure
-          RestartSec=5
-          ExecStart=/usr/local/bin/teleport start --config=/etc/teleport.yaml --pid-file=/run/teleport.pid
-          ExecReload=/bin/kill -HUP $MAINPID
-          PIDFile=/run/teleport.pid
-          LimitNOFILE=65536
-          User=teleport
-          Group=teleport
-
-          [Install]
-          WantedBy=multi-user.target
-        dest: /etc/systemd/system/teleport.service
-        mode: '0644'
-      notify:
-        - reload systemd
-        - restart teleport
 
     - name: Set up certificate renewal cron job
       cron:
@@ -182,24 +135,12 @@
         job: "/usr/bin/certbot renew --quiet && /bin/systemctl reload teleport"
         user: root
 
-    - name: Configure UFW firewall
-      ufw:
-        rule: allow
-        port: "{{ item }}"
-        proto: tcp
-      loop:
-        - "22"
-        - "443"
-        - "3024"
-        - "3025"
-        - "3026"
-        - "3036"
-        - "5432"
-        - "3080"
-
-    - name: Enable UFW
-      ufw:
-        state: enabled
+    - name: Wait for Teleport to be ready
+      wait_for:
+        port: 3080
+        host: localhost
+        delay: 10
+        timeout: 60
 
     - name: Enable and start Teleport service
       systemd:
