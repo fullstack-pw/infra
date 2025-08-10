@@ -1,9 +1,10 @@
 ---
-- name: Install and Configure Teleport
+- name: Install and Configure Teleport Community Edition
   hosts: teleport
   become: true
   vars:
-    teleport_version: "16.4.8"
+    teleport_version: "17.6.0"
+    teleport_edition: "oss"  # Community Edition
     teleport_domain: "teleport.fullstack.pw"
     teleport_cluster_name: "fullstack-pw"
     github_org: "fullstack-pw"
@@ -20,7 +21,6 @@
     - name: Install required packages
       apt:
         name:
-          - wget
           - curl
           - ca-certificates
           - gnupg
@@ -29,21 +29,26 @@
           - acl
         state: present
 
-    - name: Add Teleport repository key
-      apt_key:
-        url: https://apt.releases.teleport.dev/gpg
-        state: present
+    - name: Set Teleport installation environment variables
+      set_fact:
+        teleport_install_env:
+          TELEPORT_EDITION: "{{ teleport_edition }}"
+          TELEPORT_VERSION: "{{ teleport_version }}"
 
-    - name: Add Teleport repository
-      apt_repository:
-        repo: "deb https://apt.releases.teleport.dev/ stable main"
-        state: present
-        update_cache: true
+    - name: Download and install Teleport using official script
+      shell: |
+        export TELEPORT_EDITION="{{ teleport_edition }}"
+        export TELEPORT_VERSION="{{ teleport_version }}"
+        curl https://cdn.teleport.dev/install.sh | bash -s ${TELEPORT_VERSION} ${TELEPORT_EDITION}
+      args:
+        creates: /usr/local/bin/teleport
 
-    - name: Install Teleport
-      apt:
-        name: "teleport={{ teleport_version }}"
-        state: present
+    - name: Add /usr/local/bin to secure_path for sudo
+      lineinfile:
+        path: /etc/sudoers.d/secure_path
+        line: "Defaults secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin"
+        create: true
+        mode: '0440'
 
     - name: Create teleport system user
       user:
@@ -65,50 +70,37 @@
         - /var/lib/teleport
         - /var/log/teleport
 
-    - name: Generate Teleport configuration
-      template:
-        src: teleport.yaml.j2
-        dest: /etc/teleport.yaml
-        owner: teleport
-        group: teleport
-        mode: '0600'
-      notify: restart teleport
-
-    - name: Create systemd service override directory
-      file:
-        path: /etc/systemd/system/teleport.service.d
-        state: directory
-        mode: '0755'
-
-    - name: Create systemd service override
-      copy:
-        content: |
-          [Service]
-          ExecStart=
-          ExecStart=/usr/local/bin/teleport start --config=/etc/teleport.yaml --pid-file=/run/teleport.pid
-          PIDFile=/run/teleport.pid
-        dest: /etc/systemd/system/teleport.service.d/override.conf
-        mode: '0644'
-      notify:
-        - reload systemd
-        - restart teleport
-
-    - name: Install certbot for Let's Encrypt certificates
+    - name: Install certbot and dependencies
       apt:
         name: 
           - certbot
           - python3-certbot-dns-cloudflare
+          - python3-pip
+          - pipx
         state: present
 
     - name: Create Cloudflare credentials file
       copy:
         content: |
+          # Cloudflare API token (recommended)
+          dns_cloudflare_api_token = {{ cloudflare_api_token }}
+        dest: /etc/letsencrypt/cloudflare.ini
+        mode: '0600'
+        owner: root
+        group: root
+      when: cloudflare_api_token is defined
+
+    - name: Create Cloudflare credentials file (legacy API key)
+      copy:
+        content: |
+          # Cloudflare API credentials (legacy)
           dns_cloudflare_email = {{ cloudflare_email }}
           dns_cloudflare_api_key = {{ cloudflare_api_key }}
         dest: /etc/letsencrypt/cloudflare.ini
         mode: '0600'
         owner: root
         group: root
+      when: cloudflare_api_token is not defined and cloudflare_api_key is defined
 
     - name: Generate Let's Encrypt certificate
       command: >
@@ -122,14 +114,6 @@
       args:
         creates: "/etc/letsencrypt/live/{{ teleport_domain }}/fullchain.pem"
 
-    - name: Set up certificate renewal cron job
-      cron:
-        name: "Renew Let's Encrypt certificates"
-        minute: "0"
-        hour: "2"
-        job: "/usr/bin/certbot renew --quiet && systemctl reload teleport"
-        user: root
-
     - name: Copy certificates to Teleport directory
       copy:
         src: "/etc/letsencrypt/live/{{ teleport_domain }}/{{ item.src }}"
@@ -141,7 +125,81 @@
       loop:
         - { src: "fullchain.pem", dest: "fullchain.pem" }
         - { src: "privkey.pem", dest: "privkey.pem" }
+
+    - name: Generate initial Teleport configuration using teleport configure
+      shell: |
+        teleport configure \
+          --cluster-name="{{ teleport_cluster_name }}" \
+          --public-addr="{{ teleport_domain }}:443" \
+          --cert-file="/var/lib/teleport/fullchain.pem" \
+          --key-file="/var/lib/teleport/privkey.pem" \
+          --data-dir="/var/lib/teleport" \
+          --output=file:///etc/teleport.yaml
+      args:
+        creates: /etc/teleport.yaml
+
+    - name: Update Teleport configuration with custom settings
+      template:
+        src: teleport.yaml.j2
+        dest: /etc/teleport.yaml
+        owner: teleport
+        group: teleport
+        mode: '0600'
+        backup: true
       notify: restart teleport
+
+    - name: Create systemd service file for Teleport
+      copy:
+        content: |
+          [Unit]
+          Description=Teleport SSH Service
+          After=network.target
+
+          [Service]
+          Type=simple
+          Restart=on-failure
+          RestartSec=5
+          ExecStart=/usr/local/bin/teleport start --config=/etc/teleport.yaml --pid-file=/run/teleport.pid
+          ExecReload=/bin/kill -HUP $MAINPID
+          PIDFile=/run/teleport.pid
+          LimitNOFILE=65536
+          User=teleport
+          Group=teleport
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/teleport.service
+        mode: '0644'
+      notify:
+        - reload systemd
+        - restart teleport
+
+    - name: Set up certificate renewal cron job
+      cron:
+        name: "Renew Let's Encrypt certificates"
+        minute: "0"
+        hour: "2"
+        job: "/usr/bin/certbot renew --quiet && /bin/systemctl reload teleport"
+        user: root
+
+    - name: Configure UFW firewall
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - "22"
+        - "443"
+        - "3024"
+        - "3025"
+        - "3026"
+        - "3036"
+        - "5432"
+        - "3080"
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
 
     - name: Enable and start Teleport service
       systemd:
@@ -150,33 +208,34 @@
         state: started
         daemon_reload: true
 
-    - name: Configure UFW firewall
-      ufw:
-        rule: allow
-        port: "{{ item }}"
-        proto: tcp
-      loop:
-        - "443"   # HTTPS/Web UI
-        - "3024"  # SSH proxy
-        - "3025"  # SSH reverse tunnel
-        - "3080"  # Web proxy
-
-    - name: Enable UFW
-      ufw:
-        state: enabled
+    - name: Wait for Teleport to be ready
+      wait_for:
+        port: 3080
+        host: localhost
+        delay: 10
+        timeout: 60
 
     - name: Display connection information
       debug:
         msg: |
-          Teleport has been installed and configured!
+          ✅ Teleport has been installed and configured successfully!
           
-          Access URL: https://{{ teleport_domain }}
+          🌐 Access URL: https://{{ teleport_domain }}
+          🔧 Config file: /etc/teleport.yaml
+          📋 Service: systemctl status teleport
           
-          To create the first user, run:
-          sudo tctl users add admin --roles=access,auditor,editor --logins=root,ubuntu
+          📝 Next steps:
+          1. Create the first user:
+             sudo tctl users add admin --roles=access,auditor,editor --logins=root,ubuntu
           
-          To get the agent join token for Kubernetes clusters:
-          sudo tctl tokens add --type=kube
+          2. Get the join token for Kubernetes agents:
+             sudo tctl tokens add --type=kube --ttl=8760h
+          
+          3. Check service status:
+             sudo systemctl status teleport
+          
+          4. View logs:
+             sudo journalctl -u teleport -f
 
   handlers:
     - name: reload systemd

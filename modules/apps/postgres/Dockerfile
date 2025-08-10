@@ -1,6 +1,6 @@
 FROM tensorchord/pgvecto-rs:pg15-v0.3.0 AS builder
 
-FROM bitnami/postgresql:15.4.0
+FROM bitnami/postgresql:15.10.0
 
 USER root
 
