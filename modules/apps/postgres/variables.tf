@@ -19,7 +19,8 @@ variable "release_name" {
 variable "chart_version" {
   description = "PostgreSQL Helm chart version"
   type        = string
-  default     = "16.2.0" #using pg17.0
+  #default     = "16.2.0" #using pg17.0
+  default = "12.12.10" #using pg15.4
 }
 
 variable "postgres_version" { #postgres docker image version

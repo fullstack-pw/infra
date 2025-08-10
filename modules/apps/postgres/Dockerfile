@@ -1,12 +1,12 @@
-FROM tensorchord/pgvecto-rs:pg16-v0.3.0 AS builder
+FROM tensorchord/pgvecto-rs:pg15-v0.3.0 AS builder
 
-FROM bitnami/postgresql:16.6.0
+FROM bitnami/postgresql:15.10.0
 
 USER root
 
 # Copy the pgvecto.rs extension files from the builder image
-COPY --from=builder /usr/lib/postgresql/16/lib/vectors.so /opt/bitnami/postgresql/lib/
-COPY --from=builder /usr/share/postgresql/16/extension/vectors* /opt/bitnami/postgresql/share/extension/
+COPY --from=builder /usr/lib/postgresql/15/lib/vectors.so /opt/bitnami/postgresql/lib/
+COPY --from=builder /usr/share/postgresql/15/extension/vectors* /opt/bitnami/postgresql/share/extension/
 
 # Install necessary dependencies for pgvecto.rs
 RUN apt-get update && apt-get install -y --no-install-recommends \
