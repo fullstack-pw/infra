@@ -19,8 +19,21 @@ variable "release_name" {
 variable "chart_version" {
   description = "PostgreSQL Helm chart version"
   type        = string
-  default     = "16.2.0"
+  default     = "16.2.0" #using pg17.0
 }
+
+variable "postgres_version" { #postgres docker image version
+  default = "1.2.3"
+}
+
+variable "registry" {
+  default = "registry.fullstack.pw"
+}
+variable "repository" {
+  default = "library/postgres"
+}
+
+
 
 variable "timeout" {
   description = "Timeout for Helm operations"
@@ -223,16 +236,6 @@ variable "preserve_existing_vault_data" {
   default     = true
 }
 
-variable "registry" {
-  default = "registry.fullstack.pw"
-}
-variable "repository" {
-  default = "library/postgres"
-}
-
-variable "postgres_version" {
-  default = "1.2.3"
-}
 # registry.fullstack.pw/library/postgres:1.2.0
 # docker.io/bitnami/postgresql:15.4.0
 
