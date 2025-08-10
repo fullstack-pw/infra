@@ -135,20 +135,13 @@
         job: "/usr/bin/certbot renew --quiet && /bin/systemctl reload teleport"
         user: root
 
-    - name: Wait for Teleport to be ready
-      wait_for:
-        port: 3080
-        host: localhost
-        delay: 10
-        timeout: 60
-
     - name: Enable and start Teleport service
       systemd:
         name: teleport
         enabled: true
         state: started
         daemon_reload: true
-
+        
     - name: Wait for Teleport to be ready
       wait_for:
         port: 3080
