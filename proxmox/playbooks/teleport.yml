@@ -29,19 +29,51 @@
           - acl
         state: present
 
-    - name: Set Teleport installation environment variables
-      set_fact:
-        teleport_install_env:
-          TELEPORT_EDITION: "{{ teleport_edition }}"
-          TELEPORT_VERSION: "{{ teleport_version }}"
+    - name: Check if Teleport is already installed
+      stat:
+        path: /usr/local/bin/teleport
+      register: teleport_installed
 
-    - name: Download and install Teleport using official script
+    - name: Download Teleport installation script
+      get_url:
+        url: https://cdn.teleport.dev/install.sh
+        dest: /tmp/install_teleport.sh
+        mode: '0755'
+      when: not teleport_installed.stat.exists
+      become: true
+
+    - name: Run Teleport installation script with timeout
       shell: |
         export TELEPORT_EDITION="{{ teleport_edition }}"
         export TELEPORT_VERSION="{{ teleport_version }}"
-        curl https://cdn.teleport.dev/install.sh | bash -s ${TELEPORT_VERSION?} ${TELEPORT_EDITION?}
+        /tmp/install_teleport.sh ${TELEPORT_VERSION?} ${TELEPORT_EDITION?}
       args:
-        creates: /usr/local/bin/teleport
+        executable: /bin/bash
+      async: 300  # Maximum runtime in seconds (5 minutes)
+      poll: 0  # Fire-and-forget (we'll check status later)
+      register: install_result
+      when: not teleport_installed.stat.exists
+      become: true
+
+    - name: Wait for installation to complete
+      async_status:
+        jid: "{{ install_result.ansible_job_id }}"
+      register: job_result
+      until: job_result.finished
+      retries: 30  # 30 * 10 = 300 seconds
+      delay: 10  # Check every 10 seconds
+      when: not teleport_installed.stat.exists
+
+    - name: Verify installation success
+      fail:
+        msg: "Teleport installation timed out after 5 minutes"
+      when: not job_result.finished
+
+    - name: Cleanup installation script
+      file:
+        path: /tmp/install_teleport.sh
+        state: absent
+      become: true
 
     - name: Add /usr/local/bin to secure_path for sudo
       lineinfile:
