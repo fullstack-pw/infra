@@ -189,10 +189,13 @@
         proto: tcp
       loop:
         - "22"
-        - "443"   # HTTPS/Web UI
-        - "3024"  # SSH proxy
-        - "3025"  # SSH reverse tunnel
-        - "3080"  # Web proxy
+        - "443"
+        - "3024"
+        - "3025"
+        - "3026"
+        - "3036"
+        - "5432"
+        - "3080"
 
     - name: Enable UFW
       ufw:

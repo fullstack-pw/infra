@@ -14,7 +14,8 @@ teleport:
     type: postgresql
     conn_string: postgresql://{{ postgres_user }}:{{ postgres_passwd }}@{{ postgres_host }}/teleport_backend
     audit_events_uri:
-      - postgresql://{{ postgres_user }}:{{ postgres_passwd }}@{{ postgres_host }}/teleport_audit?retention_period=240h
+      - postgresql://{{ postgres_user }}:{{ postgres_passwd }}@{{ postgres_host }}/teleport_audit
+    audit_sessions_uri: 's3://fullstack.pw/teleport_audit'
 
 proxy_service:
   proxy_protocol: off

@@ -24,7 +24,7 @@ variable "chart_version" {
 }
 
 variable "postgres_version" { #postgres docker image version
-  default = "1.2.3"
+  default = "latest"
 }
 
 variable "registry" {
