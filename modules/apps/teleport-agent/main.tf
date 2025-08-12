@@ -39,6 +39,8 @@ module "values" {
         node_selector           = var.node_selector
         tolerations             = var.tolerations
         resources               = var.resources
+        roles                   = var.roles
+        apps                    = var.apps
       }
     }
   ]

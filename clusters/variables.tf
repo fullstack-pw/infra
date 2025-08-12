@@ -38,7 +38,8 @@ variable "workload" {
       "cert_manager",
       "external_secrets",
       "kubevirt",
-      "longhorn"
+      "longhorn",
+      "teleport-agent"
     ]
     tools = [
       "externaldns",
@@ -95,6 +96,11 @@ variable "config" {
       kubernetes_context = "sandboxy"
       install_crd        = true
       cert_manager_crd   = true
+      teleport = {
+        apps = [
+          { "longhorn" : "http://longhorn-frontend:80" }
+        ]
+      }
     }
     tools = {
       kubernetes_context = "tools"

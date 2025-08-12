@@ -173,3 +173,12 @@ module "proxmox_talos_clusters" {
   proxmox_secret        = local.secrets_json["kv/cluster-secret-store/secrets/PROXMOX_SECRET"]["PROXMOX_SECRET"]
   proxmox_token         = local.secrets_json["kv/cluster-secret-store/secrets/PROXMOX_TOKEN_ID"]["PROXMOX_TOKEN_ID"]
 }
+
+module "teleport-agent" {
+  count  = contains(local.workload, "teleport-agent") ? 1 : 0
+  source = "../modules/apps/teleport-agent"
+
+  kubernetes_cluster_name = terraform.workspace
+  join_token              = "76756646e90d1f740646aa5e30fdd216"
+  apps                    = var.config[terraform.workspace].teleport.apps
+}
