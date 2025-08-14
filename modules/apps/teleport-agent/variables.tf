@@ -4,6 +4,13 @@ variable "namespace" {
   default     = "teleport-agent"
 }
 
+variable "roles" {
+  default = "kube,app,db"
+}
+
+variable "apps" {
+  default = false
+}
 variable "create_namespace" {
   description = "Create namespace if it doesn't exist"
   type        = bool
@@ -19,13 +26,13 @@ variable "release_name" {
 variable "chart_version" {
   description = "Teleport Agent Helm chart version"
   type        = string
-  default     = "17.0.2"
+  default     = "17.7.1"
 }
 
 variable "timeout" {
   description = "Timeout for Helm operations"
   type        = number
-  default     = 600
+  default     = 300
 }
 
 variable "cluster_name" {
@@ -37,13 +44,13 @@ variable "cluster_name" {
 variable "teleport_version" {
   description = "Teleport version"
   type        = string
-  default     = "16.4.8"
+  default     = "17.7.1"
 }
 
 variable "proxy_server" {
   description = "Teleport proxy server address"
   type        = string
-  default     = "teleport.fullstack.pw:443"
+  default     = "teleport.fullstack.pw:3080"
 }
 
 variable "join_token" {
