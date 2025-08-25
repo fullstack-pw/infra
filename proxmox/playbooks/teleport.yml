@@ -67,7 +67,9 @@
     - name: Verify installation success
       fail:
         msg: "Teleport installation timed out after 5 minutes"
-      when: not job_result.finished
+      when: 
+        - not teleport_installed.stat.exists
+        - not job_result.finished
 
     - name: Cleanup installation script
       file:
@@ -121,7 +123,7 @@
         --email {{ cloudflare_email }}
         --agree-tos
         --non-interactive
-        --domains {{ teleport_domain }}
+        --domains {{ teleport_domain }},*.{{ teleport_domain }}
       args:
         creates: "/etc/letsencrypt/live/{{ teleport_domain }}/fullchain.pem"
 

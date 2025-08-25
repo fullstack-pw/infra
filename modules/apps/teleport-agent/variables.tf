@@ -9,8 +9,17 @@ variable "roles" {
 }
 
 variable "apps" {
-  default = false
+  description = "Map of applications to register with Teleport"
+  type        = map(string)
+  default     = {}
 }
+
+variable "databases" {
+  description = "Map of applications to register with Teleport"
+  type        = map(string)
+  default     = {}
+}
+
 variable "create_namespace" {
   description = "Create namespace if it doesn't exist"
   type        = bool

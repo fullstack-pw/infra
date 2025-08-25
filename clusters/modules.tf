@@ -180,5 +180,7 @@ module "teleport-agent" {
 
   kubernetes_cluster_name = terraform.workspace
   join_token              = "76756646e90d1f740646aa5e30fdd216"
+  roles                   = var.config[terraform.workspace].teleport.roles
   apps                    = var.config[terraform.workspace].teleport.apps
+  databases               = var.config[terraform.workspace].teleport.databases
 }

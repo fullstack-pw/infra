@@ -32,6 +32,36 @@ primary:
       value: "false"
     - name: POSTGRESQL_WAL_LEVEL
       value: logical
+%{if enable_teleport_ssl}
+    - name: POSTGRESQL_TLS_ENABLED
+      value: "yes"
+    - name: POSTGRESQL_TLS_CERT_FILE
+      value: "/opt/bitnami/postgresql/certs/server.crt"
+    - name: POSTGRESQL_TLS_KEY_FILE
+      value: "/opt/bitnami/postgresql/certs/server.key"
+    - name: POSTGRESQL_TLS_CA_FILE
+      value: "/opt/bitnami/postgresql/certs/ca.crt"
+  extraVolumes:
+    - name: teleport-certs
+      secret:
+        secretName: cluster-secrets
+        items:
+          - key: ${teleport_ca_cert_key}
+            path: ca.crt
+            mode: 0600
+          - key: ${teleport_server_cert_key}
+            path: server.crt
+            mode: 0600
+          - key: ${teleport_server_key_key}
+            path: server.key
+            mode: 0600
+
+  extraVolumeMounts:
+    - name: teleport-certs
+      mountPath: /opt/bitnami/postgresql/certs
+      readOnly: true
+
+%{endif}
 
   persistence:
     enabled: ${persistence_enabled}
