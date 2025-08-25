@@ -13,25 +13,20 @@ variable "workload" {
       "externaldns",
       "cert_manager",
       "external_secrets",
-      "observability-box"
+      "teleport-agent"
+      #"observability-box"
     ]
     stg = [
       "externaldns",
       "cert_manager",
       "external_secrets",
-      "observability-box"
+      #"observability-box"
     ]
     prod = [
       "externaldns",
       "cert_manager",
       "external_secrets",
-      "observability-box"
-    ]
-    sandbox = [
-      "externaldns",
-      "cert_manager",
-      "ingress_nginx",
-      "observability"
+      #"observability-box"
     ]
     sandboxy = [
       "externaldns",
@@ -53,7 +48,8 @@ variable "workload" {
       "github_runner",
       "harbor",
       "minio",
-      "vault"
+      "vault",
+      "teleport-agent"
     ]
     cluster-api = [
       "externaldns",
@@ -76,6 +72,13 @@ variable "config" {
       kubernetes_context = "dev"
       install_crd        = true
       cert_manager_crd   = true
+      teleport = {
+        apps = {
+          "dev-ascii" = "http://ascii-frontend.default.svc.cluster.local"
+          "dev-cks"   = "http://cks-frontend.default.svc.cluster.local:3000"
+        }
+        roles = "kube,app"
+      }
     }
     stg = {
       kubernetes_context = "stg"
@@ -87,25 +90,32 @@ variable "config" {
       install_crd        = true
       cert_manager_crd   = true
     }
-    sandbox = {
-      kubernetes_context = "sandbox"
-      install_crd        = true
-      cert_manager_crd   = true
-    }
     sandboxy = {
       kubernetes_context = "sandboxy"
       install_crd        = true
       cert_manager_crd   = true
       teleport = {
-        apps = [
-          { "longhorn" : "http://longhorn-frontend:80" }
-        ]
+        apps = {
+          "longhorn" = "http://longhorn-frontend.longhorn-system.svc.cluster.local"
+        }
+        roles = "kube,app"
       }
     }
     tools = {
       kubernetes_context = "tools"
       install_crd        = true
       cert_manager_crd   = true
+      teleport = {
+        apps = {
+          "harbor" = "http://harbor-portal.harbor.svc.cluster.local"
+          "vault"  = "http://vault.vault.svc.cluster.local:8200"
+          "minio"  = "http://minio-console.default.svc.cluster.local:9001"
+        }
+        databases = {
+          "postgres" = "postgres.fullstack.pw:5432"
+        }
+        roles = "kube,app,db"
+      }
     }
     cluster-api = {
       kubernetes_context = "cluster-api"

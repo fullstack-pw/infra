@@ -41,6 +41,7 @@ module "values" {
         resources               = var.resources
         roles                   = var.roles
         apps                    = var.apps
+        databases               = var.databases
       }
     }
   ]

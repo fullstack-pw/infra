@@ -5,11 +5,34 @@ authToken: "${join_token}"
 teleportClusterName: "${cluster_name}"
 kubeClusterName: "${kubernetes_cluster_name}"
 
-%{if apps != ""}
+%{if length(apps) > 0}
 apps:
 %{for key, value in apps}
   - name: ${key}
     uri: ${value}
+%{endfor}
+%{endif}
+
+%{if length(databases) > 0}
+databases:
+%{for key, value in databases}
+  - name: ${key}
+    uri: ${value}
+    protocol: postgres
+    tls:
+      ca_cert_file: "/etc/teleport-tls-db/db-ca/ca.pem"
+extraVolumes:
+  - name: db-ca
+    secret:
+      secretName: cluster-secrets
+      items:
+        - key: POSTGRES_SSL_CERT
+          path: ca.pem
+          mode: 0600
+extraVolumeMounts:
+  - name: db-ca
+    mountPath: /etc/teleport-tls-db/db-ca
+    readOnly: true
 %{endfor}
 %{endif}
 

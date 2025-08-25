@@ -250,3 +250,28 @@ variable "preserve_existing_vault_data" {
 # variable "postgres_version" {
 #   default = "15.4.0"
 # }
+
+# Teleport Database Access
+variable "enable_teleport_ssl" {
+  description = "Enable Teleport database access with SSL certificates"
+  type        = bool
+  default     = false
+}
+
+variable "teleport_ca_cert_key" {
+  description = "Vault secret key containing Teleport CA certificate (base64 encoded)"
+  type        = string
+  default     = "POSTGRES_SSL_CA"
+}
+
+variable "teleport_server_cert_key" {
+  description = "Vault secret key containing Teleport server certificate (base64 encoded)"
+  type        = string
+  default     = "POSTGRES_SSL_CERT"
+}
+
+variable "teleport_server_key_key" {
+  description = "Vault secret key containing Teleport server private key (base64 encoded)"
+  type        = string
+  default     = "POSTGRES_SSL_KEY"
+}
