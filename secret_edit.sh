@@ -1,6 +1,6 @@
 #!/bin/bash
 # Script to safely edit an encrypted secret
-
+EDITOR="code --wait --new-window --disable-extensions"
 set -e
 
 # Check arguments
