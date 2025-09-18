@@ -183,6 +183,52 @@
         delay: 10
         timeout: 60
 
+    - name: Create database access role
+      shell: |
+        /usr/local/bin/tctl create <<'EOF'
+        kind: role
+        version: v7
+        metadata:
+          name: db-access
+        spec:
+          allow:
+            db_labels:
+              "*": "*"
+            db_names:
+            - postgres
+            - "*"
+            db_users:
+            - admin
+            - "*"
+        EOF
+      register: create_role_result
+      failed_when: 
+        - create_role_result.rc != 0
+        - "'already exists' not in create_role_result.stderr"
+      changed_when: "'already exists' not in create_role_result.stderr"
+
+    - name: Update admin user with database access role
+      shell: |
+        # Get current user config
+        /usr/local/bin/tctl get user/admin > /tmp/admin-user.yaml
+        
+        # Check if db-access role is already present
+        if ! grep -q "db-access" /tmp/admin-user.yaml; then
+          # Add db-access to roles list
+          sed -i '/^  roles:/a\  - db-access' /tmp/admin-user.yaml
+          
+          # Apply updated config
+          /usr/local/bin/tctl create -f /tmp/admin-user.yaml --force
+          echo "Added db-access role to admin user"
+        else
+          echo "db-access role already present for admin user"
+        fi
+        
+        # Cleanup
+        rm -f /tmp/admin-user.yaml
+      register: update_user_result
+      changed_when: "'Added db-access role' in update_user_result.stdout"
+
     - name: Display connection information
       debug:
         msg: |
