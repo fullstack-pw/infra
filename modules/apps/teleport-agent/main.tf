@@ -42,6 +42,7 @@ module "values" {
         roles                   = var.roles
         apps                    = var.apps
         databases               = var.databases
+        ssl_ca_cert_key         = var.ssl_ca_cert_key
       }
     }
   ]

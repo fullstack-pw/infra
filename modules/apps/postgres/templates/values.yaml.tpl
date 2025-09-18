@@ -3,6 +3,8 @@ image:
   registry: ${registry}
   repository: ${repository}
   tag: "${pg_version}"
+##diagnosticMode:
+##  enabled: true
 
 global:
   postgresql:
@@ -13,11 +15,10 @@ global:
       database: "${postgres_database}"
       existingSecret: ""
 
-# Configure PostgreSQL to accept external connections
 postgresql:
   extraEnvVars:
     - name: POSTGRESQL_EXTRA_FLAGS
-      value: "-c listen_addresses=* -c max_connections=200"
+      value: "-c shared_preload_libraries=vectors.so -c listen_addresses=* -c max_connections=200"
 
 primary:
   service:
@@ -32,8 +33,8 @@ primary:
       value: "false"
     - name: POSTGRESQL_WAL_LEVEL
       value: logical
-%{if enable_teleport_ssl}
-    - name: POSTGRESQL_TLS_ENABLED
+%{if enable_ssl}
+    - name: POSTGRESQL_ENABLE_TLS
       value: "yes"
     - name: POSTGRESQL_TLS_CERT_FILE
       value: "/opt/bitnami/postgresql/certs/server.crt"
@@ -46,13 +47,13 @@ primary:
       secret:
         secretName: cluster-secrets
         items:
-          - key: ${teleport_ca_cert_key}
+          - key: ${ssl_ca_cert_key}
             path: ca.crt
             mode: 0600
-          - key: ${teleport_server_cert_key}
+          - key: ${ssl_server_cert_key}
             path: server.crt
             mode: 0600
-          - key: ${teleport_server_key_key}
+          - key: ${ssl_server_key_key}
             path: server.key
             mode: 0600
 
@@ -60,9 +61,13 @@ primary:
     - name: teleport-certs
       mountPath: /opt/bitnami/postgresql/certs
       readOnly: true
-
+  pgHbaConfiguration: |-
+    local   all             all                                     peer
+    host    all             all             127.0.0.1/32            scram-sha-256
+    host    all             all             ::1/128                 scram-sha-256
+    hostssl all             all             ::/0                    cert
+    hostssl all             all             0.0.0.0/0               cert
 %{endif}
-
   persistence:
     enabled: ${persistence_enabled}
 %{if persistence_enabled && storage_class != ""}

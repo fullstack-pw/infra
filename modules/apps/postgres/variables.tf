@@ -39,7 +39,7 @@ variable "repository" {
 variable "timeout" {
   description = "Timeout for Helm operations"
   type        = number
-  default     = 300
+  default     = 120
 }
 
 
@@ -251,27 +251,29 @@ variable "preserve_existing_vault_data" {
 #   default = "15.4.0"
 # }
 
-# Teleport Database Access
-variable "enable_teleport_ssl" {
-  description = "Enable Teleport database access with SSL certificates"
+variable "enable_ssl" {
+  description = "Enable database access with SSL certificates"
   type        = bool
   default     = false
 }
 
-variable "teleport_ca_cert_key" {
-  description = "Vault secret key containing Teleport CA certificate (base64 encoded)"
+variable "ssl_ca_cert_key" {
+  description = "Vault secret key containing CA certificate"
   type        = string
-  default     = "POSTGRES_SSL_CA"
+  default     = "SSL_CA"
+  #default = ""
 }
 
-variable "teleport_server_cert_key" {
-  description = "Vault secret key containing Teleport server certificate (base64 encoded)"
+variable "ssl_server_cert_key" {
+  description = "Vault secret key containing server certificate"
   type        = string
-  default     = "POSTGRES_SSL_CERT"
+  default     = "SSL_CERT"
+  #default = ""
 }
 
-variable "teleport_server_key_key" {
-  description = "Vault secret key containing Teleport server private key (base64 encoded)"
+variable "ssl_server_key_key" {
+  description = "Vault secret key containing server private key"
   type        = string
-  default     = "POSTGRES_SSL_KEY"
+  default     = "SSL_KEY"
+  #default = ""
 }

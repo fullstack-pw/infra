@@ -86,11 +86,6 @@ module "observability-box" {
 module "postgres" {
   count  = contains(local.workload, "postgres") ? 1 : 0
   source = "../modules/apps/postgres"
-
-  memory_request = "512Mi"
-  cpu_request    = "250m"
-  memory_limit   = "1Gi"
-  cpu_limit      = "500m"
 }
 
 module "redis" {
@@ -183,4 +178,20 @@ module "teleport-agent" {
   roles                   = var.config[terraform.workspace].teleport.roles
   apps                    = var.config[terraform.workspace].teleport.apps
   databases               = var.config[terraform.workspace].teleport.databases
+}
+
+module "testing_postgres" {
+  count  = contains(local.workload, "dev-postgres") ? 1 : 0
+  source = "../modules/apps/postgres"
+
+  memory_request          = "512Mi"
+  cpu_request             = "250m"
+  memory_limit            = "1Gi"
+  cpu_limit               = "500m"
+  ingress_host            = "dev.postgres.fullstack.pw"
+  ingress_tls_secret_name = "postgres-tls"
+  enable_ssl              = true
+  ssl_ca_cert_key         = "SSL_CA"
+  ssl_server_cert_key     = "SSL_CERT"
+  ssl_server_key_key      = "SSL_KEY"
 }

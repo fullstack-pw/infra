@@ -87,10 +87,10 @@ module "values" {
         replication_replicas               = var.replication_replicas
         replication_synchronousCommit      = var.replication_synchronousCommit
         replication_numSynchronousReplicas = var.replication_numSynchronousReplicas
-        enable_teleport_ssl                = var.enable_teleport_ssl
-        teleport_ca_cert_key               = var.teleport_ca_cert_key
-        teleport_server_cert_key           = var.teleport_server_cert_key
-        teleport_server_key_key            = var.teleport_server_key_key
+        enable_ssl                         = var.enable_ssl
+        ssl_ca_cert_key                    = var.ssl_ca_cert_key
+        ssl_server_cert_key                = var.ssl_server_cert_key
+        ssl_server_key_key                 = var.ssl_server_key_key
       }
     }
   ]
