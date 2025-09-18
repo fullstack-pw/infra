@@ -65,8 +65,11 @@ primary:
     local   all             all                                     peer
     host    all             all             127.0.0.1/32            scram-sha-256
     host    all             all             ::1/128                 scram-sha-256
-    hostssl all             all             ::/0                    cert
-    hostssl all             all             0.0.0.0/0               cert
+    hostssl all             all             10.0.0.0/8              cert clientcert=verify-full
+    hostssl all             all             172.16.0.0/12           cert clientcert=verify-full
+    hostssl all             all             192.168.0.0/16          cert clientcert=verify-full
+    hostssl all             all             0.0.0.0/0               cert clientcert=verify-full
+    hostssl all             all             ::/0                    cert clientcert=verify-full
 %{endif}
   persistence:
     enabled: ${persistence_enabled}
