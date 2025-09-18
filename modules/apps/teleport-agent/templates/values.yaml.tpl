@@ -25,22 +25,6 @@ databases:
   - name: ${key}
     uri: ${value}
     protocol: postgres
-    tls:
-      ca_cert_file: "/etc/teleport-tls-db/db-ca/ca.pem"
-    admin_user:
-      name: admin
-extraVolumes:
-  - name: db-ca
-    secret:
-      secretName: cluster-secrets
-      items:
-        - key: POSTGRES_SSL_CA
-          path: ca.pem
-          mode: 0600
-extraVolumeMounts:
-  - name: db-ca
-    mountPath: /etc/teleport-tls-db/db-ca
-    readOnly: true
 %{endfor}
 %{endif}
 

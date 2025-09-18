@@ -1,6 +1,7 @@
 #!/bin/bash
 # Script to safely edit an encrypted secret
 EDITOR="code --wait --new-window --disable-extensions"
+#EDITOR="vim"
 set -e
 
 # Check arguments

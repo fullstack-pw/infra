@@ -74,6 +74,9 @@ variable "ca_pin" {
   default     = ""
 }
 
+variable "ssl_ca_cert_key" {
+  default = "SSL_CA"
+}
 variable "kubernetes_cluster_name" {
   description = "Name of the Kubernetes cluster this agent is deployed to"
   type        = string

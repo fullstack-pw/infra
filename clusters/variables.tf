@@ -13,7 +13,8 @@ variable "workload" {
       "externaldns",
       "cert_manager",
       "external_secrets",
-      "teleport-agent"
+      "teleport-agent",
+      "dev-postgres"
       #"observability-box"
     ]
     stg = [
@@ -77,7 +78,10 @@ variable "config" {
           "dev-ascii" = "http://ascii-frontend.default.svc.cluster.local"
           "dev-cks"   = "http://cks-frontend.default.svc.cluster.local:3000"
         }
-        roles = "kube,app"
+        roles = "kube,app,db"
+        databases = {
+          "dev-postgres" = "dev.postgres.fullstack.pw:5432"
+        }
       }
     }
     stg = {
@@ -111,10 +115,7 @@ variable "config" {
           "vault"  = "http://vault.vault.svc.cluster.local:8200"
           "minio"  = "http://minio-console.default.svc.cluster.local:9001"
         }
-        databases = {
-          "postgres" = "postgres.fullstack.pw:5432"
-        }
-        roles = "kube,app,db"
+        roles = "kube,app"
       }
     }
     cluster-api = {
