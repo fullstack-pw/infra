@@ -1,0 +1,53 @@
+version: v3
+teleport:
+  nodename: "{{ ansible_hostname }}"
+  data_dir: /var/lib/teleport
+  log:
+    output: stderr
+    severity: INFO
+    format:
+      output: text
+  ca_pin: ""
+  advertise_ip: {{ teleport_domain }}
+  diag_addr: "0.0.0.0:3000"
+  storage:
+    type: postgresql
+    conn_string: postgresql://{{ postgres_user }}:{{ postgres_passwd }}@{{ postgres_host }}/teleport_backend
+    audit_events_uri:
+      - postgresql://{{ postgres_user }}:{{ postgres_passwd }}@{{ postgres_host }}/teleport_audit
+    audit_sessions_uri: 's3://fullstack.pw/teleport_audit'
+
+proxy_service:
+  proxy_protocol: off
+  listen_addr: 0.0.0.0:3023
+  web_listen_addr: 0.0.0.0:3080
+  tunnel_listen_addr: 0.0.0.0:3024
+  public_addr: "{{ teleport_domain }}:3080"
+  ssh_public_addr: "{{ teleport_domain }}:3023"
+  tunnel_public_addr: "{{ teleport_domain }}:3024"
+  https_keypairs:
+  - key_file: /var/lib/teleport/privkey.pem
+    cert_file: /var/lib/teleport/fullchain.pem
+  kube_public_addr: k8s.{{ teleport_domain }}
+  kube_listen_addr: 0.0.0.0:3026
+  mysql_public_addr: mysql.{{ teleport_domain }}
+  mysql_listen_addr: "0.0.0.0:3036"
+  postgres_public_addr: postgres.{{ teleport_domain }}
+  postgres_listen_addr: "0.0.0.0:5432"
+
+
+auth_service:
+  cluster_name: "{{ teleport_cluster_name }}"
+  session_recording: "node-sync"
+  
+  # Authentication settings
+  authentication:
+
+ssh_service:
+  labels:
+    env: production
+    role: teleport-gateway
+  commands:
+  - name: hostname
+    command: [hostname]
+    period: 1m0s

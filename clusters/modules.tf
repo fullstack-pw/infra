@@ -86,11 +86,6 @@ module "observability-box" {
 module "postgres" {
   count  = contains(local.workload, "postgres") ? 1 : 0
   source = "../modules/apps/postgres"
-
-  memory_request = "512Mi"
-  cpu_request    = "250m"
-  memory_limit   = "1Gi"
-  cpu_limit      = "500m"
 }
 
 module "redis" {
@@ -172,4 +167,31 @@ module "proxmox_talos_clusters" {
   proxmox_url           = element(split("/api2", local.secrets_json["kv/cluster-secret-store/secrets/PROXMOX_URL"]["PROXMOX_URL"]), 0)
   proxmox_secret        = local.secrets_json["kv/cluster-secret-store/secrets/PROXMOX_SECRET"]["PROXMOX_SECRET"]
   proxmox_token         = local.secrets_json["kv/cluster-secret-store/secrets/PROXMOX_TOKEN_ID"]["PROXMOX_TOKEN_ID"]
+}
+
+module "teleport-agent" {
+  count  = contains(local.workload, "teleport-agent") ? 1 : 0
+  source = "../modules/apps/teleport-agent"
+
+  kubernetes_cluster_name = terraform.workspace
+  join_token              = "76756646e90d1f740646aa5e30fdd216"
+  roles                   = var.config[terraform.workspace].teleport.roles
+  apps                    = var.config[terraform.workspace].teleport.apps
+  databases               = var.config[terraform.workspace].teleport.databases
+}
+
+module "testing_postgres" {
+  count  = contains(local.workload, "dev-postgres") ? 1 : 0
+  source = "../modules/apps/postgres"
+
+  memory_request          = "512Mi"
+  cpu_request             = "250m"
+  memory_limit            = "1Gi"
+  cpu_limit               = "500m"
+  ingress_host            = "dev.postgres.fullstack.pw"
+  ingress_tls_secret_name = "postgres-tls"
+  enable_ssl              = true
+  ssl_ca_cert_key         = "SSL_CA"
+  ssl_server_cert_key     = "SSL_CERT"
+  ssl_server_key_key      = "SSL_KEY"
 }

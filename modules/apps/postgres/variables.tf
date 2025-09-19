@@ -19,13 +19,27 @@ variable "release_name" {
 variable "chart_version" {
   description = "PostgreSQL Helm chart version"
   type        = string
-  default     = "12.5.8"
+  #default     = "16.2.0" #using pg17.0
+  default = "12.12.10" #using pg15.4
 }
+
+variable "postgres_version" { #postgres docker image version
+  default = "latest"
+}
+
+variable "registry" {
+  default = "registry.fullstack.pw"
+}
+variable "repository" {
+  default = "library/postgres"
+}
+
+
 
 variable "timeout" {
   description = "Timeout for Helm operations"
   type        = number
-  default     = 300
+  default     = 120
 }
 
 
@@ -223,16 +237,6 @@ variable "preserve_existing_vault_data" {
   default     = true
 }
 
-variable "registry" {
-  default = "registry.fullstack.pw"
-}
-variable "repository" {
-  default = "library/postgres"
-}
-
-variable "postgres_version" {
-  default = "1.2.3"
-}
 # registry.fullstack.pw/library/postgres:1.2.0
 # docker.io/bitnami/postgresql:15.4.0
 
@@ -246,3 +250,30 @@ variable "postgres_version" {
 # variable "postgres_version" {
 #   default = "15.4.0"
 # }
+
+variable "enable_ssl" {
+  description = "Enable database access with SSL certificates"
+  type        = bool
+  default     = false
+}
+
+variable "ssl_ca_cert_key" {
+  description = "Vault secret key containing CA certificate"
+  type        = string
+  default     = "SSL_CA"
+  #default = ""
+}
+
+variable "ssl_server_cert_key" {
+  description = "Vault secret key containing server certificate"
+  type        = string
+  default     = "SSL_CERT"
+  #default = ""
+}
+
+variable "ssl_server_key_key" {
+  description = "Vault secret key containing server private key"
+  type        = string
+  default     = "SSL_KEY"
+  #default = ""
+}
