@@ -77,6 +77,44 @@ jobs:
 
           echo "Final PLAYBOOK_PATH: $(echo $PLAYBOOK_PATH)"
 
+      - name: Validate Inventory and New Hosts
+        run: |
+          PLAYBOOK="${{ needs.detect-ansible-command.outputs.playbook }}"
+          echo "Validating inventory for playbook: $PLAYBOOK"
+
+          # Check if inventory file exists
+          if [ ! -f "proxmox/k8s.ini" ]; then
+            echo "❌ Inventory file proxmox/k8s.ini not found"
+            exit 1
+          fi
+
+          # Check if we have hosts to configure
+          if [ -f "proxmox/new_hosts.txt" ] && [ -s "proxmox/new_hosts.txt" ]; then
+            echo "✅ Found new hosts to configure:"
+            cat proxmox/new_hosts.txt
+          else
+            # Check if we're targeting specific hosts
+            if [[ $PLAYBOOK =~ ^k8s-(.+)$ ]]; then
+              TARGET_ENV="${BASH_REMATCH[1]}"
+              echo "Checking for existing hosts in environment: $TARGET_ENV"
+              
+              if grep -q "^\[${TARGET_ENV}\]" proxmox/k8s.ini && \
+                 grep -A 10 "^\[${TARGET_ENV}\]" proxmox/k8s.ini | grep -q "^[a-zA-Z0-9-]"; then
+                echo "✅ Found existing hosts in $TARGET_ENV environment"
+              else
+                echo "❌ No hosts found for environment: $TARGET_ENV"
+                echo "Available environments in inventory:"
+                grep "^\[.*\]" proxmox/k8s.ini || echo "No groups found in inventory"
+                exit 1
+              fi
+            else
+              echo "❌ No new hosts found and not targeting specific environment"
+              echo "Available hosts in inventory:"
+              grep "ansible_host=" proxmox/k8s.ini || echo "No hosts found in inventory"
+              exit 1
+            fi
+          fi
+
       - name: Prepare Environment
         run: |
           mkdir -p ~/.ssh
