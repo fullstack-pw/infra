@@ -195,7 +195,6 @@
     - name: Extract Proxmox URL (remove /api2/json suffix)
       set_fact:
         proxmox_url_clean: "{{ lookup('env', 'PROXMOX_URL') | regex_replace('/api2.*$', '') }}"
-      delegate_to: localhost
       become: false
       run_once: true
 
@@ -210,7 +209,6 @@
       args:
         executable: /bin/bash
       register: clusterctl_init
-      delegate_to: localhost
       become: false
       run_once: true
 
@@ -228,7 +226,6 @@
       register: capi_pods
       changed_when: false
       failed_when: false
-      delegate_to: localhost
       become: false
       run_once: true
 
