@@ -129,25 +129,23 @@ jobs:
         run: |
           terraform apply -auto-approve
 
-      # - name: Extract Ansible Playbook from Commit
-      #   if: steps.apply.outcome == 'success'
-      #   id: extract-playbook
-      #   run: |
-      #     # Get the HEAD commit message (this will be the squashed commit title)
-      #     COMMIT_MSG=$(git log -1 --pretty=format:"%s")
-      #     echo "Commit message: $COMMIT_MSG"
+      - name: Extract Ansible Playbook from Commit
+        if: steps.apply.outcome == 'success'
+        id: extract-playbook
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=format:"%s")
+          echo "Commit message: $COMMIT_MSG"
 
-      #     # Look for [ansible playbook-name] pattern in commit message
-      #     if [[ $COMMIT_MSG =~ \[ansible[[:space:]]+([^\]]+)\] ]]; then
-      #       PLAYBOOK="${BASH_REMATCH[1]}"
-      #       PLAYBOOK=$(echo $PLAYBOOK | xargs)
-      #       echo "Found playbook: $PLAYBOOK"
-      #       echo "ANSIBLE_PLAYBOOK=$PLAYBOOK" >> $GITHUB_ENV
-      #       echo "ANSIBLE_TAG=[ansible $PLAYBOOK]" >> $GITHUB_ENV
-      #     else
-      #       echo "No ansible command found in commit message"
-      #       echo "ANSIBLE_TAG=" >> $GITHUB_ENV
-      #     fi
+          if [[ $COMMIT_MSG =~ \[ansible[[:space:]]+([^\]]+)\] ]]; then
+            PLAYBOOK="${BASH_REMATCH[1]}"
+            PLAYBOOK=$(echo $PLAYBOOK | xargs)
+            echo "Found playbook: $PLAYBOOK"
+            echo "ANSIBLE_PLAYBOOK=$PLAYBOOK" >> $GITHUB_ENV
+            echo "ANSIBLE_TAG=[ansible $PLAYBOOK]" >> $GITHUB_ENV
+          else
+            echo "No ansible command found in commit message"
+            echo "ANSIBLE_TAG=" >> $GITHUB_ENV
+          fi
 
       - name: Install Ansible for Inventory Validation
         id: install-ansible
@@ -184,9 +182,8 @@ jobs:
             exit 0
           fi
 
-          # Use ansible tag as commit message if present
           if [ -n "$ANSIBLE_TAG" ]; then
-            COMMIT_MSG="$ANSIBLE_TAG"
+            COMMIT_MSG="Auto-update Ansible inventory $ANSIBLE_TAG"
           else
             COMMIT_MSG="Auto-update Ansible inventory"
           fi
