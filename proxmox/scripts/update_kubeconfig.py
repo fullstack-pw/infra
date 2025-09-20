@@ -105,25 +105,25 @@ class KubeconfigUpdater:
             for section in ['clusters', 'contexts', 'users']:
                 if section in new_yaml and new_yaml[section]:
                     for item in new_yaml[section]:
-                        item['name'] = cluster_name
-                        
-                    # Update context references
-                    if section == 'contexts':
-                        for item in new_yaml[section]:
+                        if section == 'contexts':
+                            # Context name should be inventory_name (VM hostname)
+                            item['name'] = inventory_name
                             if 'context' in item:
                                 item['context']['cluster'] = cluster_name
                                 item['context']['user'] = cluster_name
-                                item['name'] = inventory_name
+                        else:
+                            # Clusters and users use cluster_name
+                            item['name'] = cluster_name
             
             # Merge sections
             for section in ['clusters', 'contexts', 'users']:
                 if section not in existing_yaml:
                     existing_yaml[section] = []
                     
-                # Remove existing entries for this cluster
+                # Remove existing entries for this cluster (by cluster_name and inventory_name)
                 existing_yaml[section] = [
                     item for item in existing_yaml[section] 
-                    if item.get('name') != cluster_name
+                    if item.get('name') not in [cluster_name, inventory_name]
                 ]
                 
                 # Add new entries

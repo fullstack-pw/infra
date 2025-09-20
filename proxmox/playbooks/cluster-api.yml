@@ -124,11 +124,11 @@
         host_ip: "{{ ansible_eth0.ipv4.address }}"
       run_once: true
 
-    - name: Create kubeconfig with server address substituted
+    - name: Create kubeconfig with server address and names substituted
       delegate_to: localhost
       become: false
       copy:
-        content: "{{ kubeconfig_content.stdout | replace('127.0.0.1', host_ip) | replace('default', cluster_name) }}"
+        content: "{{ kubeconfig_content.stdout | replace('127.0.0.1', host_ip) | regex_replace('name: default$', 'name: ' + inventory_hostname, multiline=True) }}"
         dest: "/tmp/{{ cluster_name }}-kubeconfig"
       run_once: true
 
