@@ -204,11 +204,16 @@
         echo "Using kubeconfig: $KUBECONFIG"
         echo "Checking if kubeconfig file exists:"
         ls -la "/tmp/{{ cluster_name }}-kubeconfig"
-        echo "Kubeconfig content preview:"
-        head -20 "/tmp/{{ cluster_name }}-kubeconfig"
-        echo "Checking kubectl access:"
+        echo "Full kubeconfig content:"
+        cat "/tmp/{{ cluster_name }}-kubeconfig"
+        echo "Checking kubectl config:"
+        kubectl config view
+        echo "Current context:"
         kubectl config current-context
-        kubectl get nodes
+        echo "Available contexts:"
+        kubectl config get-contexts
+        echo "Testing connection:"
+        kubectl get nodes -v=6
 
         clusterctl init --infrastructure proxmox --ipam in-cluster --control-plane talos --bootstrap talos
       args:
