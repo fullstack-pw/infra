@@ -128,7 +128,7 @@
       delegate_to: localhost
       become: false
       copy:
-        content: "{{ kubeconfig_content.stdout | replace('127.0.0.1', host_ip) | regex_replace('name: default$', 'name: ' + inventory_hostname, multiline=True) }}"
+        content: "{{ kubeconfig_content.stdout | replace('127.0.0.1', host_ip) | replace('name: default', 'name: ' + inventory_hostname) | replace('current-context: default', 'current-context: ' + inventory_hostname) | replace('cluster: default', 'cluster: ' + cluster_name) | replace('user: default', 'user: ' + cluster_name) }}"
         dest: "/tmp/{{ cluster_name }}-kubeconfig"
       run_once: true
 
