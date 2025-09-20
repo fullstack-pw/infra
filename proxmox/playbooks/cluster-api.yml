@@ -195,7 +195,7 @@
 
     - name: Initialize cluster-api with providers
       shell: |
-        export KUBECONFIG=/tmp/update_kubeconfig.py
+        export KUBECONFIG="/tmp/{{ cluster_name }}-kubeconfig"
         export PROXMOX_URL="{{ proxmox_url_clean }}"
         export PROXMOX_TOKEN="{{ lookup('env', 'PROXMOX_TOKEN_ID') }}"
         export PROXMOX_SECRET="{{ lookup('env', 'PROXMOX_SECRET') }}"
@@ -215,7 +215,7 @@
 
     - name: Verify cluster-api installation
       shell: |
-        export KUBECONFIG=/tmp/update_kubeconfig.py
+        export KUBECONFIG="/tmp/{{ cluster_name }}-kubeconfig"
         kubectl get pods -A | grep -E "(capi|cluster-api|talos|proxmox)"
       args:
         executable: /bin/bash
