@@ -109,7 +109,7 @@
         msg: "Node token for {{ inventory_hostname }}: {{ node_token.stdout }}"
 
     - name: Fetch kubeconfig
-      shell: cat ./tmp/update_kubeconfig.py
+      shell: cat /tmp/update_kubeconfig.py
       register: kubeconfig_content
       changed_when: false
 
@@ -203,7 +203,7 @@
 
     - name: Initialize cluster-api with providers
       shell: |
-        export KUBECONFIG=./tmp/update_kubeconfig.py
+        export KUBECONFIG=/tmp/update_kubeconfig.py
         export PROXMOX_URL="{{ proxmox_url_clean }}"
         export PROXMOX_TOKEN="{{ lookup('env', 'PROXMOX_TOKEN_ID') }}"
         export PROXMOX_SECRET="{{ lookup('env', 'PROXMOX_SECRET') }}"
@@ -223,7 +223,7 @@
 
     - name: Verify cluster-api installation
       shell: |
-        export KUBECONFIG=./tmp/update_kubeconfig.py
+        export KUBECONFIG=/tmp/update_kubeconfig.py
         kubectl get pods -A | grep -E "(capi|cluster-api|talos|proxmox)"
       args:
         executable: /bin/bash
