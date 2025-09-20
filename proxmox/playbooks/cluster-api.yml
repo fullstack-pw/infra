@@ -195,6 +195,7 @@
 
     - name: Initialize cluster-api with providers
       shell: |
+        unset KUBECONFIG
         export KUBECONFIG="/tmp/{{ cluster_name }}-kubeconfig"
         export PROXMOX_URL="{{ proxmox_url_clean }}"
         export PROXMOX_TOKEN="{{ lookup('env', 'PROXMOX_TOKEN_ID') }}"
