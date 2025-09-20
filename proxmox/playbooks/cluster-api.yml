@@ -109,7 +109,7 @@
         msg: "Node token for {{ inventory_hostname }}: {{ node_token.stdout }}"
 
     - name: Fetch kubeconfig
-      shell: cat /etc/rancher/k3s/k3s.yaml
+      shell: cat ./tmp/update_kubeconfig.py
       register: kubeconfig_content
       changed_when: false
 
@@ -145,7 +145,7 @@
       become: false
       copy:
         src: "{{ playbook_dir }}/../scripts/update_kubeconfig.py"
-        dest: "./tmp/update_kubeconfig.py"
+        dest: "/tmp/update_kubeconfig.py"
         mode: '0755'
       run_once: true
       register: script_copy
@@ -161,7 +161,7 @@
       delegate_to: localhost
       become: false
       command: >
-        python3 ./tmp/update_kubeconfig.py
+        python3 /tmp/update_kubeconfig.py
         --cluster-name "{{ cluster_name }}"
         --kubeconfig-file "./tmp/{{ cluster_name }}-kubeconfig"
         --vault-addr "{{ vault_addr }}"
@@ -175,6 +175,7 @@
       ignore_errors: yes
 
     - name: Download clusterctl binary
+      delegate_to: localhost
       get_url:
         url: "https://github.com/kubernetes-sigs/cluster-api/releases/latest/download/clusterctl-linux-amd64"
         dest: "/usr/local/bin/clusterctl"
@@ -184,6 +185,7 @@
       become: true
 
     - name: Verify clusterctl installation
+      delegate_to: localhost
       command: clusterctl version
       register: clusterctl_version
       changed_when: false
@@ -195,12 +197,13 @@
     - name: Extract Proxmox URL (remove /api2/json suffix)
       set_fact:
         proxmox_url_clean: "{{ lookup('env', 'PROXMOX_URL') | regex_replace('/api2.*$', '') }}"
+      delegate_to: localhost
       become: false
       run_once: true
 
     - name: Initialize cluster-api with providers
       shell: |
-        export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+        export KUBECONFIG=./tmp/update_kubeconfig.py
         export PROXMOX_URL="{{ proxmox_url_clean }}"
         export PROXMOX_TOKEN="{{ lookup('env', 'PROXMOX_TOKEN_ID') }}"
         export PROXMOX_SECRET="{{ lookup('env', 'PROXMOX_SECRET') }}"
@@ -209,6 +212,7 @@
       args:
         executable: /bin/bash
       register: clusterctl_init
+      delegate_to: localhost
       become: false
       run_once: true
 
@@ -219,13 +223,14 @@
 
     - name: Verify cluster-api installation
       shell: |
-        export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+        export KUBECONFIG=./tmp/update_kubeconfig.py
         kubectl get pods -A | grep -E "(capi|cluster-api|talos|proxmox)"
       args:
         executable: /bin/bash
       register: capi_pods
       changed_when: false
       failed_when: false
+      delegate_to: localhost
       become: false
       run_once: true
 
