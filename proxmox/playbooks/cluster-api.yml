@@ -200,7 +200,16 @@
         export PROXMOX_URL="{{ proxmox_url_clean }}"
         export PROXMOX_TOKEN="{{ lookup('env', 'PROXMOX_TOKEN_ID') }}"
         export PROXMOX_SECRET="{{ lookup('env', 'PROXMOX_SECRET') }}"
-        
+
+        echo "Using kubeconfig: $KUBECONFIG"
+        echo "Checking if kubeconfig file exists:"
+        ls -la "/tmp/{{ cluster_name }}-kubeconfig"
+        echo "Kubeconfig content preview:"
+        head -20 "/tmp/{{ cluster_name }}-kubeconfig"
+        echo "Checking kubectl access:"
+        kubectl config current-context
+        kubectl get nodes
+
         clusterctl init --infrastructure proxmox --ipam in-cluster --control-plane talos --bootstrap talos
       args:
         executable: /bin/bash
