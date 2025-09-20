@@ -109,7 +109,7 @@
         msg: "Node token for {{ inventory_hostname }}: {{ node_token.stdout }}"
 
     - name: Fetch kubeconfig
-      shell: cat /tmp/update_kubeconfig.py
+      shell: cat /etc/rancher/k3s/k3s.yaml
       register: kubeconfig_content
       changed_when: false
 
@@ -118,14 +118,6 @@
         msg: 
           - "Inventory hostname: {{ inventory_hostname }}"
           - "Using cluster name: {{ cluster_name }}"
-
-    - name: Create local temp directory
-      delegate_to: localhost
-      become: false
-      file:
-        path: ./tmp
-        state: directory
-      run_once: true
 
     - name: Set host IP variable
       set_fact:
@@ -137,7 +129,7 @@
       become: false
       copy:
         content: "{{ kubeconfig_content.stdout | replace('127.0.0.1', host_ip) | replace('default', cluster_name) }}"
-        dest: "./tmp/{{ cluster_name }}-kubeconfig"
+        dest: "/tmp/{{ cluster_name }}-kubeconfig"
       run_once: true
 
     - name: Copy kubeconfig update script to controller
@@ -163,7 +155,7 @@
       command: >
         python3 /tmp/update_kubeconfig.py
         --cluster-name "{{ cluster_name }}"
-        --kubeconfig-file "./tmp/{{ cluster_name }}-kubeconfig"
+        --kubeconfig-file "/tmp/{{ cluster_name }}-kubeconfig"
         --vault-addr "{{ vault_addr }}"
         --inventory-name "{{ inventory_hostname }}"
         --vault-path "kv/cluster-secret-store/secrets/KUBECONFIG"
