@@ -119,14 +119,6 @@
           - "Inventory hostname: {{ inventory_hostname }}"
           - "Using cluster name: {{ cluster_name }}"
 
-    - name: Create local temp directory
-      delegate_to: localhost
-      become: false
-      file:
-        path: ./tmp
-        state: directory
-      run_once: true
-
     - name: Set host IP variable
       set_fact:
         host_ip: "{{ ansible_eth0.ipv4.address }}"
@@ -137,7 +129,7 @@
       become: false
       copy:
         content: "{{ kubeconfig_content.stdout | replace('127.0.0.1', host_ip) | replace('default', cluster_name) }}"
-        dest: "./tmp/{{ cluster_name }}-kubeconfig"
+        dest: "/tmp/{{ cluster_name }}-kubeconfig"
       run_once: true
 
     - name: Copy kubeconfig update script to controller
@@ -145,7 +137,7 @@
       become: false
       copy:
         src: "{{ playbook_dir }}/../scripts/update_kubeconfig.py"
-        dest: "./tmp/update_kubeconfig.py"
+        dest: "/tmp/update_kubeconfig.py"
         mode: '0755'
       run_once: true
       register: script_copy
@@ -161,9 +153,9 @@
       delegate_to: localhost
       become: false
       command: >
-        python3 ./tmp/update_kubeconfig.py
+        python3 /tmp/update_kubeconfig.py
         --cluster-name "{{ cluster_name }}"
-        --kubeconfig-file "./tmp/{{ cluster_name }}-kubeconfig"
+        --kubeconfig-file "/tmp/{{ cluster_name }}-kubeconfig"
         --vault-addr "{{ vault_addr }}"
         --inventory-name "{{ inventory_hostname }}"
         --vault-path "kv/cluster-secret-store/secrets/KUBECONFIG"
@@ -175,6 +167,7 @@
       ignore_errors: yes
 
     - name: Download clusterctl binary
+      delegate_to: localhost
       get_url:
         url: "https://github.com/kubernetes-sigs/cluster-api/releases/latest/download/clusterctl-linux-amd64"
         dest: "/usr/local/bin/clusterctl"
@@ -184,6 +177,7 @@
       become: true
 
     - name: Verify clusterctl installation
+      delegate_to: localhost
       command: clusterctl version
       register: clusterctl_version
       changed_when: false
@@ -201,7 +195,7 @@
 
     - name: Initialize cluster-api with providers
       shell: |
-        export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+        export KUBECONFIG="/tmp/{{ cluster_name }}-kubeconfig"
         export PROXMOX_URL="{{ proxmox_url_clean }}"
         export PROXMOX_TOKEN="{{ lookup('env', 'PROXMOX_TOKEN_ID') }}"
         export PROXMOX_SECRET="{{ lookup('env', 'PROXMOX_SECRET') }}"
@@ -221,7 +215,7 @@
 
     - name: Verify cluster-api installation
       shell: |
-        export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+        export KUBECONFIG="/tmp/{{ cluster_name }}-kubeconfig"
         kubectl get pods -A | grep -E "(capi|cluster-api|talos|proxmox)"
       args:
         executable: /bin/bash
