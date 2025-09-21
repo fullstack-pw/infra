@@ -99,11 +99,21 @@ plan:
 			echo -e "\n#########################################################" | tee -a plan.txt; \
 			echo -e "##\n##   Planning changes for $${env} environment..." | tee -a plan.txt; \
 			echo -e "##\n#########################################################" | tee -a plan.txt; \
-			terraform plan $(EXTRA_ARGS) -no-color -out=$${env}.tfplan && terraform show -no-color $${env}.tfplan >> plan.txt && cd .. || cd ..; \
+			if terraform plan $(EXTRA_ARGS) -no-color -out=$${env}.tfplan 2>&1 | tee -a plan.txt; then \
+				terraform show -no-color $${env}.tfplan >> plan.txt 2>&1; \
+			else \
+				echo -e "\n❌ Terraform plan failed for $${env} environment" | tee -a plan.txt; \
+			fi; \
+			cd ..; \
 		done; \
 	else \
 		echo -e "${CYAN}Planning changes for $(ENV) environment...${NC}"; \
-		cd $(TERRAFORM_DIR) && terraform workspace select $(ENV) && terraform plan $(EXTRA_ARGS) -no-color -out=$(ENV).tfplan && terraform show -no-color $(ENV).tfplan >> plan.txt; \
+		cd $(TERRAFORM_DIR) && terraform workspace select $(ENV); \
+		if terraform plan $(EXTRA_ARGS) -no-color -out=$(ENV).tfplan 2>&1 | tee -a plan.txt; then \
+			terraform show -no-color $(ENV).tfplan >> plan.txt 2>&1; \
+		else \
+			echo -e "\n❌ Terraform plan failed for $(ENV) environment" | tee -a plan.txt; \
+		fi; \
 	fi
 
 # Apply changes for all environments or a specific one
