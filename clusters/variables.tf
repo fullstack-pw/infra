@@ -158,8 +158,8 @@ variable "config" {
     }
     homologate-cluster-api = {
       kubernetes_context = "homologate-cluster-api"
-      install_crd        = false
-      cert_manager_crd   = false
+      install_crd        = true
+      cert_manager_crd   = true
       # proxmox-talos-cluster = [
       #   {
       #     name                      = "testing-cluster"
