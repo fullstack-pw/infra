@@ -58,6 +58,12 @@ variable "workload" {
       "external_secrets",
       "proxmox-talos-cluster"
     ]
+    homologate-cluster-api = [
+      "externaldns",
+      "cert_manager",
+      "external_secrets",
+      "proxmox-talos-cluster"
+    ]
   }
 }
 
@@ -102,7 +108,8 @@ variable "config" {
         apps = {
           "longhorn" = "http://longhorn-frontend.longhorn-system.svc.cluster.local"
         }
-        roles = "kube,app"
+        databases = {}
+        roles     = "kube,app"
       }
     }
     tools = {
@@ -122,6 +129,37 @@ variable "config" {
       kubernetes_context = "cluster-api"
       install_crd        = true
       cert_manager_crd   = true
+      # proxmox-talos-cluster = [
+      #   {
+      #     name                      = "testing-cluster"
+      #     kubernetes_version        = "v1.33.0"
+      #     control_plane_endpoint_ip = "192.168.1.100"
+      #     ip_range_start            = "192.168.1.101"
+      #     ip_range_end              = "192.168.1.110"
+      #     gateway                   = "192.168.1.1"
+      #     prefix                    = 24
+      #     dns_servers               = ["192.168.1.3", "8.8.4.4"]
+
+      #     source_node   = "node03"
+      #     template_id   = 103
+      #     allowed_nodes = ["node03"]
+
+      #     cp_replicas = 1
+      #     wk_replicas = 2
+
+      #     cp_disk_size = 20
+      #     cp_memory    = 2048
+      #     cp_cores     = 2
+      #     wk_disk_size = 30
+      #     wk_memory    = 4096
+      #     wk_cores     = 2
+      #   },
+      # ]
+    }
+    homologate-cluster-api = {
+      kubernetes_context = "homologate-cluster-api"
+      install_crd        = false
+      cert_manager_crd   = false
       # proxmox-talos-cluster = [
       #   {
       #     name                      = "testing-cluster"
