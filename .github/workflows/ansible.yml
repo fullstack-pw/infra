@@ -168,7 +168,7 @@ jobs:
                   # Create temporary inventory for this host
                   TEMP_INVENTORY=$(mktemp)
                   echo "[all]" > $TEMP_INVENTORY
-                  echo "$IP ansible_user=suporte" >> $TEMP_INVENTORY
+                  echo "$ENV ansible_host=$IP ansible_user=suporte" >> $TEMP_INVENTORY
                   
                   ansible-playbook -i "$TEMP_INVENTORY" $PLAYBOOK_PATH \
                     -e "ansible_user=suporte" \

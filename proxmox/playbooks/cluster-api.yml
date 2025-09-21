@@ -128,7 +128,7 @@
       delegate_to: localhost
       become: false
       copy:
-        content: "{{ kubeconfig_content.stdout | replace('127.0.0.1', host_ip) | regex_replace('name: default$', 'name: ' + inventory_hostname, multiline=True) }}"
+        content: "{{ kubeconfig_content.stdout | replace('127.0.0.1', host_ip) | replace('name: default', 'name: ' + inventory_hostname) | replace('current-context: default', 'current-context: ' + inventory_hostname) | replace('cluster: default', 'cluster: ' + inventory_hostname) | replace('user: default', 'user: ' + inventory_hostname) }}"
         dest: "/tmp/{{ cluster_name }}-kubeconfig"
       run_once: true
 
@@ -193,13 +193,47 @@
       become: false
       run_once: true
 
+    - name: Debug kubeconfig and kubectl setup
+      shell: |
+        unset KUBECONFIG
+        rm -rf ~/.kube/config ~/.kube/cache 2>/dev/null || true
+        
+        export KUBECONFIG="/tmp/{{ cluster_name }}-kubeconfig"
+        
+        echo "=== KUBECONFIG DEBUG ==="
+        echo "Using kubeconfig: $KUBECONFIG"
+        echo "File exists:"
+        ls -la "/tmp/{{ cluster_name }}-kubeconfig"
+        echo "File content:"
+        cat "/tmp/{{ cluster_name }}-kubeconfig"
+        echo "=== KUBECTL DEBUG ==="
+        kubectl config view
+        echo "Current context:"
+        kubectl config current-context
+        echo "Get contexts:"
+        kubectl config get-contexts
+        echo "Testing API connection with verbose output:"
+        kubectl get nodes -v=8
+      args:
+        executable: /bin/bash
+      register: debug_output
+      delegate_to: localhost
+      become: false
+      run_once: true
+      ignore_errors: yes
+
+    - name: Display debug output
+      debug:
+        var: debug_output.stdout_lines
+        
     - name: Initialize cluster-api with providers
       shell: |
+        unset KUBECONFIG
         export KUBECONFIG="/tmp/{{ cluster_name }}-kubeconfig"
         export PROXMOX_URL="{{ proxmox_url_clean }}"
         export PROXMOX_TOKEN="{{ lookup('env', 'PROXMOX_TOKEN_ID') }}"
         export PROXMOX_SECRET="{{ lookup('env', 'PROXMOX_SECRET') }}"
-        
+
         clusterctl init --infrastructure proxmox --ipam in-cluster --control-plane talos --bootstrap talos
       args:
         executable: /bin/bash
