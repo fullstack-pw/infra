@@ -122,7 +122,8 @@ variable "config" {
           "vault"  = "http://vault.vault.svc.cluster.local:8200"
           "minio"  = "http://minio-console.default.svc.cluster.local:9001"
         }
-        roles = "kube,app"
+        databases = {}
+        roles     = "kube,app"
       }
     }
     cluster-api = {
