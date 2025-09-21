@@ -108,7 +108,8 @@ variable "config" {
         apps = {
           "longhorn" = "http://longhorn-frontend.longhorn-system.svc.cluster.local"
         }
-        roles = "kube,app"
+        databases = {}
+        roles     = "kube,app"
       }
     }
     tools = {
