@@ -2,6 +2,7 @@ name: Ansible Provisioning
 
 on:
   push:
+    branches: [main]
 
 jobs:
   detect-ansible-command:
