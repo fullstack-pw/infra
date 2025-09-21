@@ -72,7 +72,8 @@ RUN pip3 install --no-cache-dir \
     hvac \
     requests \
     boto3 \
-    kubernetes
+    kubernetes \
+    ansible
 
 # Set up directories
 RUN mkdir -p /home/runner/.kube ~/.sops/keys ~/.aws ~/.config/gcloud \
