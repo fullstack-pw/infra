@@ -193,39 +193,6 @@
       become: false
       run_once: true
 
-    - name: Debug kubeconfig and kubectl setup
-      shell: |
-        unset KUBECONFIG
-        rm -rf ~/.kube/config ~/.kube/cache 2>/dev/null || true
-        
-        export KUBECONFIG="/tmp/{{ cluster_name }}-kubeconfig"
-        
-        echo "=== KUBECONFIG DEBUG ==="
-        echo "Using kubeconfig: $KUBECONFIG"
-        echo "File exists:"
-        ls -la "/tmp/{{ cluster_name }}-kubeconfig"
-        echo "File content:"
-        cat "/tmp/{{ cluster_name }}-kubeconfig"
-        echo "=== KUBECTL DEBUG ==="
-        kubectl config view
-        echo "Current context:"
-        kubectl config current-context
-        echo "Get contexts:"
-        kubectl config get-contexts
-        echo "Testing API connection with verbose output:"
-        kubectl get nodes -v=8
-      args:
-        executable: /bin/bash
-      register: debug_output
-      delegate_to: localhost
-      become: false
-      run_once: true
-      ignore_errors: yes
-
-    - name: Display debug output
-      debug:
-        var: debug_output.stdout_lines
-        
     - name: Initialize cluster-api with providers
       shell: |
         unset KUBECONFIG
