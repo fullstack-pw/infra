@@ -5,7 +5,7 @@
 SHELL := /bin/bash
 
 # Configuration
-ENVIRONMENTS := dev sandboxy tools cluster-api homologate-cluster-api
+ENVIRONMENTS := dev sandboxy tools cluster-api
 DEFAULT_ENV := tools
 TERRAFORM_DIR := clusters
 PROXMOX_DIR := proxmox
