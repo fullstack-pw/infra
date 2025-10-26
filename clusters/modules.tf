@@ -108,6 +108,7 @@ module "harbor" {
   external_database_password = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
   external_redis_password    = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
   #ingress_annotations        = var.config[terraform.workspace].harbor.ingress
+  ingress_enabled = true
 }
 
 module "immich" {

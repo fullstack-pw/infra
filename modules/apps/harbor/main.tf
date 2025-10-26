@@ -78,6 +78,7 @@ module "values" {
         notary_domain = var.notary_domain
 
         # Ingress configuration
+        ingress_enabled      = var.ingress_enabled
         ingress_class_name   = var.ingress_class_name
         ingress_annotations  = var.ingress_annotations
         tls_enabled          = var.tls_enabled

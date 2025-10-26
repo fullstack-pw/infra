@@ -25,13 +25,13 @@ variable "github_owner" {
 variable "controller_chart_version" {
   description = "Version of the gha-runner-scale-set-controller Helm chart"
   type        = string
-  default     = "0.12.1"
+  default     = "0.13.0"
 }
 
 variable "runner_chart_version" {
   description = "Version of the gha-runner-scale-set Helm chart"
   type        = string
-  default     = "0.12.1"
+  default     = "0.13.0"
 }
 
 variable "runner_name" {

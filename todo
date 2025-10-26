@@ -1,3 +1,0 @@
-research openshift
-refactor KUBECONFIG on runners to pool of files (s3?)
-cluster-api installed manually with clusterctl
