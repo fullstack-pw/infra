@@ -4,6 +4,11 @@ variable "namespace" {
   default     = "external-dns"
 }
 
+variable "create_namespace" {
+  type    = bool
+  default = true
+
+}
 variable "replicas" {
   description = "Number of ExternalDNS replicas"
   type        = number
@@ -46,4 +51,39 @@ variable "pihole_password" {
   type        = string
   default     = ""
   sensitive   = true
+}
+
+variable "dns_provider" {
+  description = "DNS provider to use (pihole or cloudflare)"
+  type        = string
+  default     = "pihole"
+  validation {
+    condition     = contains(["pihole", "cloudflare"], var.dns_provider)
+    error_message = "Provider must be either 'pihole' or 'cloudflare'."
+  }
+}
+
+variable "cloudflare_api_token" {
+  description = "Cloudflare API token for DNS management"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "cloudflare_secret_name" {
+  description = "Name of the secret containing Cloudflare API token"
+  type        = string
+  default     = "cloudflare-api-token"
+}
+
+variable "create_cloudflare_secret" {
+  description = "Whether to create a secret for Cloudflare API token"
+  type        = bool
+  default     = false
+}
+
+variable "deployment_name" {
+  description = "Name of the ExternalDNS deployment (allows multiple instances)"
+  type        = string
+  default     = "external-dns"
 }

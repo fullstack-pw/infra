@@ -107,7 +107,7 @@ module "ingress" {
   name               = "${var.release_name}-ingress"
   namespace          = module.namespace.name
   host               = var.ingress_host
-  service_name       = var.release_name
+  service_name       = "${var.release_name}-headless"
   service_port       = 8222 # NATS monitoring port
   tls_enabled        = var.ingress_tls_enabled
   tls_secret_name    = var.ingress_tls_secret_name

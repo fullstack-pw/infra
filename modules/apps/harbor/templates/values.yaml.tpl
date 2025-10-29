@@ -6,6 +6,9 @@ expose:
     secret:
       secretName: ${tls_cert_secret_name}
   ingress:
+%{if !ingress_enabled }
+    enabled: false
+%{endif}
     hosts:
       core: ${harbor_domain}
     className: ${ingress_class_name}
@@ -65,7 +68,9 @@ core:
     requests:
       cpu: ${resources_requests.core.cpu}
       memory: ${resources_requests.core.memory}
-
+  extraEnvVars:
+    - name: REGISTRY_HTTP_CLIENT_TIMEOUT
+      value: "600"
 jobservice:
   replicas: 1
   resources:
@@ -75,6 +80,9 @@ jobservice:
     requests:
       cpu: ${resources_requests.jobservice.cpu}
       memory: ${resources_requests.jobservice.memory}
+  extraEnvVars:
+    - name: REGISTRY_HTTP_CLIENT_TIMEOUT
+      value: "600"
 
 registry:
   replicas: 1

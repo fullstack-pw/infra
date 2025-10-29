@@ -2,11 +2,34 @@ module "externaldns" {
   count  = contains(local.workload, "externaldns") ? 1 : 0
   source = "../modules/apps/externaldns"
 
+  deployment_name      = "external-dns-pihole"
+  dns_provider         = "pihole"
   create_pihole_secret = terraform.workspace == "sandbox" ? true : false
   pihole_password      = terraform.workspace == "sandbox" ? local.secrets_json["kv/cluster-secret-store/secrets/EXTERNAL_DNS_PIHOLE_PASSWORD"]["PIHOLE_PASSWORD"] : ""
-
 }
 
+module "externaldns_cloudflare" {
+  count  = contains(local.workload, "externaldns") ? 1 : 0
+  source = "../modules/apps/externaldns"
+
+  deployment_name          = "external-dns-cloudflare"
+  dns_provider             = "cloudflare"
+  create_cloudflare_secret = true
+  cloudflare_api_token     = local.secrets_json["kv/cloudflare"]["api-token"]
+  container_args = [
+    "--source=ingress",
+    "--registry=txt",
+    "--txt-owner-id=k8s-${terraform.workspace}",
+    "--policy=sync",
+    "--provider=cloudflare",
+  ]
+  create_namespace = false
+}
+
+moved {
+  from = module.externaldns[0].module.namespace.kubernetes_namespace.this[0]
+  to   = module.externaldns[0].module.namespace[0].kubernetes_namespace.this[0]
+}
 module "cert_manager" {
   count  = contains(local.workload, "cert_manager") ? 1 : 0
   source = "../modules/apps/certmanager"
@@ -108,6 +131,7 @@ module "harbor" {
   external_database_password = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
   external_redis_password    = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
   #ingress_annotations        = var.config[terraform.workspace].harbor.ingress
+  ingress_enabled = true
 }
 
 module "immich" {
