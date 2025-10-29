@@ -26,10 +26,10 @@ module "externaldns_cloudflare" {
   create_namespace = false
 }
 
-# moved {
-#   from = module.externaldns[0].module.namespace.kubernetes_namespace.this[0]
-#   to   = module.externaldns[0].module.namespace[0].kubernetes_namespace.this[0]
-# }
+moved {
+  from = module.externaldns[0].module.namespace.kubernetes_namespace.this[0]
+  to   = module.externaldns[0].module.namespace[0].kubernetes_namespace.this[0]
+}
 module "cert_manager" {
   count  = contains(local.workload, "cert_manager") ? 1 : 0
   source = "../modules/apps/certmanager"
