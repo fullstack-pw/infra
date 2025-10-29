@@ -5,6 +5,7 @@
  */
 
 module "namespace" {
+  count  = var.create_namespace ? 1 : 0
   source = "../../base/namespace"
 
   create = true
@@ -18,14 +19,14 @@ module "namespace" {
 resource "kubernetes_service_account" "externaldns" {
   automount_service_account_token = false
   metadata {
-    name      = "external-dns"
+    name      = var.deployment_name
     namespace = var.namespace
   }
 }
 
 resource "kubernetes_cluster_role" "externaldns" {
   metadata {
-    name = "external-dns"
+    name = var.deployment_name
   }
 
   rule {
@@ -49,7 +50,7 @@ resource "kubernetes_cluster_role" "externaldns" {
 
 resource "kubernetes_cluster_role_binding" "externaldns" {
   metadata {
-    name = "external-dns-viewer"
+    name = "${var.deployment_name}-viewer"
   }
 
   role_ref {
@@ -60,14 +61,14 @@ resource "kubernetes_cluster_role_binding" "externaldns" {
 
   subject {
     kind      = "ServiceAccount"
-    name      = "external-dns"
+    name      = var.deployment_name
     namespace = var.namespace
   }
 }
 
 resource "kubernetes_deployment" "externaldns" {
   metadata {
-    name      = "external-dns"
+    name      = var.deployment_name
     namespace = var.namespace
   }
 
@@ -76,21 +77,21 @@ resource "kubernetes_deployment" "externaldns" {
 
     selector {
       match_labels = {
-        app = "external-dns"
+        app = var.deployment_name
       }
     }
 
     template {
       metadata {
         labels = {
-          app = "external-dns"
+          app = var.deployment_name
         }
       }
 
       spec {
         automount_service_account_token = true
         enable_service_links            = false
-        service_account_name            = "external-dns"
+        service_account_name            = var.deployment_name
 
         container {
           name  = "external-dns"
@@ -103,15 +104,35 @@ resource "kubernetes_deployment" "externaldns" {
               optional = true
             }
           }
-          env {
-            name = "EXTERNAL_DNS_PIHOLE_PASSWORD"
-            value_from {
-              secret_key_ref {
-                name = var.create_pihole_secret ? kubernetes_secret.pihole[0].metadata[0].name : var.pihole_secret_name
-                key  = "PIHOLE_PASSWORD"
+
+          # PiHole-specific environment
+          dynamic "env" {
+            for_each = var.dns_provider == "pihole" ? [1] : []
+            content {
+              name = "EXTERNAL_DNS_PIHOLE_PASSWORD"
+              value_from {
+                secret_key_ref {
+                  name = var.create_pihole_secret ? kubernetes_secret.pihole[0].metadata[0].name : var.pihole_secret_name
+                  key  = "PIHOLE_PASSWORD"
+                }
               }
             }
           }
+
+          # Cloudflare-specific environment
+          dynamic "env" {
+            for_each = var.dns_provider == "cloudflare" ? [1] : []
+            content {
+              name = "CF_API_TOKEN"
+              value_from {
+                secret_key_ref {
+                  name = var.create_cloudflare_secret ? kubernetes_secret.cloudflare[0].metadata[0].name : var.cloudflare_secret_name
+                  key  = "api-token"
+                }
+              }
+            }
+          }
+
           args = var.container_args
         }
 
@@ -134,5 +155,18 @@ resource "kubernetes_secret" "pihole" {
 
   data = {
     PIHOLE_PASSWORD = var.pihole_password
+  }
+}
+
+resource "kubernetes_secret" "cloudflare" {
+  count = var.create_cloudflare_secret ? 1 : 0
+
+  metadata {
+    name      = var.cloudflare_secret_name
+    namespace = var.namespace
+  }
+
+  data = {
+    "api-token" = var.cloudflare_api_token
   }
 }
