@@ -52,6 +52,12 @@ variable "workload" {
       "vault",
       "teleport-agent"
     ]
+    # observability = [
+    #   "externaldns",
+    #   "cert_manager",
+    #   "external_secrets",
+    #   "observability"
+    # ]
     cluster-api = [
       "externaldns",
       "cert_manager",
@@ -125,6 +131,11 @@ variable "config" {
         databases = {}
         roles     = "kube,app"
       }
+    }
+    observability = {
+      kubernetes_context = "observability"
+      install_crd        = false
+      cert_manager_crd   = false
     }
     cluster-api = {
       kubernetes_context = "cluster-api"
