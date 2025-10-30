@@ -58,12 +58,12 @@ variable "workload" {
     #   "external_secrets",
     #   "observability"
     # ]
-    cluster-api = [
-      "externaldns",
-      "cert_manager",
-      "external_secrets",
-      "proxmox-talos-cluster"
-    ]
+    # cluster-api = [
+    #   "externaldns",
+    #   "cert_manager",
+    #   "external_secrets",
+    #   "proxmox-talos-cluster"
+    # ]
     # homologate-cluster-api = [
     #   "externaldns",
     #   "cert_manager",
