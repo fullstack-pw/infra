@@ -133,7 +133,7 @@ variable "config" {
       }
     }
     observability = {
-      kubernetes_context = "observability"
+      kubernetes_context = "k8s-observability"
       install_crd        = false
       cert_manager_crd   = false
     }
