@@ -5,7 +5,7 @@
 SHELL := /bin/bash
 
 # Configuration
-ENVIRONMENTS := dev sandboxy tools
+ENVIRONMENTS := dev sandboxy tools observability
 DEFAULT_ENV := tools
 TERRAFORM_DIR := clusters
 PROXMOX_DIR := proxmox
@@ -95,7 +95,7 @@ plan:
 	@if [ -z "$(ENV)" ]; then \
 		echo -e "${CYAN}Planning changes for all environments...${NC}"; \
 		for env in $(ENVIRONMENTS); do \
-			cd $(TERRAFORM_DIR) && terraform workspace select $${env}; \
+			cd $(TERRAFORM_DIR) && terraform workspace select $${env} || terraform workspace new $${env}; \
 			echo -e "\n#########################################################" | tee -a plan.txt; \
 			echo -e "##\n##   Planning changes for $${env} environment..." | tee -a plan.txt; \
 			echo -e "##\n#########################################################" | tee -a plan.txt; \
@@ -108,7 +108,7 @@ plan:
 		done; \
 	else \
 		echo -e "${CYAN}Planning changes for $(ENV) environment...${NC}"; \
-		cd $(TERRAFORM_DIR) && terraform workspace select $(ENV); \
+		cd $(TERRAFORM_DIR) && terraform workspace select $(ENV) || terraform workspace new $(ENV); \
 		if terraform plan $(EXTRA_ARGS) -no-color -out=$(ENV).tfplan 2>&1 | tee -a plan.txt; then \
 			terraform show -no-color $(ENV).tfplan >> plan.txt 2>&1; \
 		else \

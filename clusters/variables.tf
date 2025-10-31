@@ -52,12 +52,12 @@ variable "workload" {
       "vault",
       "teleport-agent"
     ]
-    # observability = [
-    #   "externaldns",
-    #   "cert_manager",
-    #   "external_secrets",
-    #   "observability"
-    # ]
+    observability = [
+      "externaldns",
+      "cert_manager",
+      "external_secrets",
+      "observability"
+    ]
     # cluster-api = [
     #   "externaldns",
     #   "cert_manager",
@@ -133,7 +133,7 @@ variable "config" {
       }
     }
     observability = {
-      kubernetes_context = "observability"
+      kubernetes_context = "k8s-observability"
       install_crd        = false
       cert_manager_crd   = false
     }
