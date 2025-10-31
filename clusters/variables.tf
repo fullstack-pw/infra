@@ -52,12 +52,12 @@ variable "workload" {
       "vault",
       "teleport-agent"
     ]
-    # observability = [
-    #   "externaldns",
-    #   "cert_manager",
-    #   "external_secrets",
-    #   "observability"
-    # ]
+    observability = [
+      "externaldns",
+      "cert_manager",
+      "external_secrets",
+      "observability"
+    ]
     # cluster-api = [
     #   "externaldns",
     #   "cert_manager",
