@@ -95,7 +95,7 @@ variable "otel_collector_ingress_annotations" {
 variable "ingress_class_name" {
   description = "Ingress class name to use for all ingresses"
   type        = string
-  default     = "nginx"
+  default     = "traefik"
 }
 
 variable "cert_manager_cluster_issuer" {
@@ -113,7 +113,7 @@ variable "prometheus_enabled" {
 variable "prometheus_chart_version" {
   description = "Version of the kube-prometheus-stack Helm chart"
   type        = string
-  default     = "69.8.2"
+  default     = "79.0.1"
 }
 
 variable "prometheus_values_file" {
@@ -203,7 +203,7 @@ variable "loki_replicas" {
 variable "loki_memory_request" {
   description = "Memory request for Loki"
   type        = string
-  default     = "256Mi"
+  default     = "512Mi"
 }
 
 variable "loki_cpu_request" {
@@ -215,13 +215,13 @@ variable "loki_cpu_request" {
 variable "loki_memory_limit" {
   description = "Memory limit for Loki"
   type        = string
-  default     = "512Mi"
+  default     = "2048Mi"
 }
 
 variable "loki_cpu_limit" {
   description = "CPU limit for Loki"
   type        = string
-  default     = "200m"
+  default     = "2000m"
 }
 
 variable "promtail_enabled" {

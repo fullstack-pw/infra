@@ -14,8 +14,8 @@ variable "workload" {
       "cert_manager",
       "external_secrets",
       "teleport-agent",
-      "dev-postgres"
-      #"observability-box"
+      "dev-postgres",
+      "observability-box"
     ]
     stg = [
       "externaldns",
@@ -35,6 +35,7 @@ variable "workload" {
       "external_secrets",
       "kubevirt",
       "longhorn",
+      "observability-box",
       "teleport-agent"
     ]
     tools = [
@@ -44,7 +45,7 @@ variable "workload" {
       "postgres",
       "redis",
       "nats",
-      #"observability-box",
+      "observability-box",
       "gitlab_runner",
       "github_runner",
       "harbor",
@@ -134,8 +135,8 @@ variable "config" {
     }
     observability = {
       kubernetes_context = "k8s-observability"
-      install_crd        = false
-      cert_manager_crd   = false
+      install_crd        = true
+      cert_manager_crd   = true
     }
     cluster-api = {
       kubernetes_context = "cluster-api"

@@ -277,3 +277,29 @@ variable "ssl_server_key_key" {
   default     = "SSL_KEY"
   #default = ""
 }
+
+# Application User
+variable "create_app_user" {
+  description = "Create an application user for password-based authentication"
+  type        = bool
+  default     = false
+}
+
+variable "app_username" {
+  description = "Application username"
+  type        = string
+  default     = "appuser"
+}
+
+variable "app_user_generate_password" {
+  description = "Generate random password for application user"
+  type        = bool
+  default     = true
+}
+
+variable "app_user_password" {
+  description = "Application user password (if not generated)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}

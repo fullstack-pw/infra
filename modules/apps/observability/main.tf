@@ -62,6 +62,7 @@ module "jaeger_operator" {
 }
 
 resource "kubernetes_manifest" "jaeger_instance" {
+  count = var.install_crd ? 1 : 0
   manifest = {
     apiVersion = "jaegertracing.io/v1"
     kind       = "Jaeger"
@@ -100,6 +101,7 @@ module "otel_collector_config" {
 }
 
 resource "kubernetes_manifest" "otel_collector" {
+  count = var.install_crd ? 1 : 0
   manifest = {
     apiVersion = "opentelemetry.io/v1alpha1"
     kind       = "OpenTelemetryCollector"
@@ -241,31 +243,6 @@ module "loki" {
   timeout          = 300
   create_namespace = false
   values_files     = module.loki_values[0].rendered_values
-}
-
-resource "kubernetes_manifest" "loki_datasource" {
-  count = var.loki_enabled && var.install_crd && var.prometheus_enabled ? 1 : 0
-  manifest = {
-    apiVersion = "integreatly.org/v1alpha1"
-    kind       = "GrafanaDatasource"
-    metadata = {
-      name      = "loki-datasource"
-      namespace = module.namespace.name
-    }
-    spec = {
-      datasource = {
-        name      = "Loki"
-        type      = "loki"
-        url       = "http://loki-gateway.${module.namespace.name}.svc.cluster.local:3100"
-        isDefault = false
-        jsonData = {
-          maxLines = 5000
-        }
-      }
-    }
-  }
-
-  depends_on = [module.loki, module.prometheus]
 }
 
 resource "kubernetes_config_map" "unified_dashboard" {

@@ -17,6 +17,15 @@ grafana:
       type: prometheus
       url: http://prometheus-operated:9090
       access: proxy
+    - name: Loki
+      type: loki
+      access: proxy
+      url: http://loki-headless:3100
+      jsonData:
+        tlsSkipVerify: true
+        httpHeaderName1: 'X-Scope-OrgID'
+      secureJsonData:
+        httpHeaderValue1: 'empty'
 
 prometheus:
   prometheusSpec:

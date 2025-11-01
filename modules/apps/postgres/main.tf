@@ -25,6 +25,24 @@ module "credentials" {
   }
 }
 
+# Application user credentials
+module "app_credentials" {
+  count  = var.create_app_user ? 1 : 0
+  source = "../../base/credentials"
+
+  name              = "${var.release_name}-app-credentials"
+  namespace         = module.namespace.name
+  generate_password = var.app_user_generate_password
+  password          = var.app_user_password
+  password_key      = "password"
+  create_secret     = true
+
+  data = {
+    username = var.app_username
+    database = local.postgres_database
+  }
+}
+
 resource "vault_kv_secret_v2" "postgres_password" {
   count = var.store_password_in_vault ? 1 : 0
 
@@ -35,16 +53,18 @@ resource "vault_kv_secret_v2" "postgres_password" {
     merge(
       jsondecode(var.preserve_existing_vault_data ? data.vault_kv_secret_v2.existing_secret[0].data_json : "{}"),
       {
-        "POSTGRES_PASSWORD" = module.credentials.password
-        "POSTGRES_USER"     = local.postgres_username
-        "POSTGRES_HOST"     = "${var.release_name}-postgresql.${module.namespace.name}.svc.cluster.local"
-        "POSTGRES_PORT"     = var.service_port
-        "POSTGRES_DATABASE" = local.postgres_database
+        "POSTGRES_PASSWORD"     = module.credentials.password
+        "POSTGRES_USER"         = local.postgres_username
+        "POSTGRES_HOST"         = "${var.release_name}-postgresql.${module.namespace.name}.svc.cluster.local"
+        "POSTGRES_PORT"         = var.service_port
+        "POSTGRES_DATABASE"     = local.postgres_database
+        "POSTGRES_APP_USER"     = var.create_app_user ? var.app_username : ""
+        "POSTGRES_APP_PASSWORD" = var.create_app_user ? local.app_user_password : ""
       }
     )
   )
 
-  depends_on = [module.credentials]
+  depends_on = [module.credentials, module.app_credentials]
 }
 data "vault_kv_secret_v2" "existing_secret" {
   count = var.store_password_in_vault && var.preserve_existing_vault_data ? 1 : 0
@@ -58,6 +78,7 @@ locals {
   postgres_username = var.generate_credentials ? "admin" : var.postgres_username
   postgres_database = var.postgres_database != "" ? var.postgres_database : "postgres"
   postgres_password = var.generate_credentials ? module.credentials.password : var.postgres_password
+  app_user_password = var.create_app_user ? (var.app_user_generate_password ? module.app_credentials[0].password : var.app_user_password) : ""
 }
 
 module "values" {
@@ -91,6 +112,9 @@ module "values" {
         ssl_ca_cert_key                    = var.ssl_ca_cert_key
         ssl_server_cert_key                = var.ssl_server_cert_key
         ssl_server_key_key                 = var.ssl_server_key_key
+        create_app_user                    = var.create_app_user
+        app_username                       = var.app_username
+        app_user_password                  = local.app_user_password
       }
     }
   ]

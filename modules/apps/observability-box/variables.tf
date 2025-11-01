@@ -88,15 +88,6 @@ variable "otel_collector_cpu_request" {
   default = "100m"
 }
 
-variable "otel_collector_ingress_annotations" {
-  type = map(string)
-  default = {
-    "external-dns.alpha.kubernetes.io/hostname" = "otel-collector.fullstack.pw"
-    "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
-    "kubernetes.io/ingress.class"               = "traefik"
-  }
-}
-
 variable "otel_collector_additional_set_values" {
   type = list(object({
     name  = string

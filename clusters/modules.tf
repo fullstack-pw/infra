@@ -99,6 +99,7 @@ module "observability" {
   source = "../modules/apps/observability"
 
   minio_rootPassword = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootPassword"]
+  install_crd        = var.config[terraform.workspace].install_crd
 }
 
 module "observability-box" {
@@ -218,4 +219,9 @@ module "testing_postgres" {
   ssl_ca_cert_key         = "SSL_CA"
   ssl_server_cert_key     = "SSL_CERT"
   ssl_server_key_key      = "SSL_KEY"
+
+  # Application user for password-based authentication
+  create_app_user              = true
+  app_username                 = "appuser"
+  app_user_generate_password   = true
 }
