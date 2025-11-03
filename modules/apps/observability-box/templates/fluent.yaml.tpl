@@ -75,7 +75,7 @@ config:
         Port                   443
         TLS                    On
         Labels                 job=fluentbit,cluster=${CLUSTER}
-        Label_Keys             $kubernetes['namespace_name'],$kubernetes['pod_name'],$kubernetes['container_name'],$kubernetes['labels']['app'],$trace_id
+        Label_Keys             $kubernetes['namespace_name'],$kubernetes['pod_name'],$kubernetes['container_name']
         Auto_Kubernetes_Labels Off
         Remove_Keys            stream
         Line_Format            json
