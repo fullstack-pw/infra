@@ -14,6 +14,7 @@ variable "workload" {
       "cert_manager",
       "external_secrets",
       "istio",
+      "argocd",
       "teleport-agent",
       "dev-postgres",
       "observability-box"
@@ -84,9 +85,11 @@ variable "config" {
       cert_manager_crd   = true
     }
     dev = {
-      kubernetes_context = "dev"
-      install_crd        = true
-      cert_manager_crd   = true
+      kubernetes_context   = "dev"
+      install_crd          = true
+      cert_manager_crd     = true
+      argocd_ingress_class = "istio"
+      argocd_domain        = "dev.argocd.fullstack.pw"
       teleport = {
         apps = {
           "dev-ascii" = "http://ascii-frontend.default.svc.cluster.local"

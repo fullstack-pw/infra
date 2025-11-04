@@ -33,6 +33,8 @@ variable "container_args" {
   default = [
     "--pihole-tls-skip-verify",
     "--source=ingress",
+    "--source=istio-gateway",
+    "--source=istio-virtualservice",
     "--registry=noop",
     "--policy=upsert-only",
     "--provider=pihole",

@@ -19,6 +19,7 @@ module "externaldns_cloudflare" {
   container_args = [
     "--source=ingress",
     "--source=istio-gateway",
+    "--source=istio-virtualservice",
     "--registry=txt",
     "--txt-owner-id=k8s-${terraform.workspace}",
     "--policy=sync",
@@ -105,7 +106,25 @@ module "istio" {
     "*.enqueuer.fullstack.pw",
     "*.api.cks.fullstack.pw",
     "*.cks.fullstack.pw",
+    "*.argocd.fullstack.pw",
   ]
+}
+
+module "argocd" {
+  count  = contains(local.workload, "argocd") ? 1 : 0
+  source = "../modules/apps/argocd"
+
+  namespace              = "argocd"
+  argocd_version         = "7.7.12"
+  argocd_domain          = var.config[terraform.workspace].argocd_domain
+  ingress_enabled        = true
+  ingress_class_name     = var.config[terraform.workspace].argocd_ingress_class
+  cert_issuer            = "letsencrypt-prod"
+  use_istio              = contains(local.workload, "istio")
+  admin_password_bcrypt  = local.secrets_json["kv/cluster-secret-store/secrets/ARGOCD"]["ADMIN_PASSWORD_BCRYPT"]
+  application_namespaces = "*"
+  enable_notifications   = true
+  enable_dex             = false
 }
 
 module "minio" {
