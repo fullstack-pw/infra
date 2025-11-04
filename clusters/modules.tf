@@ -18,6 +18,7 @@ module "externaldns_cloudflare" {
   cloudflare_api_token     = local.secrets_json["kv/cloudflare"]["api-token"]
   container_args = [
     "--source=ingress",
+    "--source=istio-gateway",
     "--registry=txt",
     "--txt-owner-id=k8s-${terraform.workspace}",
     "--policy=sync",
@@ -73,6 +74,38 @@ module "ingress_nginx" {
   count  = contains(local.workload, "ingress_nginx") ? 1 : 0
   source = "../modules/apps/ingress-nginx"
 
+}
+
+module "istio" {
+  count  = contains(local.workload, "istio") ? 1 : 0
+  source = "../modules/apps/istio"
+
+  # Gateway configuration - K3s has built-in ServiceLB (Klipper-LB)
+  gateway_service_type = "LoadBalancer"
+
+  # Control plane configuration
+  pilot_replicas   = 1
+  gateway_replicas = 1
+
+  # Enable telemetry and observability
+  enable_telemetry = true
+  enable_tracing   = false # Can be enabled later to integrate with Jaeger
+  access_log_file  = "/dev/stdout"
+
+  # IMPORTANT: Set to false for initial deployment, then set to true after CRDs are installed
+  # This avoids the chicken-and-egg problem with Terraform validating manifests during plan
+  create_default_gateway = true # TODO: Change to true after first apply
+  default_tls_secret     = "default-gateway-tls"
+
+  # Certificate configuration for default gateway
+  cert_issuer_name = "letsencrypt-prod"
+  cert_issuer_kind = "ClusterIssuer"
+  gateway_dns_names = [
+    "*.ascii.fullstack.pw",
+    "*.enqueuer.fullstack.pw",
+    "*.api.cks.fullstack.pw",
+    "*.cks.fullstack.pw",
+  ]
 }
 
 module "minio" {
@@ -221,7 +254,14 @@ module "testing_postgres" {
   ssl_server_key_key      = "SSL_KEY"
 
   # Application user for password-based authentication
-  create_app_user              = true
-  app_username                 = "appuser"
-  app_user_generate_password   = true
+  create_app_user            = true
+  app_username               = "appuser"
+  app_user_generate_password = true
+
+  # IMPORTANT: Set to false for initial deployment, then set to true after Istio CRDs are installed
+  # This avoids the chicken-and-egg problem with Terraform validating manifests during plan
+  use_istio               = true # TODO: Change to true after Istio is deployed
+  istio_gateway_namespace = "istio-system"
+  istio_gateway_name      = "istio-system/default-gateway"
+  ingress_class_name      = "istio"
 }

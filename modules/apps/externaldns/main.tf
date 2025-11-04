@@ -46,6 +46,20 @@ resource "kubernetes_cluster_role" "externaldns" {
     resources  = ["nodes"]
     verbs      = ["list", "watch"]
   }
+
+  # Istio Gateway API support
+  rule {
+    api_groups = ["networking.istio.io"]
+    resources  = ["gateways", "virtualservices"]
+    verbs      = ["get", "watch", "list"]
+  }
+
+  # Gateway API support (optional, for future use)
+  rule {
+    api_groups = ["gateway.networking.k8s.io"]
+    resources  = ["gateways", "httproutes", "tlsroutes", "tcproutes", "udproutes"]
+    verbs      = ["get", "watch", "list"]
+  }
 }
 
 resource "kubernetes_cluster_role_binding" "externaldns" {

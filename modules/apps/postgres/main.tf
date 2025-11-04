@@ -138,7 +138,7 @@ module "helm" {
 module "ingress" {
   source = "../../base/ingress"
 
-  enabled            = var.ingress_enabled
+  enabled            = var.ingress_enabled && !var.use_istio
   name               = "${var.release_name}-postgresql-ingress"
   namespace          = module.namespace.name
   host               = var.ingress_host
@@ -156,4 +156,91 @@ module "ingress" {
     "nginx.ingress.kubernetes.io/backend-protocol"      = "HTTPS"
     "nginx.ingress.kubernetes.io/ssl-passthrough"       = "true"
   }, var.ingress_annotations)
+}
+
+# Istio Gateway for PostgreSQL with TLS passthrough
+# Using kubernetes_manifest directly because the base module doesn't handle
+# TLS PASSTHROUGH mode properly (Terraform strict type validation issue)
+resource "kubernetes_manifest" "istio_gateway" {
+  count      = var.ingress_enabled && var.use_istio ? 1 : 0
+  depends_on = []
+
+  # Wait for Istio CRD to be available before validating
+  computed_fields = ["spec"]
+
+  manifest = {
+    apiVersion = "networking.istio.io/v1beta1"
+    kind       = "Gateway"
+    metadata = {
+      name      = "${var.release_name}-postgresql-gateway"
+      namespace = var.istio_gateway_namespace
+      annotations = {
+        "external-dns.alpha.kubernetes.io/hostname" = var.ingress_host
+      }
+    }
+    spec = {
+      selector = {
+        istio = "ingressgateway"
+      }
+      servers = [
+        {
+          port = {
+            number   = 5432
+            name     = "tcp-postgres"
+            protocol = "TLS"
+          }
+          hosts = [var.ingress_host]
+          tls = {
+            mode = "PASSTHROUGH"
+          }
+        }
+      ]
+    }
+  }
+}
+
+# Istio VirtualService for PostgreSQL (TCP routing with TLS passthrough)
+resource "kubernetes_manifest" "istio_virtualservice" {
+  count      = var.ingress_enabled && var.use_istio ? 1 : 0
+  depends_on = [kubernetes_manifest.istio_gateway]
+
+  # Wait for Istio CRD to be available before validating
+  computed_fields = ["spec"]
+
+  manifest = {
+    apiVersion = "networking.istio.io/v1beta1"
+    kind       = "VirtualService"
+    metadata = {
+      name      = "${var.release_name}-postgresql-vs"
+      namespace = module.namespace.name
+      annotations = {
+        "cert-manager.io/cluster-issuer" = var.cert_manager_cluster_issuer
+      }
+    }
+    spec = {
+      hosts    = [var.ingress_host]
+      gateways = ["${var.istio_gateway_namespace}/${var.release_name}-postgresql-gateway"]
+      # For TLS passthrough, we use TCP routing instead of HTTP
+      tls = [
+        {
+          match = [
+            {
+              port     = 5432
+              sniHosts = [var.ingress_host]
+            }
+          ]
+          route = [
+            {
+              destination = {
+                host = "${var.release_name}-postgresql.${module.namespace.name}.svc.cluster.local"
+                port = {
+                  number = var.service_port
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
 }

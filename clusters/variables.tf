@@ -13,6 +13,7 @@ variable "workload" {
       "externaldns",
       "cert_manager",
       "external_secrets",
+      "istio",
       "teleport-agent",
       "dev-postgres",
       "observability-box"

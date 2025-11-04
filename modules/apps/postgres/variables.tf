@@ -183,6 +183,25 @@ variable "cert_manager_cluster_issuer" {
   default     = "letsencrypt-prod"
 }
 
+# Istio Ingress
+variable "use_istio" {
+  description = "Use Istio Gateway/VirtualService instead of traditional Ingress"
+  type        = bool
+  default     = false
+}
+
+variable "istio_gateway_name" {
+  description = "Name of the Istio Gateway to use (format: namespace/gateway-name)"
+  type        = string
+  default     = "istio-system/default-gateway"
+}
+
+variable "istio_gateway_namespace" {
+  description = "Namespace where the Istio Gateway is located"
+  type        = string
+  default     = "istio-system"
+}
+
 # High Availability
 variable "replication_enabled" {
   description = "Enable PostgreSQL replication"
