@@ -1,0 +1,59 @@
+---
+# Sync Wave -1: Deploy first (ConfigMap)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sync-wave-demo-config
+  namespace: default
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+data:
+  message: "I deploy first!"
+
+---
+# Sync Wave 0: Deploy second (default wave)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sync-wave-demo-default
+  namespace: default
+data:
+  message: "I deploy at wave 0 (default)"
+
+---
+# Sync Wave 1: Deploy third
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sync-wave-demo-last
+  namespace: default
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+data:
+  message: "I deploy last!"
+
+---
+# PreSync Hook: Runs before sync
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sync-hook-presync
+  namespace: default
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+data:
+  message: "I run BEFORE the sync starts!"
+
+---
+# PostSync Hook: Runs after successful sync
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sync-hook-postsync
+  namespace: default
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+data:
+  message: "I run AFTER the sync completes!"

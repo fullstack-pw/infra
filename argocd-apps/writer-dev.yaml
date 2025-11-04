@@ -1,0 +1,46 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: writer-dev
+  namespace: argocd
+  # Finalizer to ensure proper cleanup
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  # The project the application belongs to
+  project: default
+
+  # Source repository
+  source:
+    # Git repository URL
+    repoURL: https://github.com/fullstack-pw/demo-apps.git
+    # Target revision (branch, tag, or commit SHA)
+    targetRevision: HEAD
+    # Path to the kustomize overlay
+    path: apps/writer/kustomize/overlays/dev
+
+  # Destination cluster and namespace
+  destination:
+    # Can use server URL or cluster name
+    server: https://kubernetes.default.svc
+    namespace: default
+
+  # Sync policy
+  syncPolicy:
+    # Automated sync enabled!
+    automated:
+      # Prune resources that are no longer in Git
+      prune: true
+      # Self-heal if someone manually changes resources in cluster
+      selfHeal: true
+      # Allow deletion of resources
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+    # Retry strategy for failed syncs
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
