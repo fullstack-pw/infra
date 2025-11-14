@@ -134,6 +134,42 @@ module "minio" {
   root_password = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootPassword"]
 }
 
+module "terraform_state_backup" {
+  count  = contains(local.workload, "terraform_state_backup") ? 1 : 0
+  source = "../modules/apps/terraform-state-backup"
+
+  name      = "terraform-state-backup"
+  namespace = "default"
+
+  # Backup schedule - daily at 2 AM UTC
+  schedule = "0 2 * * *"
+
+  # MinIO configuration
+  minio_endpoint     = "https://s3.fullstack.pw"
+  minio_access_key   = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootUser"]
+  minio_secret_key   = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootPassword"]
+  minio_region       = "main"
+  minio_bucket_path  = "terraform" # Backs up the entire terraform bucket
+
+  # Oracle Cloud OCI CLI configuration
+  oracle_user_ocid    = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["userOcid"]
+  oracle_tenancy_ocid = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["tenancyOcid"]
+  oracle_fingerprint  = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["fingerprint"]
+  oracle_private_key  = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["privateKey"]
+  oracle_region       = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["region"]
+  oracle_namespace    = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["namespace"]
+  oracle_bucket       = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["bucket"]
+  backup_path         = "terraform-state-backup"
+
+  # Resource limits - increased for tool installation
+  memory_request     = "256Mi"
+  memory_limit       = "1Gi"
+  cpu_request        = "200m"
+  cpu_limit          = "1000m"
+
+  depends_on = [module.minio]
+}
+
 module "registry" {
   count  = contains(local.workload, "registry") ? 1 : 0
   source = "../modules/apps/registry"
