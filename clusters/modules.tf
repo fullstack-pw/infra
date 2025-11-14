@@ -145,11 +145,11 @@ module "terraform_state_backup" {
   schedule = "0 2 * * *"
 
   # MinIO configuration
-  minio_endpoint     = "https://s3.fullstack.pw"
-  minio_access_key   = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootUser"]
-  minio_secret_key   = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootPassword"]
-  minio_region       = "main"
-  minio_bucket_path  = "terraform" # Backs up the entire terraform bucket
+  minio_endpoint    = "https://s3.fullstack.pw"
+  minio_access_key  = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootUser"]
+  minio_secret_key  = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootPassword"]
+  minio_region      = "main"
+  minio_bucket_path = "terraform" # Backs up the entire terraform bucket
 
   # Oracle Cloud OCI CLI configuration
   oracle_user_ocid    = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["userOcid"]
@@ -162,10 +162,10 @@ module "terraform_state_backup" {
   backup_path         = "terraform-state-backup"
 
   # Resource limits - increased for tool installation
-  memory_request     = "256Mi"
-  memory_limit       = "1Gi"
-  cpu_request        = "200m"
-  cpu_limit          = "1000m"
+  memory_request = "256Mi"
+  memory_limit   = "1Gi"
+  cpu_request    = "200m"
+  cpu_limit      = "1000m"
 
   depends_on = [module.minio]
 }
@@ -193,6 +193,8 @@ module "observability" {
 module "observability-box" {
   count  = contains(local.workload, "observability-box") ? 1 : 0
   source = "../modules/apps/observability-box"
+
+  prometheus_namespaces = var.config[terraform.workspace].prometheus_namespaces
 }
 
 module "postgres" {

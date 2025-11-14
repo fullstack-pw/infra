@@ -90,6 +90,7 @@ variable "config" {
           "dev-postgres" = "dev.postgres.fullstack.pw:5432"
         }
       }
+      prometheus_namespaces = []
     }
     stg = {
       kubernetes_context = "stg"
@@ -138,6 +139,22 @@ variable "config" {
           wk_cores     = 2
         },
       ]
+      prometheus_namespaces = [
+        "cluster1",
+        "cluster2",
+        "cluster3",
+        "kubevirt",
+        "teleport-agent",
+        "observability",
+        "external-dns",
+        "external-secrets",
+        "kube-system",
+        "cabpt-system",
+        "cacppt-system",
+        "capi-ipam-in-cluster-system",
+        "capi-system",
+        "capmox-system"
+      ]
     }
     tools = {
       kubernetes_context = "tools"
@@ -152,6 +169,7 @@ variable "config" {
         databases = {}
         roles     = "kube,app"
       }
+      prometheus_namespaces = []
     }
     observability = {
       kubernetes_context = "k8s-observability"

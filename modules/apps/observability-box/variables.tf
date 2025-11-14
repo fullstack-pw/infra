@@ -132,7 +132,7 @@ variable "prometheus_release_name" {
 
 variable "prometheus_chart_version" {
   type    = string
-  default = "27.8.0"
+  default = "27.45.0"
 }
 
 variable "prometheus_remote_write_url" {
@@ -165,7 +165,7 @@ variable "prometheus_memory_limit" {
 
 variable "prometheus_cpu_limit" {
   type    = string
-  default = "1000m"
+  default = "4000m"
 }
 
 variable "prometheus_memory_request" {
@@ -176,4 +176,10 @@ variable "prometheus_memory_request" {
 variable "prometheus_cpu_request" {
   type    = string
   default = "100m"
+}
+
+variable "prometheus_namespaces" {
+  type        = list(string)
+  default     = []
+  description = "List of namespaces to exclude from metric collection. Metrics from pods and services in these namespaces will be dropped."
 }

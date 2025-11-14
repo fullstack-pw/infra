@@ -70,7 +70,7 @@ help:
 .PHONY: init
 init: install-crypto-tools
 	@echo -e "${CYAN}Initializing Terraform for all environments...${NC}"
-	@cd $(TERRAFORM_DIR) && terraform init
+	@cd $(TERRAFORM_DIR) && terraform init -upgrade
 
 # Create a new workspace
 .PHONY: create-workspace

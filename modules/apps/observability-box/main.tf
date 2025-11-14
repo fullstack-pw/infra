@@ -74,6 +74,64 @@ module "fluent_values" {
   ]
 }
 
+resource "kubectl_manifest" "prometheus_namespace_role" {
+  for_each = length(var.prometheus_namespaces) > 0 ? toset(var.prometheus_namespaces) : toset([])
+
+  yaml_body = yamlencode({
+    apiVersion = "rbac.authorization.k8s.io/v1"
+    kind       = "Role"
+    metadata = {
+      name      = "prometheus-server"
+      namespace = each.value
+    }
+    rules = [
+      {
+        apiGroups = [""]
+        resources = ["services", "endpoints", "pods", "configmaps"]
+        verbs     = ["get", "list", "watch"]
+      },
+      {
+        apiGroups = ["discovery.k8s.io"]
+        resources = ["endpointslices"]
+        verbs     = ["get", "list", "watch"]
+      }
+    ]
+  })
+
+  wait              = false
+  server_side_apply = true
+
+  depends_on = [module.namespace]
+}
+
+resource "kubectl_manifest" "prometheus_namespace_rolebinding" {
+  for_each = length(var.prometheus_namespaces) > 0 ? toset(var.prometheus_namespaces) : toset([])
+
+  yaml_body = yamlencode({
+    apiVersion = "rbac.authorization.k8s.io/v1"
+    kind       = "RoleBinding"
+    metadata = {
+      name      = "prometheus-server"
+      namespace = each.value
+    }
+    roleRef = {
+      apiGroup = "rbac.authorization.k8s.io"
+      kind     = "Role"
+      name     = "prometheus-server"
+    }
+    subjects = [{
+      kind      = "ServiceAccount"
+      name      = "prometheus-server"
+      namespace = module.namespace.name
+    }]
+  })
+
+  wait              = false
+  server_side_apply = true
+
+  depends_on = [kubectl_manifest.prometheus_namespace_role]
+}
+
 module "prometheus_helm" {
   source = "../../base/helm"
 
@@ -88,6 +146,8 @@ module "prometheus_helm" {
   values_files     = module.prometheus_values.rendered_values
 
   set_values = var.prometheus_additional_set_values
+
+  depends_on = [kubectl_manifest.prometheus_namespace_rolebinding]
 }
 
 module "prometheus_values" {
@@ -103,6 +163,7 @@ module "prometheus_values" {
         cpu_request      = var.prometheus_cpu_request
         remote_write_url = var.prometheus_remote_write_url
         cluster_name     = terraform.workspace
+        namespaces       = var.prometheus_namespaces
       }
     }
   ]

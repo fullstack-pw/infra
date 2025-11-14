@@ -1,0 +1,1 @@
+* fix externaldns module to not include istio resources where we don't have istio

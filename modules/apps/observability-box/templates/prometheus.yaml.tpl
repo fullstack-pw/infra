@@ -2,7 +2,17 @@ alertmanager:
   enabled: false
 prometheus-pushgateway:
   enabled: false
+%{ if length(namespaces) > 0 ~}
+rbac:
+  create: false
+%{ endif ~}
 server:
+%{ if length(namespaces) > 0 ~}
+  namespaces:
+%{ for ns in namespaces ~}
+    - ${ns}
+%{ endfor ~}
+%{ endif ~}
   remoteWrite:
     - url: "${remote_write_url}"
       name: "central-prometheus"
@@ -29,6 +39,7 @@ server:
 serverFiles:
   prometheus.yml:
     scrape_configs:
+%{ if length(namespaces) == 0 ~}
       - job_name: kubernetes-apiservers
         kubernetes_sd_configs:
           - role: endpoints
@@ -95,10 +106,18 @@ serverFiles:
             replacement: "kubelet"
           - target_label: cluster
             replacement: ${cluster_name}
+%{ endif ~}
 
       - job_name: kubernetes-service-endpoints
         kubernetes_sd_configs:
           - role: endpoints
+%{ if length(namespaces) > 0 ~}
+            namespaces:
+              names:
+%{ for ns in namespaces ~}
+                - ${ns}
+%{ endfor ~}
+%{ endif ~}
         relabel_configs:
           - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
             action: keep
@@ -148,6 +167,13 @@ serverFiles:
       - job_name: node-exporter
         kubernetes_sd_configs:
           - role: endpoints
+%{ if length(namespaces) > 0 ~}
+            namespaces:
+              names:
+%{ for ns in namespaces ~}
+                - ${ns}
+%{ endfor ~}
+%{ endif ~}
         relabel_configs:
           - source_labels: [__meta_kubernetes_endpoints_name]
             regex: prometheus-node-exporter
@@ -172,6 +198,13 @@ serverFiles:
       - job_name: kube-state-metrics
         kubernetes_sd_configs:
           - role: endpoints
+%{ if length(namespaces) > 0 ~}
+            namespaces:
+              names:
+%{ for ns in namespaces ~}
+                - ${ns}
+%{ endfor ~}
+%{ endif ~}
         relabel_configs:
           - source_labels: [__meta_kubernetes_endpoints_name]
             regex: prometheus-kube-state-metrics
