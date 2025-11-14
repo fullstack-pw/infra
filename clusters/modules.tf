@@ -6,6 +6,24 @@ module "externaldns" {
   dns_provider         = "pihole"
   create_pihole_secret = terraform.workspace == "sandbox" ? true : false
   pihole_password      = terraform.workspace == "sandbox" ? local.secrets_json["kv/cluster-secret-store/secrets/EXTERNAL_DNS_PIHOLE_PASSWORD"]["PIHOLE_PASSWORD"] : ""
+
+  container_args = contains(local.workload, "istio") ? [
+    "--pihole-tls-skip-verify",
+    "--source=ingress",
+    "--source=istio-gateway",
+    "--source=istio-virtualservice",
+    "--registry=noop",
+    "--policy=upsert-only",
+    "--provider=pihole",
+    "--pihole-server=http://192.168.1.3",
+    ] : [
+    "--pihole-tls-skip-verify",
+    "--source=ingress",
+    "--registry=noop",
+    "--policy=upsert-only",
+    "--provider=pihole",
+    "--pihole-server=http://192.168.1.3",
+  ]
 }
 
 module "externaldns_cloudflare" {
@@ -16,7 +34,13 @@ module "externaldns_cloudflare" {
   dns_provider             = "cloudflare"
   create_cloudflare_secret = true
   cloudflare_api_token     = local.secrets_json["kv/cloudflare"]["api-token"]
-  container_args = [
+  container_args = !contains(local.workload, "istio") ? [
+    "--source=ingress",
+    "--registry=txt",
+    "--txt-owner-id=k8s-${terraform.workspace}",
+    "--policy=sync",
+    "--provider=cloudflare",
+    ] : [
     "--source=ingress",
     "--source=istio-gateway",
     "--source=istio-virtualservice",
