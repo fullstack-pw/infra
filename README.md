@@ -1,300 +1,282 @@
 # fullstack.pw Infrastructure
 
-This repository contains the infrastructure-as-code for the **fullstack.pw** homelab environment. It manages multiple Kubernetes clusters (K3s and vanilla K8s), Proxmox VMs, and supporting services through a modular, declarative approach.
+Production-grade infrastructure-as-code repository demonstrating enterprise DevOps practices, GitOps workflows, and cloud-native architectures implemented in a homelab environment.
 
-## Overview
+## DevOps Practices
 
-The environment is designed as a production-grade homelab platform for:
+### Infrastructure as Code
 
-- **Multi-environment Deployments**: Managing development, staging, production, home automation, and sandbox environments
-- **Infrastructure Automation**: Provision and configure infrastructure using Terraform and Ansible
-- **Observability**: Comprehensive monitoring with Prometheus, Grafana, Jaeger, OpenTelemetry, and Fluent Bit
-- **CI/CD Integration**: Self-hosted runners for GitHub Actions and GitLab CI
-- **Security**: Vault for secrets management, cert-manager for TLS, and External Secrets for Kubernetes integration
-- **Home Services**: Media management with Immich for photo storage
+**Terraform-Driven Infrastructure**
+- Modular two-tier architecture: 11 base modules and 24 application modules promoting composability and reusability
+- S3-compatible remote state backend ([s3.fullstack.pw](https://s3.fullstack.pw)) with workspace isolation per environment
+- Automated state backup to Oracle Cloud Object Storage via CronJob for disaster recovery
+- YAML-driven VM provisioning using dynamic `for_each` loops for declarative infrastructure definitions
+
+**Configuration Management**
+- Ansible playbooks for VM configuration (K3s, vanilla Kubernetes, HAProxy, Talos Linux)
+- Dynamic inventory auto-generated from Terraform outputs and automatically committed to Git
+- Integration with HashiCorp Vault for centralized kubeconfig management
+- Idempotent playbook design for reliable repeated execution
+
+### GitOps Methodology
+
+**Git as Single Source of Truth**
+- All infrastructure changes submitted via pull requests with automated validation
+- Commit message parsing for workflow automation triggers
+- ArgoCD implementation with app-of-apps pattern for hierarchical application management
+- Sync waves and hooks for ordered, controlled deployments
+- Self-healing enabled with automatic drift detection and remediation
+
+**Automated CI/CD Pipelines**
+
+10 GitHub Actions workflows provide comprehensive automation:
+
+| Workflow | Purpose | Trigger |
+|----------|---------|---------|
+| terraform-plan.yml | Parallel Terraform plans for proxmox and clusters | Pull request |
+| terraform-apply.yml | Conditional apply with path-based change detection | Merge to main |
+| ansible.yml | VM provisioning via `[ansible PLAYBOOK]` commit tag | Commit tag detection |
+| build.yml | Docker image builds on Dockerfile changes | File path changes |
+| sec-trivy.yml | Container and IaC vulnerability scanning | Pull request / Push |
+| sec-trufflehog.yml | Secret leak detection in commits | Pull request / Push |
+| conventional-commits.yml | Commit message validation | Pull request |
+| release.yml | Semantic versioning and changelog generation | Merge to main |
+| iac-tests.yml | Infrastructure validation tests | Pull request |
+
+**Self-Hosted Runner Infrastructure**
+- Actions Runner Controller (ARC) deployed on tools cluster
+- Custom runner image with kubectl, Helm, Terraform, SOPS, Docker CLI, and cloud provider tools
+- GitLab CI runners for multi-platform pipeline support
+- Centralized reusable workflows in dedicated pipelines repository
+
+### Continuous Observability
+
+**Hub-and-Spoke Architecture**
+
+Central observability hub on dedicated cluster:
+- Prometheus (kube-prometheus-stack v79.0.1) for metrics aggregation
+- Grafana for unified multi-cluster dashboards
+- Jaeger v2.57.0 for distributed tracing
+- Loki v6.28.0 for log aggregation
+- OpenTelemetry Collector v0.33.0 for telemetry ingestion
+
+Edge collectors on all workload clusters:
+- Fluent Bit v0.48.9 for log forwarding
+- Prometheus with remote write capability
+- OpenTelemetry Collector for traces and metrics
+- Automatic cluster labeling for multi-cluster aggregation
+
+**Application Instrumentation**
+- OpenTelemetry SDK integration in Go microservices
+- Structured JSON logging with trace context correlation
+- ServiceMonitor CRDs for automatic Prometheus scraping
+- Custom dashboards for PostgreSQL, Redis, NATS with predefined alerting rules
+
+## Cluster Bootstrapping
+
+### Single-Commit VM-to-Kubernetes Workflow
+
+The `[ansible PLAYBOOK]` pattern enables fully automated cluster provisioning:
+
+```bash
+git commit -m "feat(proxmox): add k8s-observability VM [ansible k8s-observability]"
+```
+
+**Automated Pipeline Chain**
+1. Release workflow generates semantic version tag
+2. Terraform creates VM from YAML definition in Proxmox
+3. Terraform updates Ansible inventory, preserving `[ansible]` tag in commit message
+4. Ansible workflow triggers on tag detection
+5. Ansible installs K3s/K8s, configures storage paths
+6. Python script extracts kubeconfig, updates IP and context name
+7. Kubeconfig merged into central Vault KV store
+8. Cluster immediately available to Terraform and CI/CD pipelines
+
+### Supported Kubernetes Distributions
+
+| Distribution | Provisioning Method | Use Case |
+|--------------|---------------------|----------|
+| K3s | Ansible playbook with custom storage paths | Lightweight single-node clusters (dev, stg, prod, tools, home) |
+| Vanilla K8s | Kubeadm via Ansible | Multi-node HA clusters (sandbox) |
+| Talos Linux | Cluster API + Talos configs | Immutable infrastructure with declarative configuration |
+| KubeVirt | Operator on existing K8s | Nested virtualization on Kubernetes (sandboxy) |
+
+### Bootstrap Components
+
+Terraform automatically deploys platform services to new clusters:
+- cert-manager for TLS automation
+- External-DNS for dynamic DNS record management
+- External Secrets for Vault integration
+- Observability stack (hub or edge collector based on cluster role)
+- Ingress controllers (Istio or NGINX)
+- ArgoCD for GitOps application delivery
+
+## Infrastructure Resilience
+
+### Disaster Recovery
+
+**Automated Backup Strategy**
+- Terraform state backed up daily to Oracle Cloud Object Storage via CronJob
+
+**Recovery Capabilities**
+- Complete infrastructure reproducible from Git repository alone
+- Terraform state restoration from Oracle Cloud backups
+
+### High Availability
+
+**Multi-Cluster Architecture**
+- 7 environment-isolated Kubernetes clusters (dev, stg, prod, tools, home, sandboxy, observability)
+- Production workloads distributed across multiple replicas via Kustomize overlays
+- HAProxy load balancer for vanilla Kubernetes traffic distribution
+- MetalLB for LoadBalancer service type support on bare metal
+
+**Resource Management**
+- Resource limits and requests prevent resource exhaustion
+- Namespace quotas for multi-tenant isolation
+- Anti-affinity rules for pod distribution (where configured)
+
+## Security Implementation
+
+### Secrets Management
+
+**Multi-Layered Defense**
+
+1. **Encryption at Rest**: SOPS with age encryption for all secrets in Git
+   - Age public key: `age15vvdhaj90s3nru2zw4p2a9yvdrv6alfg0d6ea9zxpx3eagyqfqlsgdytsp`
+   - Automated scripts: `secret_new.sh`, `secret_edit.sh`, `secret_view.sh`
+
+2. **Runtime Secret Storage**: HashiCorp Vault deployed on tools cluster
+   - KV v2 engine for versioned secrets
+   - Kubernetes authentication backend
+   - Dynamic policy creation via Terraform
+   - Accessible at [vault.fullstack.pw](https://vault.fullstack.pw)
+
+3. **Kubernetes Integration**: External Secrets Operator
+   - ClusterSecretStore for multi-namespace secret distribution
+   - Automatic synchronization from Vault to Kubernetes secrets
+   - Support for secret rotation with namespace selector `cluster-secrets=true`
+
+**Secret Lifecycle**
+```
+Git (SOPS encrypted) → CI/CD (decrypt) → Vault (runtime) → External Secrets → K8s Secrets → Pods
+```
+
+### Certificate Management
+
+**Automated TLS**
+- cert-manager with Let's Encrypt ClusterIssuer (`letsencrypt-prod`)
+- Cloudflare DNS-01 challenge for wildcard certificate support
+- Automatic renewal before expiration
+- Istio Gateway integration for TLS termination
+- Certificate validation monitoring
+
+### Network Security
+
+**Service Mesh Implementation**
+- Istio deployed on dev cluster for traffic encryption and observability
+- Mutual TLS (mTLS) capability between services
+- VirtualServices for fine-grained routing control
+- Gateway resources for ingress traffic management
+- SNI-based routing for TLS passthrough (PostgreSQL example)
+
+**DNS Security**
+- External-DNS with TXT record ownership verification
+- Cloudflare integration for public DNS with WAF protection
+- Pi-hole for internal DNS with ad-blocking
+- Automatic DNS record lifecycle management
+
+### Access Control
+
+**Kubernetes RBAC**
+- ServiceAccounts with minimal permissions for all components
+- ClusterRoles for platform services (External-DNS, External Secrets)
+- Namespace-based isolation for tenant workloads
+- Vault policies for least-privilege access
+
+**CI/CD Security**
+- Self-hosted runners in isolated network environment
+- Secret injection only in authorized workflows
+- No secrets embedded in container images
+- Container scanning with Trivy before deployment
+
+### Security Scanning
+
+**Continuous Vulnerability Assessment**
+- Trivy scanning for containers and IaC on every pull request
+- TruffleHog secret leak detection in commit history
+- SARIF output integration with GitHub Security tab
+- Configurable blocking on critical vulnerabilities
+
+**Secure Container Practices**
+- Multi-stage Docker builds minimizing attack surface
+- Non-root user execution enforced
+- Minimal base images (Alpine, distroless)
+- Regular base image updates via Renovate/Dependabot
 
 ## Repository Structure
 
 ```
 infra/
-├── .github/workflows/    # GitHub Actions workflows for CI/CD
-├── clusters/             # Kubernetes cluster configurations
-├── modules/              # Reusable Terraform modules
-│   ├── base/             # Base modules (building blocks)
-│   └── apps/             # Application modules
-├── proxmox/              # Proxmox VM configurations
-│   ├── vms/              # YAML VM definitions
-│   ├── playbooks/        # Ansible playbooks
-│   └── scripts/          # Helper scripts
-└── secrets/              # Encrypted secrets (SOPS)
+├── clusters/             # Kubernetes workload definitions (Terraform)
+├── modules/
+│   ├── base/            # 11 foundational modules (helm, namespace, ingress, monitoring, etc.)
+│   └── apps/            # 24 application modules (argocd, vault, observability, istio, etc.)
+├── proxmox/
+│   ├── vms/             # YAML VM definitions for declarative provisioning
+│   ├── playbooks/       # Ansible configuration playbooks
+│   └── scripts/         # Automation scripts (Talos, kubeconfig management)
+├── argocd-apps/         # GitOps application manifests
+├── secrets/             # SOPS-encrypted secrets
+├── .github/workflows/   # CI/CD automation pipelines
+└── docs/                # Technical documentation
 ```
-
-## Key Components
-
-### Infrastructure Layer
-
-- **Proxmox Management**: Provisions VMs from YAML definitions
-- **PXE Boot Server**: Network boot for quick node provisioning
-- **K3s Clusters**: Lightweight Kubernetes clusters for dev, staging, production, tools, and home
-- **Vanilla K8s**: Multi-node Kubernetes cluster for sandbox environments
-- **Storage**: USB-attached storage for home services (Immich)
-
-### Platform Services
-
-- **Certificate Management**: Automatic TLS using cert-manager and Let's Encrypt
-- **DNS Management**: ExternalDNS integration for automatic DNS record updates
-- **Secret Management**: HashiCorp Vault with Kubernetes integration via External Secrets
-- **Storage**: MinIO S3-compatible object storage
-- **Container Registry**: Harbor enterprise-grade registry and private Docker registry
-- **Ingress**: NGINX ingress controllers with custom configurations
-
-### Observability Stack
-
-The observability architecture follows a hub-and-spoke model:
-
-- **Central Hub (Sandbox cluster)**: 
-  - Jaeger for distributed tracing
-  - Prometheus for metrics aggregation
-  - Grafana for visualization
-  - Loki for log aggregation
-  - OpenTelemetry Collector for telemetry ingestion
-
-- **Edge Collectors (All clusters)**:
-  - OpenTelemetry Collector for traces and metrics
-  - Fluent Bit for log collection
-  - Prometheus for local metrics
-  - All forwarding to the central Sandbox cluster
-
-### CI/CD Integration
-
-- **GitHub Actions Runners**: Self-hosted via actions-runner-controller (ARC) with custom Docker image
-- **GitLab Runners**: Self-hosted GitLab CI executor
-- **Shared Pipelines**: Reusable workflow templates for application deployments
-
-## CI/CD Workflows
-
-The repository includes comprehensive GitHub Actions workflows:
-
-- **terraform-plan.yml**: Runs `terraform plan` on pull requests
-- **terraform-apply.yml**: Applies changes when PRs are merged
-- **ansible.yml**: Runs Ansible playbooks for VM configuration
-- **build.yml**: Builds and pushes Docker images for custom components
-- **sec-trivy.yml**: Security scanning with Trivy
-- **iac-tests.yml**: Infrastructure as Code testing
 
 ## Physical Infrastructure
 
-The homelab runs on three primary nodes:
+**Compute Resources**
+- NODE01: Acer Nitro (i7-4710HQ, 16GB RAM)
+- NODE02: HP ED800 G3 Mini (i7-7700T, 32GB RAM)
+- NODE03: X99 dual Xeon E5-2699-V3 18-Core, 128GB RAM
 
-- **NODE01 (old notebook)**: Acer Nitro (i7-4710HQ, 16GB RAM)
-- **NODE02 (mini pc)**: HP ED800 G3 Mini (i7-7700T, 32GB RAM)
-- **NODE03 (home server)**: X99 2x Xeon E5-2699-V3 2.3Ghz 18-Core, 128GB RAM
+**Virtualization**: Proxmox VE managing 10+ VMs across 3 physical hosts
 
-## Network Architecture
-
-- **Cloudflare**: DNS, CDN, and WAF for public-facing services
-- **HAProxy**: Load balancer for Vanilla Kubernetes traffic
-- **Internal DNS**: Local name resolution (PiHole)
-- **MetalLB**: Vanilla Kubernetes load balancing
-
-## Kubernetes Clusters
+## Kubernetes Environments
 
 | Cluster | Type | Purpose | Node(s) | Key Workloads |
 |---------|------|---------|---------|---------------|
-| Sandbox | K8s | Central observability and services | k8s-sandbox-01 | Observability stack, Vault, Harbor |
-| Sandboxy | K3s | Experimental virtualization | k8s-sandbox | KubeVirt |
-| Dev | K3s | Development environment | k8s-dev | Development workloads |
-| Stg | K3s | Staging environment | k8s-stg | Staging workloads |
-| Prod | K3s | Production environment | k8s-prod | Production services |
-| Tools | K3s | Supporting tools and services | k8s-tools | PostgreSQL, Redis, NATS, CI/CD runners |
-| Home | K3s | Home automation and media | k8s-home | Immich photo management |
+| dev | K3s | Development environment | k8s-dev | Development services, Istio service mesh |
+| stg | K3s | Staging environment | k8s-stg | Pre-production validation |
+| prod | K3s | Production environment | k8s-prod | Production services |
+| tools | K3s | Platform services | k8s-tools | PostgreSQL, Redis, NATS, CI/CD runners, Vault |
+| home | K3s | Home automation | k8s-home | Immich photo management |
+| observability | K3s | Central monitoring hub | k8s-observability | Prometheus, Grafana, Jaeger, Loki |
+| sandboxy | K3s | Experimentation | k8s-sandbox | KubeVirt, Longhorn distributed storage |
 
-## Module Design
+## Technology Stack
 
-The infrastructure follows these principles:
+**Infrastructure Layer**
+- Terraform 1.10.5+, Ansible, Proxmox VE
 
-1. **Composability**: Base modules can be combined to create more complex app modules
-2. **Standardization**: Common patterns implemented consistently
-3. **DRY (Don't Repeat Yourself)**: Reusable configurations
-4. **Separation of Concerns**: Each module has a single responsibility
+**Kubernetes**
+- K3s, vanilla Kubernetes, Talos Linux, KubeVirt
 
-### Base Modules
+**Platform Services**
+- ArgoCD 7.7.12, HashiCorp Vault, cert-manager, External Secrets Operator, Istio
 
-- **namespace**: Kubernetes namespace management
-- **helm**: Standardized Helm chart deployment
-- **values-template**: Template rendering for Helm values
-- **ingress**: Common ingress configuration
-- **persistence**: Volume management
-- **credentials**: Secret handling
-- **monitoring**: Prometheus/ServiceMonitor integration
+**Observability**
+- Prometheus (kube-prometheus-stack v79.0.1), Grafana, Jaeger v2.57.0, Loki v6.28.0, OpenTelemetry v0.33.0, Fluent Bit v0.48.9
 
-### Application Modules
+**Data Services**
+- PostgreSQL 15 with pgvector, Redis (Bitnami), NATS with JetStream, MinIO S3
 
-Built from base modules to provide complete solutions:
+**CI/CD**
+- GitHub Actions (ARC), GitLab CI, custom runner images with comprehensive tooling
 
-- **cert-manager**: TLS certificate automation
-- **externaldns**: DNS record management
-- **external-secrets**: External secret integration
-- **fluent**: Log collection and forwarding
-- **github-runner**: GitHub Actions runners (ARC)
-- **gitlab-runner**: GitLab CI runners
-- **harbor**: Enterprise container registry
-- **immich**: Photo management solution
-- **ingress-nginx**: Ingress controller
-- **kubevirt**: Virtual machine management
-- **minio**: S3-compatible storage
-- **nats**: Messaging system
-- **observability**: Complete monitoring stack
-- **observability-box**: Edge observability collector
-- **postgres**: PostgreSQL database (with pgvector)
-- **redis**: Redis database/cache
-- **registry**: Docker registry
-- **vault**: Secret management
+**Security**
+- SOPS with age encryption, Trivy, TruffleHog, Istio, cert-manager, Teleport agent
 
-## Cross-Cluster Observability
+## Documentation
 
-The observability architecture enables comprehensive monitoring across all clusters:
-
-### Central Observability (Sandbox Cluster)
-- Uses `modules/apps/observability` to deploy the full stack
-- Receives telemetry from all other clusters
-- Provides unified dashboards and alerting
-
-### Edge Collectors (All Other Clusters)
-- Uses `modules/apps/observability-box` for lightweight collection
-- Collects and forwards:
-  - Metrics via Prometheus and OpenTelemetry
-  - Traces via OpenTelemetry
-  - Logs via Fluent Bit
-
-### Data Flow
-
-```
-[Workload Clusters] → [observability-box] → [Central Sandbox] → [observability]
-(dev/stg/prod)                              (Jaeger/Prometheus/Loki)
-```
-
-## Security
-
-- **Vault**: Centralized secret management
-- **External Secrets**: Kubernetes secret integration
-- **cert-manager**: Automated TLS certificate management
-- **SOPS**: Secret encryption in Git (uses age encryption)
-- **Trivy**: Security scanning
-
-## Getting Started
-
-### Prerequisites
-
-- Terraform v1.10.5+
-- kubectl
-- Ansible
-- SOPS for secret management
-- Access to Proxmox and Vault
-
-### Provisioning Infrastructure
-
-1. **Initialize Terraform**
-
-```bash
-terraform init
-```
-
-2. **Configure Variables**
-
-Create a `terraform.tfvars` file with required variables (see `terraform.tfvars.example`).
-
-3. **Plan and Apply**
-
-```bash
-# For Proxmox VMs
-cd proxmox
-terraform plan -out=plan.tfplan
-terraform apply plan.tfplan
-
-# For Kubernetes resources
-cd clusters
-terraform workspace select dev  # or stg, prod, sandbox, tools
-terraform plan -out=plan.tfplan
-terraform apply plan.tfplan
-```
-
-### Configure VMs with Ansible
-
-```bash
-# Run playbook for specific environment
-cd proxmox
-ansible-playbook playbooks/k8s.yml -i k8s.ini -e "target_hosts=dev"
-```
-
-## Workflows
-
-The repository includes several GitHub Actions workflows:
-
-- **terraform-plan.yml**: Runs `terraform plan` on pull requests
-- **terraform-apply.yml**: Applies changes when PRs are merged
-- **ansible.yml**: Runs Ansible playbooks for VM configuration
-- **sec-trivy.yml**: Security scanning with Trivy
-- **iac-tests.yml**: Infrastructure as Code testing
-
-## Module Design
-
-The infrastructure follows these principles:
-
-1. **Composability**: Base modules can be combined to create more complex app modules
-2. **Standardization**: Common patterns implemented consistently
-3. **DRY (Don't Repeat Yourself)**: Reusable configurations
-4. **Separation of Concerns**: Each module has a single responsibility
-
-### Base Modules
-
-- **namespace**: Kubernetes namespace management
-- **helm**: Standardized Helm chart deployment
-- **values-template**: Template rendering for Helm values
-- **ingress**: Common ingress configuration
-- **persistence**: Volume management
-- **credentials**: Secret handling
-- **monitoring**: Prometheus integration
-
-### Application Modules
-
-Built from base modules to provide complete solutions:
-
-- **cert-manager**: TLS certificate automation
-- **externaldns**: DNS record management
-- **external-secrets**: External secret integration
-- **fluent**: Log collection and forwarding
-- **github-runner**: GitHub Actions runners
-- **gitlab-runner**: GitLab CI runners
-- **ingress-nginx**: Ingress controller
-- **minio**: S3-compatible storage
-- **nats**: Messaging system
-- **observability**: Complete monitoring stack
-- **otel-collector**: OpenTelemetry collector
-- **postgres**: PostgreSQL database
-- **redis**: Redis database/cache
-- **registry**: Docker registry
-- **vault**: Secret management
-
-## Physical Infrastructure
-
-The homelab runs on:
-
-- **NODE01 (old notebook)**: Acer Nitro (i7-4710HQ, 16GB RAM)
-- **NODE02 (mini pc)**: HP ED800 G3 Mini (i7-7700T, 32GB RAM)
-- **NODE03 (home server)**: X99 2x Xeon E5-2699-V3 2.3Ghz 18-Core 128GB RAM
-
-## Network Architecture
-
-- **Cloudflare**: DNS, CDN, and WAF for public-facing services
-- **HAProxy**: Load balancer for Kubernetes traffic
-- **Internal DNS**: Local name resolution
-- **MetalLB**: Kubernetes load balancing
-
-## Security
-
-- **Vault**: Centralized secret management
-- **External Secrets**: Kubernetes secret integration
-- **cert-manager**: Automated TLS certificate management
-- **SOPS**: Secret encryption in Git
-- **Trivy**: Security scanning
+- [Secret Rotation Procedures](docs/SECRETS_ROTATION.md)
+- [Secret Extraction from Vault](docs/SECRETS_EXTRACTION.md)
+- [Istio Migration Guide](docs/ISTIO.md)
