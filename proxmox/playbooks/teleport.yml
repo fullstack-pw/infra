@@ -139,6 +139,14 @@
         - { src: "fullchain.pem", dest: "fullchain.pem" }
         - { src: "privkey.pem", dest: "privkey.pem" }
 
+    - name: Deploy certificate renewal script
+      template:
+        src: renew-teleport-certs.sh.j2
+        dest: /usr/local/bin/renew-teleport-certs.sh
+        owner: root
+        group: root
+        mode: '0755'
+
     - name: Generate initial Teleport configuration using teleport configure
       shell: |
         teleport configure \
@@ -163,10 +171,10 @@
 
     - name: Set up certificate renewal cron job
       cron:
-        name: "Renew Let's Encrypt certificates"
+        name: "Renew Let's Encrypt certificates for Teleport"
         minute: "0"
         hour: "2"
-        job: "/usr/bin/certbot renew --quiet && /bin/systemctl reload teleport"
+        job: "/usr/local/bin/renew-teleport-certs.sh >> /var/log/teleport-cert-renewal.log 2>&1"
         user: root
 
     - name: Enable and start Teleport service

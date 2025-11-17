@@ -1,0 +1,106 @@
+#!/bin/bash
+#
+# Teleport Certificate Renewal Script
+# Automatically renews Let's Encrypt certificates and updates Teleport
+#
+# This script is managed by Ansible - DO NOT EDIT MANUALLY
+# Source: proxmox/playbooks/templates/renew-teleport-certs.sh.j2
+#
+
+set -euo pipefail
+
+# Configuration
+TELEPORT_DOMAIN="{{ teleport_domain }}"
+LETSENCRYPT_LIVE_DIR="/etc/letsencrypt/live/${TELEPORT_DOMAIN}"
+TELEPORT_CERT_DIR="/var/lib/teleport"
+LOG_FILE="/var/log/teleport-cert-renewal.log"
+SYSTEMD_SERVICE="teleport"
+
+# Logging function
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "${LOG_FILE}"
+}
+
+# Error handler
+error_exit() {
+    log "ERROR: $1"
+    exit 1
+}
+
+# Start renewal process
+log "=== Starting Teleport certificate renewal process ==="
+
+# Check if Let's Encrypt certificates exist
+if [[ ! -f "${LETSENCRYPT_LIVE_DIR}/fullchain.pem" ]]; then
+    error_exit "Let's Encrypt certificate not found at ${LETSENCRYPT_LIVE_DIR}/fullchain.pem"
+fi
+
+if [[ ! -f "${LETSENCRYPT_LIVE_DIR}/privkey.pem" ]]; then
+    error_exit "Let's Encrypt private key not found at ${LETSENCRYPT_LIVE_DIR}/privkey.pem"
+fi
+
+# Get current certificate expiration date before renewal
+CERT_EXPIRY_BEFORE=$(openssl x509 -in "${LETSENCRYPT_LIVE_DIR}/fullchain.pem" -noout -enddate 2>/dev/null || echo "unknown")
+log "Current certificate expiration: ${CERT_EXPIRY_BEFORE}"
+
+# Run certbot renewal
+log "Running certbot renew..."
+if ! /usr/bin/certbot renew --quiet --deploy-hook "/bin/true" 2>&1 | tee -a "${LOG_FILE}"; then
+    error_exit "certbot renew failed"
+fi
+
+# Check if certificate was actually renewed by comparing modification times
+LETSENCRYPT_CERT_MTIME=$(stat -c %Y "${LETSENCRYPT_LIVE_DIR}/fullchain.pem" 2>/dev/null || echo 0)
+TELEPORT_CERT_MTIME=$(stat -c %Y "${TELEPORT_CERT_DIR}/fullchain.pem" 2>/dev/null || echo 0)
+
+# Get certificate expiration date after renewal
+CERT_EXPIRY_AFTER=$(openssl x509 -in "${LETSENCRYPT_LIVE_DIR}/fullchain.pem" -noout -enddate 2>/dev/null || echo "unknown")
+
+# Copy certificates to Teleport directory
+log "Copying renewed certificates to Teleport directory..."
+
+if ! cp -f "${LETSENCRYPT_LIVE_DIR}/fullchain.pem" "${TELEPORT_CERT_DIR}/fullchain.pem"; then
+    error_exit "Failed to copy fullchain.pem"
+fi
+
+if ! cp -f "${LETSENCRYPT_LIVE_DIR}/privkey.pem" "${TELEPORT_CERT_DIR}/privkey.pem"; then
+    error_exit "Failed to copy privkey.pem"
+fi
+
+# Set correct permissions
+log "Setting certificate permissions..."
+chmod 0600 "${TELEPORT_CERT_DIR}/fullchain.pem" "${TELEPORT_CERT_DIR}/privkey.pem"
+chown root:root "${TELEPORT_CERT_DIR}/fullchain.pem" "${TELEPORT_CERT_DIR}/privkey.pem"
+
+# Reload Teleport service to pick up new certificates
+log "Reloading Teleport service..."
+if ! /bin/systemctl reload "${SYSTEMD_SERVICE}"; then
+    log "WARNING: Failed to reload Teleport service, attempting restart..."
+    if ! /bin/systemctl restart "${SYSTEMD_SERVICE}"; then
+        error_exit "Failed to restart Teleport service"
+    fi
+    log "Teleport service restarted successfully"
+else
+    log "Teleport service reloaded successfully"
+fi
+
+# Wait a moment for service to stabilize
+sleep 2
+
+# Verify Teleport service is running
+if ! /bin/systemctl is-active --quiet "${SYSTEMD_SERVICE}"; then
+    error_exit "Teleport service is not running after reload/restart"
+fi
+
+log "Teleport service is running and healthy"
+
+# Check if certificate was renewed
+if [[ "${CERT_EXPIRY_BEFORE}" != "${CERT_EXPIRY_AFTER}" ]]; then
+    log "Certificate was RENEWED. New expiration: ${CERT_EXPIRY_AFTER}"
+else
+    log "Certificate was NOT renewed (not due for renewal yet). Expiration: ${CERT_EXPIRY_AFTER}"
+fi
+
+log "=== Certificate renewal process completed successfully ==="
+
+exit 0
