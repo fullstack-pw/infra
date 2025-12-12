@@ -386,3 +386,4 @@ module "testing_postgres" {
   istio_gateway_name      = "istio-system/default-gateway"
   ingress_class_name      = "istio"
 }
+
