@@ -10,6 +10,8 @@ locals {
 module "namespace" {
   source = "../../base/namespace"
 
+  for_each = local.clusters
+
   create = true
   name   = each.value.name
   labels = {
