@@ -1,3 +1,9 @@
+## [1.4.0](https://github.com/fullstack-pw/infra/compare/v1.3.3...v1.4.0) (2025-12-12)
+
+### Features
+
+* **provisioning:** dynamic cluster creation with cluster-api and terraform ([e8a6aab](https://github.com/fullstack-pw/infra/commit/e8a6aab1db5647d527b9200c8faf90a9a7d1aa34))
+
 ## [1.3.3](https://github.com/fullstack-pw/infra/compare/v1.3.2...v1.3.3) (2025-12-12)
 
 ### Bug Fixes
