@@ -302,7 +302,7 @@ update-kubeconfigs:
 				for cluster in $$CLUSTERS; do \
 					python3 scripts/update_talos_kubeconfig.py \
 						--cluster-name $$cluster \
-						--namespace clusters \
+						--namespace $$cluster \
 						--vault-path kv/cluster-secret-store/secrets \
 						--vault-addr $(VAULT_ADDR) \
 						--management-context $${env}; \
@@ -317,7 +317,7 @@ update-kubeconfigs:
 		for cluster in $$CLUSTERS; do \
 			python3 scripts/update_talos_kubeconfig.py \
 				--cluster-name $$cluster \
-				--namespace clusters \
+				--namespace $$cluster \
 				--vault-path kv/cluster-secret-store/secrets \
 				--vault-addr $(VAULT_ADDR) \
 				--management-context $(ENV); \
@@ -330,7 +330,7 @@ test-kubeconfig-update:
 	@echo -e "${CYAN}Testing kubeconfig update (dry-run mode)...${NC}"
 	@cd $(TERRAFORM_DIR) && python3 scripts/update_talos_kubeconfig.py \
 		--cluster-name dev \
-		--namespace clusters \
+		--namespace dev \
 		--vault-path kv/cluster-secret-store/secrets \
 		--vault-addr $(VAULT_ADDR) \
 		--management-context tools \

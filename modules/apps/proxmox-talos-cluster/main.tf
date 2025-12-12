@@ -20,13 +20,13 @@ module "namespace" {
   needs_secrets = true
 }
 
-# Create Proxmox credentials secret (only once per namespace)
+# Create Proxmox credentials secret (one per namespace/cluster)
 resource "kubernetes_secret" "proxmox_credentials" {
-  count = var.create_proxmox_secret ? 1 : 0
+  for_each = var.create_proxmox_secret ? local.clusters : {}
 
   metadata {
     name      = var.credentials_ref_name
-    namespace = var.namespace
+    namespace = each.value.name
   }
 
   data = {
@@ -36,6 +36,8 @@ resource "kubernetes_secret" "proxmox_credentials" {
   }
 
   type = "Opaque"
+
+  depends_on = [module.namespace]
 }
 
 # Template rendering for cluster manifests
@@ -50,7 +52,7 @@ module "cluster_templates" {
       path = "${path.module}/templates/cp-cluster.yaml.tpl"
       vars = {
         cluster_name             = each.value.name
-        namespace                = var.namespace
+        namespace                = each.value.name
         talos_control_plane_name = "${each.value.name}-talos-cp"
         proxmox_cluster_name     = "${each.value.name}-proxmox-cluster"
       }
@@ -60,7 +62,7 @@ module "cluster_templates" {
       path = "${path.module}/templates/cp-proxmoxcluster.yaml.tpl"
       vars = {
         cluster_name                = each.value.name
-        namespace                   = var.namespace
+        namespace                   = each.value.name
         proxmox_cluster_name        = "${each.value.name}-proxmox-cluster"
         control_plane_endpoint_ip   = each.value.control_plane_endpoint_ip
         control_plane_endpoint_port = each.value.control_plane_endpoint_port
@@ -79,7 +81,7 @@ module "cluster_templates" {
       path = "${path.module}/templates/cp-taloscontrolplane.yaml.tpl"
       vars = {
         cluster_name                = each.value.name
-        namespace                   = var.namespace
+        namespace                   = each.value.name
         talos_control_plane_name    = "${each.value.name}-talos-cp"
         kubernetes_version          = each.value.kubernetes_version
         cp_replicas                 = each.value.cp_replicas
@@ -95,7 +97,7 @@ module "cluster_templates" {
       path = "${path.module}/templates/cp-proxmoxmachinetemplate.yaml.tpl"
       vars = {
         cluster_name                = each.value.name
-        namespace                   = var.namespace
+        namespace                   = each.value.name
         control_plane_template_name = "${each.value.name}-control-plane-template"
         cp_disk_size                = each.value.cp_disk_size
         cp_memory                   = each.value.cp_memory
@@ -116,7 +118,7 @@ module "cluster_templates" {
       path = "${path.module}/templates/wk-proxmoxmachinetemplate.yaml.tpl"
       vars = {
         cluster_name           = each.value.name
-        namespace              = var.namespace
+        namespace              = each.value.name
         worker_template_name   = "${each.value.name}-worker-template"
         wk_disk_size           = each.value.wk_disk_size
         wk_memory              = each.value.wk_memory
@@ -137,7 +139,7 @@ module "cluster_templates" {
       path = "${path.module}/templates/wk-talosconfigtemplate.yaml.tpl"
       vars = {
         cluster_name             = each.value.name
-        namespace                = var.namespace
+        namespace                = each.value.name
         worker_talos_config_name = "${each.value.name}-talosconfig-workers"
         install_disk             = each.value.install_disk
       }
@@ -147,7 +149,7 @@ module "cluster_templates" {
       path = "${path.module}/templates/wk-machinedeployment.yaml.tpl"
       vars = {
         cluster_name             = each.value.name
-        namespace                = var.namespace
+        namespace                = each.value.name
         worker_deployment_name   = "${each.value.name}-machinedeploy-workers"
         worker_talos_config_name = "${each.value.name}-talosconfig-workers"
         worker_template_name     = "${each.value.name}-worker-template"

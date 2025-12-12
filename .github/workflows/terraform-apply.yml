@@ -332,7 +332,7 @@ jobs:
               echo "Updating kubeconfig for cluster: $cluster_name"
               python3 scripts/update_talos_kubeconfig.py \
                 --cluster-name "$cluster_name" \
-                --namespace "clusters" \
+                --namespace "$cluster_name" \
                 --vault-path "kv/cluster-secret-store/secrets" \
                 --vault-addr "$VAULT_ADDR" \
                 --management-context "$MGMT_CONTEXT" \
