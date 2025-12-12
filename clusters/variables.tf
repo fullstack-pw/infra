@@ -173,7 +173,7 @@ variable "config" {
       proxmox-kubeadm-cluster = [
         {
           name                      = "kubeadm-test-cluster"
-          kubernetes_version        = "v1.32.4"
+          kubernetes_version        = "v1.31.4"
           control_plane_endpoint_ip = "192.168.1.70"
           ip_range_start            = "192.168.1.71"
           ip_range_end              = "192.168.1.79"
@@ -187,15 +187,15 @@ variable "config" {
           cni_manifest_url = "https://raw.githubusercontent.com/projectcalico/calico/v3.29.1/manifests/calico.yaml"
 
           source_node   = "node03"
-          template_id   = 9003
+          template_id   = 9004
           allowed_nodes = ["node03"]
 
-          cp_replicas  = 1
+          cp_replicas  = 3
           cp_disk_size = 30
           cp_memory    = 4096
           cp_cores     = 2
 
-          wk_replicas  = 2
+          wk_replicas  = 3
           wk_disk_size = 30
           wk_memory    = 8192
           wk_cores     = 4

@@ -303,6 +303,11 @@ module "clusterapi_operator" {
   enable_k3s_provider     = false
   enable_kubeadm_provider = true
 
+  # Downgrade to CAPI v1.9 for compatibility with CAPMOX v0.7.x
+  core_provider_version        = "v1.9.4"
+  kubeadm_bootstrap_version    = "v1.9.4"
+  kubeadm_controlplane_version = "v1.9.4"
+
   proxmox_secret_name = "proxmox-credentials"
   proxmox_url         = element(split("/api2", local.secrets_json["kv/cluster-secret-store/secrets/PROXMOX_URL"]["PROXMOX_URL"]), 0)
   proxmox_secret      = local.secrets_json["kv/cluster-secret-store/secrets/PROXMOX_SECRET"]["PROXMOX_SECRET"]

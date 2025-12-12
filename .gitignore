@@ -6,7 +6,7 @@
 *.backup
 private*
 backend.hcl
-*.plan
+*plan
 *.out
 plan.txt
 settings.json

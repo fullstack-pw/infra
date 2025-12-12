@@ -41,7 +41,7 @@ resource "kubernetes_manifest" "cluster" {
   for_each = local.clusters
 
   manifest = {
-    apiVersion = "cluster.x-k8s.io/v1beta2"
+    apiVersion = "cluster.x-k8s.io/v1beta1"
     kind       = "Cluster"
     metadata = {
       name      = each.value.name
@@ -57,14 +57,14 @@ resource "kubernetes_manifest" "cluster" {
         }
       }
       controlPlaneRef = {
-        apiGroup = "controlplane.cluster.x-k8s.io"
-        kind     = "KubeadmControlPlane"
-        name     = "${each.value.name}-control-plane"
+        kind       = "KubeadmControlPlane"
+        apiVersion = "controlplane.cluster.x-k8s.io/v1beta1"
+        name       = "${each.value.name}-control-plane"
       }
       infrastructureRef = {
-        apiGroup = "infrastructure.cluster.x-k8s.io"
-        kind     = "ProxmoxCluster"
-        name     = each.value.name
+        kind       = "ProxmoxCluster"
+        apiVersion = "infrastructure.cluster.x-k8s.io/v1alpha1"
+        name       = each.value.name
       }
     }
   }
@@ -109,7 +109,7 @@ resource "kubernetes_manifest" "kubeadm_control_plane" {
   for_each = local.clusters
 
   manifest = {
-    apiVersion = "controlplane.cluster.x-k8s.io/v1beta2"
+    apiVersion = "controlplane.cluster.x-k8s.io/v1beta1"
     kind       = "KubeadmControlPlane"
     metadata = {
       name      = "${each.value.name}-control-plane"
@@ -135,16 +135,13 @@ resource "kubernetes_manifest" "kubeadm_control_plane" {
             ]
           }
           controllerManager = {
-            extraArgs = [
-              {
-                name  = "enable-hostpath-provisioner"
-                value = "true"
-              }
-            ]
+            extraArgs = {
+              "enable-hostpath-provisioner" = "true"
+            }
           }
         }
         preKubeadmCommands = [
-          "ip addr add ${each.value.control_plane_endpoint_ip}/24 dev ens18"
+          "/etc/kube-vip-prepare.sh"
         ]
         files = [
           {
@@ -155,14 +152,15 @@ resource "kubernetes_manifest" "kubeadm_control_plane" {
               apiVersion = "v1"
               kind       = "Pod"
               metadata = {
-                name      = "kube-vip"
-                namespace = "kube-system"
+                creationTimestamp = null
+                name              = "kube-vip"
+                namespace         = "kube-system"
               }
               spec = {
                 containers = [
                   {
                     name  = "kube-vip"
-                    image = "ghcr.io/kube-vip/kube-vip:v0.8.10"
+                    image = "ghcr.io/kube-vip/kube-vip:v1.0.2"
                     args  = ["manager"]
                     env = [
                       {
@@ -170,8 +168,17 @@ resource "kubernetes_manifest" "kubeadm_control_plane" {
                         value = "true"
                       },
                       {
+                        name  = "cp_namespace"
+                        value = "kube-system"
+                      },
+
+                      {
                         name  = "vip_interface"
-                        value = "ens18"
+                        value = ""
+                      },
+                      {
+                        name  = "vip_arp"
+                        value = "true"
                       },
                       {
                         name  = "address"
@@ -182,33 +189,35 @@ resource "kubernetes_manifest" "kubeadm_control_plane" {
                         value = "6443"
                       },
                       {
-                        name  = "vip_arp"
-                        value = "true"
-                      },
-                      {
                         name  = "vip_leaderelection"
-                        value = "false"
+                        value = "true"
                       },
                       {
-                        name  = "vip_startleader"
-                        value = "true"
+                        name  = "vip_leasename"
+                        value = "plndr-cp-lock"
                       },
                       {
                         name  = "vip_leaseduration"
-                        value = "15"
+                        value = "5"
                       },
                       {
                         name  = "vip_renewdeadline"
-                        value = "10"
+                        value = "3"
                       },
                       {
                         name  = "vip_retryperiod"
-                        value = "2"
-                      }
+                        value = "1"
+                      },
+                      {
+                        name  = "vip_cidr"
+                        value = "32"
+                      },
                     ]
+                    imagePullPolicy = "IfNotPresent"
+                    resources       = {}
                     securityContext = {
                       capabilities = {
-                        add = ["NET_ADMIN", "NET_RAW"]
+                        add = ["NET_ADMIN", "NET_RAW", "SYS_TIME"]
                       }
                     }
                     volumeMounts = [
@@ -219,39 +228,96 @@ resource "kubernetes_manifest" "kubeadm_control_plane" {
                     ]
                   }
                 ]
+                hostAliases = [
+                  {
+                    ip        = "127.0.0.1"
+                    hostnames = ["localhost", "kubernetes"]
+                  }
+                ]
                 hostNetwork = true
                 volumes = [
                   {
                     name = "kubeconfig"
                     hostPath = {
                       path = "/etc/kubernetes/admin.conf"
+                      type = "FileOrCreate"
                     }
                   }
                 ]
               }
+              status = {}
             })
+          },
+          {
+            path        = "/etc/kube-vip-prepare.sh"
+            owner       = "root:root"
+            permissions = "0700"
+            content     = <<-EOF
+              #!/bin/bash
+
+              # Redirect all output to log file
+              exec > /var/log/kube-vip-prepare.log 2>&1
+
+              set -ex
+              echo "=== kube-vip-prepare.sh starting at $(date) ==="
+              IS_KUBEADM_INIT="false"
+
+              # cloud-init kubeadm init
+              echo "Checking for /run/kubeadm/kubeadm.yaml..."
+              if [[ -f /run/kubeadm/kubeadm.yaml ]]; then
+                echo "Found /run/kubeadm/kubeadm.yaml - this is kubeadm init"
+                IS_KUBEADM_INIT="true"
+              else
+                echo "/run/kubeadm/kubeadm.yaml not found"
+              fi
+
+              # ignition kubeadm init
+              echo "Checking for /etc/kubeadm.sh with 'kubeadm init'..."
+              if [[ -f /etc/kubeadm.sh ]] && grep -q -e "kubeadm init" /etc/kubeadm.sh; then
+                echo "Found /etc/kubeadm.sh with 'kubeadm init' - this is kubeadm init"
+                IS_KUBEADM_INIT="true"
+              else
+                echo "/etc/kubeadm.sh check did not match"
+              fi
+
+              echo "IS_KUBEADM_INIT=$IS_KUBEADM_INIT"
+
+              if [[ "$IS_KUBEADM_INIT" == "true" ]]; then
+                echo "This is kubeadm init - patching kube-vip.yaml hostPath to use super-admin.conf"
+                echo "Before patch:"
+                grep -n "path.*admin.conf" /etc/kubernetes/manifests/kube-vip.yaml || echo "No admin.conf path references found"
+
+                # Only change the hostPath, NOT the mountPath inside the container
+                # The container expects the file at /etc/kubernetes/admin.conf
+                # But we mount super-admin.conf from the host to that location
+                sed -i 's#"path": "/etc/kubernetes/admin.conf"#"path": "/etc/kubernetes/super-admin.conf"#g' \
+                  /etc/kubernetes/manifests/kube-vip.yaml
+
+                echo "After patch:"
+                grep -n "path.*admin.conf\|path.*super-admin.conf" /etc/kubernetes/manifests/kube-vip.yaml || echo "No conf path references found"
+                echo "Patch completed successfully"
+              else
+                echo "This is NOT kubeadm init - leaving kube-vip.yaml unchanged"
+              fi
+
+              echo "=== kube-vip-prepare.sh completed at $(date) ==="
+            EOF
           }
         ]
         initConfiguration = {
           nodeRegistration = {
             criSocket = "unix:///var/run/containerd/containerd.sock"
-            kubeletExtraArgs = [
-              {
-                name  = "cloud-provider"
-                value = "external"
-              }
-            ]
+            kubeletExtraArgs = {
+              "provider-id" = "proxmox://'{{ ds.meta_data.instance_id }}'"
+            }
           }
         }
         joinConfiguration = {
           nodeRegistration = {
             criSocket = "unix:///var/run/containerd/containerd.sock"
-            kubeletExtraArgs = [
-              {
-                name  = "cloud-provider"
-                value = "external"
-              }
-            ]
+            kubeletExtraArgs = {
+              "provider-id" = "proxmox://'{{ ds.meta_data.instance_id }}'"
+            }
           }
         }
         postKubeadmCommands = [
@@ -259,12 +325,10 @@ resource "kubernetes_manifest" "kubeadm_control_plane" {
         ]
       }
       machineTemplate = {
-        spec = {
-          infrastructureRef = {
-            apiGroup = "infrastructure.cluster.x-k8s.io"
-            kind     = "ProxmoxMachineTemplate"
-            name     = "${each.value.name}-control-plane-template"
-          }
+        infrastructureRef = {
+          kind       = "ProxmoxMachineTemplate"
+          apiVersion = "infrastructure.cluster.x-k8s.io/v1alpha1"
+          name       = "${each.value.name}-control-plane-template"
         }
       }
     }
@@ -306,6 +370,9 @@ resource "kubernetes_manifest" "control_plane_machine_template" {
               model  = each.value.network_model
             }
           }
+          metadataSettings = {
+            providerIDInjection = each.value.provider_id_injection
+          }
         }
       }
     }
@@ -319,7 +386,7 @@ resource "kubernetes_manifest" "machine_deployment" {
   for_each = local.clusters
 
   manifest = {
-    apiVersion = "cluster.x-k8s.io/v1beta2"
+    apiVersion = "cluster.x-k8s.io/v1beta1"
     kind       = "MachineDeployment"
     metadata = {
       name      = "${each.value.name}-workers"
@@ -344,15 +411,15 @@ resource "kubernetes_manifest" "machine_deployment" {
           version     = each.value.kubernetes_version
           bootstrap = {
             configRef = {
-              apiGroup = "bootstrap.cluster.x-k8s.io"
-              kind     = "KubeadmConfigTemplate"
-              name     = "${each.value.name}-worker-config"
+              kind       = "KubeadmConfigTemplate"
+              apiVersion = "bootstrap.cluster.x-k8s.io/v1beta1"
+              name       = "${each.value.name}-worker-config"
             }
           }
           infrastructureRef = {
-            apiGroup = "infrastructure.cluster.x-k8s.io"
-            kind     = "ProxmoxMachineTemplate"
-            name     = "${each.value.name}-worker-template"
+            kind       = "ProxmoxMachineTemplate"
+            apiVersion = "infrastructure.cluster.x-k8s.io/v1alpha1"
+            name       = "${each.value.name}-worker-template"
           }
         }
       }
@@ -367,7 +434,7 @@ resource "kubernetes_manifest" "kubeadm_config_template" {
   for_each = local.clusters
 
   manifest = {
-    apiVersion = "bootstrap.cluster.x-k8s.io/v1beta2"
+    apiVersion = "bootstrap.cluster.x-k8s.io/v1beta1"
     kind       = "KubeadmConfigTemplate"
     metadata = {
       name      = "${each.value.name}-worker-config"
@@ -386,12 +453,9 @@ resource "kubernetes_manifest" "kubeadm_config_template" {
           joinConfiguration = {
             nodeRegistration = {
               criSocket = "unix:///var/run/containerd/containerd.sock"
-              kubeletExtraArgs = [
-                {
-                  name  = "cloud-provider"
-                  value = "external"
-                }
-              ]
+              kubeletExtraArgs = {
+                "provider-id" = "proxmox://'{{ ds.meta_data.instance_id }}'"
+              }
             }
           }
         }
@@ -434,6 +498,9 @@ resource "kubernetes_manifest" "worker_machine_template" {
               bridge = each.value.network_bridge
               model  = each.value.network_model
             }
+          }
+          metadataSettings = {
+            providerIDInjection = each.value.provider_id_injection
           }
         }
       }
