@@ -73,8 +73,8 @@ jobs:
           exit 1
 
   detect-changes:
-    needs: wait-for-release
-    if: github.event.pull_request.merged == true
+    #needs: wait-for-release
+    #if: github.event.pull_request.merged == true
     runs-on: self-hosted
     outputs:
       proxmox: ${{ steps.filter.outputs.proxmox }}
