@@ -1,3 +1,9 @@
+## [1.3.1](https://github.com/fullstack-pw/infra/compare/v1.3.0...v1.3.1) (2025-12-12)
+
+### Bug Fixes
+
+* **workload-clusters:** recreate dev-stg-prd with cluster-api talos ([17f4ca8](https://github.com/fullstack-pw/infra/commit/17f4ca83bf8cefa43b228a81b0d632dc4fddf80d))
+
 ## [1.3.0](https://github.com/fullstack-pw/infra/compare/v1.2.13...v1.3.0) (2025-12-12)
 
 ### Features
