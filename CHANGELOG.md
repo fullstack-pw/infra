@@ -1,3 +1,9 @@
+## [1.3.2](https://github.com/fullstack-pw/infra/compare/v1.3.1...v1.3.2) (2025-12-12)
+
+### Bug Fixes
+
+* **pipeline:** terraform-apply ([354bc58](https://github.com/fullstack-pw/infra/commit/354bc584c78f09d67027311b1c57fa55f5615646))
+
 ## [1.3.1](https://github.com/fullstack-pw/infra/compare/v1.3.0...v1.3.1) (2025-12-12)
 
 ### Bug Fixes
