@@ -1,3 +1,63 @@
+## [1.3.0](https://github.com/fullstack-pw/infra/compare/v1.2.13...v1.3.0) (2025-12-12)
+
+### Features
+
+* **argocd:** add app-of-apps pattern for dev environment ([de45ae8](https://github.com/fullstack-pw/infra/commit/de45ae84c6e42ca8358552df21a1cb883c5aeb59))
+* **argocd:** add sync waves and hooks demo ([08f037b](https://github.com/fullstack-pw/infra/commit/08f037b9b9ed6628d3f6694159b5aafaaba8b926))
+* **argocd:** dev ([759815b](https://github.com/fullstack-pw/infra/commit/759815b5649e02b94439840302e7ecbea5e28e51))
+* **cluter-api:** kube-adm fully working ([1a66ea7](https://github.com/fullstack-pw/infra/commit/1a66ea70262cbdb849b17622e73b0090ff4d7aa1))
+* **observability:** bootstrap [ansible k8s-observability] ([57cbf52](https://github.com/fullstack-pw/infra/commit/57cbf52dba88b80c86b3d8f887100bdcc63121ef))
+* **observability:** bootstrap [ansible k8s-observability] ([#122](https://github.com/fullstack-pw/infra/issues/122)) ([0979858](https://github.com/fullstack-pw/infra/commit/097985850f1c8c230b4ba0f0ceb5384275308830))
+* **observability:** bootstrap [ansible k8s-observability] ([#126](https://github.com/fullstack-pw/infra/issues/126)) ([66ee806](https://github.com/fullstack-pw/infra/commit/66ee806ead3e311145364c4cb654fa63711c75ab))
+* **observability:** bootstrap [ansible k8s-observability] ([#127](https://github.com/fullstack-pw/infra/issues/127)) ([f191ee9](https://github.com/fullstack-pw/infra/commit/f191ee9b8da06ca745c1f55526ea6421e03ec06f))
+* **observability:** bootstrap [ansible k8s-observability] ([#128](https://github.com/fullstack-pw/infra/issues/128)) ([55b143b](https://github.com/fullstack-pw/infra/commit/55b143b7e4f7864d6c2aad8a195fd3d4ea91850b))
+* **observability:** bootstrap [ansible k8s-observability] ([#129](https://github.com/fullstack-pw/infra/issues/129)) ([a9ec3aa](https://github.com/fullstack-pw/infra/commit/a9ec3aaa74387af1ee5559c6f06ac70a586825c0))
+* **observability:** reinstall ([#123](https://github.com/fullstack-pw/infra/issues/123)) ([6b4e45c](https://github.com/fullstack-pw/infra/commit/6b4e45cf7b77196fb4c1d963b47cf88757b87d6a))
+
+### Tasks
+
+* **backup:** tf state ([903846b](https://github.com/fullstack-pw/infra/commit/903846b69f186174c418a3df78888f7f5906a7a7))
+* **cluster api:** configure ([#96](https://github.com/fullstack-pw/infra/issues/96)) ([2c3c8d0](https://github.com/fullstack-pw/infra/commit/2c3c8d0ceb11d9e1f9c1b569a7598501f5dd6f5a))
+* **cluster api:** configure base cluster ([#98](https://github.com/fullstack-pw/infra/issues/98)) ([6e4533c](https://github.com/fullstack-pw/infra/commit/6e4533c7a0ba00167f6393f7db07d73aa1f22403))
+* **cluster api:** homologate bootstrap ([#114](https://github.com/fullstack-pw/infra/issues/114)) ([ffe6f35](https://github.com/fullstack-pw/infra/commit/ffe6f35e0d6b0ae927931959ecd8b06709d145bb))
+* **cluster api:** homologate bootstrap ([#116](https://github.com/fullstack-pw/infra/issues/116)) ([4399224](https://github.com/fullstack-pw/infra/commit/439922481c9e22e5b09f844fc01f12f6d662188b))
+* **cluster api:** homologate bootstrap ([#118](https://github.com/fullstack-pw/infra/issues/118)) ([6e64aef](https://github.com/fullstack-pw/infra/commit/6e64aef0c6b9cb848658bc90807e2a99f38789b0))
+* **cluster api:** homologate bootstrap ([#119](https://github.com/fullstack-pw/infra/issues/119)) ([3797da5](https://github.com/fullstack-pw/infra/commit/3797da52d8f19cc324271887672c5de1d87eb60c))
+* **cluster api:** homologate bootstrap [ansible cluster-api] ([#117](https://github.com/fullstack-pw/infra/issues/117)) ([49525d3](https://github.com/fullstack-pw/infra/commit/49525d3c11051d2a921d00dccb6aa35622b67ec9))
+* **cluster-api:** bootstrap ([cca8203](https://github.com/fullstack-pw/infra/commit/cca820322938b9b24d921307e3c3ab1ac26e4220))
+* **cluster-api:** configure ([#97](https://github.com/fullstack-pw/infra/issues/97)) ([5ca06ad](https://github.com/fullstack-pw/infra/commit/5ca06ad750920eafd5901436e961b7234cfc9fd0))
+* **cluster-api:** configure fresh cluster ([#95](https://github.com/fullstack-pw/infra/issues/95)) ([e432584](https://github.com/fullstack-pw/infra/commit/e432584a2f173c777858d74ca803788ca7edc272))
+* **cluster-api:** homologate bootstrap ([#121](https://github.com/fullstack-pw/infra/issues/121)) ([ae54952](https://github.com/fullstack-pw/infra/commit/ae54952353facec4f228d001a065154d639e3feb))
+* **cluster-api:** homologate bootstrap [ansible cluster-api] ([#113](https://github.com/fullstack-pw/infra/issues/113)) ([2841cdb](https://github.com/fullstack-pw/infra/commit/2841cdbebd06966bd5af596f5b59d00496aea0f7))
+* **cluster-api:** homologate CICD bootstrap [ansible cluster-api] ([#112](https://github.com/fullstack-pw/infra/issues/112)) ([e861884](https://github.com/fullstack-pw/infra/commit/e86188490f7bdaa8eabd88eb199a2c1eac4eb4f9))
+* **doc:** update ([ecf2207](https://github.com/fullstack-pw/infra/commit/ecf220739b967dbdc2e5b05cb01a8084d17931ec))
+* **readme:** update ([cd1a470](https://github.com/fullstack-pw/infra/commit/cd1a47075069d8eb6ce6a6a48dc38b91c745fbf5))
+* **talos:** bootstrap [ansible talos-testing] ([0f61308](https://github.com/fullstack-pw/infra/commit/0f613084d029e8771d5f4ea18984ea094f625d01))
+* **talos:** bootstrap [ansible talos-testing] ([#94](https://github.com/fullstack-pw/infra/issues/94)) ([2b9ae20](https://github.com/fullstack-pw/infra/commit/2b9ae20c701a5fd48f2b594f784b71dad22ecf95))
+* **talos:** create TF module ([#101](https://github.com/fullstack-pw/infra/issues/101)) ([70a781a](https://github.com/fullstack-pw/infra/commit/70a781a4b97275b3b83f196a5795951295ce71e9))
+* **teleport:** bootstrap VM and create TF module ([#102](https://github.com/fullstack-pw/infra/issues/102)) ([ef1bd17](https://github.com/fullstack-pw/infra/commit/ef1bd17d79ee628e86ff6a1d7f275ca0c55b06d8))
+* **teleport:** configure [ansible teleport] ([#103](https://github.com/fullstack-pw/infra/issues/103)) ([5959178](https://github.com/fullstack-pw/infra/commit/595917874dc25d7efbf766f03bff3ef61e3e0c71))
+* **teleport:** poc ([#104](https://github.com/fullstack-pw/infra/issues/104)) ([c6f2330](https://github.com/fullstack-pw/infra/commit/c6f233091c86c7b313f4c2010f46231efca88c51))
+* **teleport:** poc ([#105](https://github.com/fullstack-pw/infra/issues/105)) ([a551a39](https://github.com/fullstack-pw/infra/commit/a551a39a7891ecb61a2de9648074be0f88a454fb))
+* **teleport:** poc ([#106](https://github.com/fullstack-pw/infra/issues/106)) ([b56118e](https://github.com/fullstack-pw/infra/commit/b56118ea0e9aad6ba809c0cddfb669c7ad606460))
+* **teleport:** poc ([#107](https://github.com/fullstack-pw/infra/issues/107)) ([2935a92](https://github.com/fullstack-pw/infra/commit/2935a92dc4d851f06a13ade6737452d8b862b9db))
+
+### Bug Fixes
+
+* **cluster-api:** playbook ([06979eb](https://github.com/fullstack-pw/infra/commit/06979ebc5145c58e421d24ae5881675ccfea4cec))
+* **cluster-api:** playbook [ansible cluster-api] ([f8da8c8](https://github.com/fullstack-pw/infra/commit/f8da8c87f97b4bda7eb38b78474ed7ed4d02d44c))
+* **cluster-api:** playbook [ansible cluster-api] ([6946268](https://github.com/fullstack-pw/infra/commit/6946268e87149b01f0afaec6690f299b0f0af432))
+* **cluster-api:** playbook [ansible cluster-api] ([93fe7c8](https://github.com/fullstack-pw/infra/commit/93fe7c86e4bf39e4367de135bc33ac43689804e9))
+* **cluster-api:** playbook [ansible cluster-api] ([669ac85](https://github.com/fullstack-pw/infra/commit/669ac859f6586438ae2450f79fe3b0d908e9a720))
+* **cluster-api:** playbook [ansible cluster-api] ([63f9574](https://github.com/fullstack-pw/infra/commit/63f95744690ceebb492b4da4b5ea8e29c9b474fc))
+* **cluster-api:** playbook [ansible cluster-api] ([009b4d8](https://github.com/fullstack-pw/infra/commit/009b4d85f853e12fd6119c44c9633a1d8988582a))
+* **cluster-api:** playbook [ansible cluster-api] ([2d77830](https://github.com/fullstack-pw/infra/commit/2d77830e6776a43810a0c3ba94a69ee80e178681))
+* **cluster-api:** playbook [ansible cluster-api] ([84f69fe](https://github.com/fullstack-pw/infra/commit/84f69fe83aa49a8c57b9f95597ca1ce8a521031b))
+* **externaldns:** container args when we have istio ([f5d2f67](https://github.com/fullstack-pw/infra/commit/f5d2f6737cc2bdafef33b872fa83e8bf5aa610f1))
+* **prometheus:** OOM ([b08909a](https://github.com/fullstack-pw/infra/commit/b08909a08c23df15fdf1ee51006c4595f6d2b9c7))
+* **release:** remove PR restriction ([c1e4bb0](https://github.com/fullstack-pw/infra/commit/c1e4bb02f48206fbe37bf1ec7387282d0b60440a))
+* **teleport:** tls ([0545b4e](https://github.com/fullstack-pw/infra/commit/0545b4e487a21d634ccc32e615588f298d29ade5))
+
 ## [1.2.13](https://github.com/fullstack-pw/infra/compare/v1.2.12...v1.2.13) (2025-08-01)
 
 ### Tasks
