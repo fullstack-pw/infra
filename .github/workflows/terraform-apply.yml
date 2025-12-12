@@ -1,12 +1,13 @@
 name: Terraform
 
 on:
-  pull_request:
-    types: [closed]
+  # pull_request:
+  push:
+    # types: [closed]
     branches:
       - main
     paths:
-      - "proxmox/**"
+      # - "proxmox/**"
       - "clusters/**"
       - "secrets/**"
 
@@ -90,109 +91,109 @@ jobs:
               - 'clusters/**'
               - 'secrets/**'
 
-  apply-proxmox:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.proxmox == 'true'
-    runs-on: self-hosted
-    environment: terraform
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.RUNNER }}
-          fetch-depth: 0
+  # apply-proxmox:
+  #   needs: detect-changes
+  #   if: needs.detect-changes.outputs.proxmox == 'true'
+  #   runs-on: self-hosted
+  #   environment: terraform
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v4
+  #       with:
+  #         token: ${{ secrets.RUNNER }}
+  #         fetch-depth: 0
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: "20"
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.10.5
+  #     - name: Setup Terraform
+  #       uses: hashicorp/setup-terraform@v3
+  #       with:
+  #         terraform_version: 1.10.5
 
-      - name: Install jq
-        run: |
-          if ! command -v jq &> /dev/null; then
-            sudo apt-get update
-            sudo apt-get install -y jq
-          fi
+  #     - name: Install jq
+  #       run: |
+  #         if ! command -v jq &> /dev/null; then
+  #           sudo apt-get update
+  #           sudo apt-get install -y jq
+  #         fi
 
-      - name: Terraform Init
-        working-directory: ./proxmox
-        run: |
-          terraform init
+  #     - name: Terraform Init
+  #       working-directory: ./proxmox
+  #       run: |
+  #         terraform init
 
-      - name: Terraform Apply
-        working-directory: ./proxmox
-        id: apply
-        run: |
-          terraform apply -auto-approve
+  #     - name: Terraform Apply
+  #       working-directory: ./proxmox
+  #       id: apply
+  #       run: |
+  #         terraform apply -auto-approve
 
-      - name: Extract Ansible Playbook from Commit
-        if: steps.apply.outcome == 'success'
-        id: extract-playbook
-        run: |
-          COMMIT_MSG=$(git log -1 --pretty=format:"%s")
-          echo "Commit message: $COMMIT_MSG"
+  #     - name: Extract Ansible Playbook from Commit
+  #       if: steps.apply.outcome == 'success'
+  #       id: extract-playbook
+  #       run: |
+  #         COMMIT_MSG=$(git log -1 --pretty=format:"%s")
+  #         echo "Commit message: $COMMIT_MSG"
 
-          if [[ $COMMIT_MSG =~ \[ansible[[:space:]]+([^\]]+)\] ]]; then
-            PLAYBOOK="${BASH_REMATCH[1]}"
-            PLAYBOOK=$(echo $PLAYBOOK | xargs)
-            echo "Found playbook: $PLAYBOOK"
-            echo "ANSIBLE_PLAYBOOK=$PLAYBOOK" >> $GITHUB_ENV
-            echo "ANSIBLE_TAG=[ansible $PLAYBOOK]" >> $GITHUB_ENV
-          else
-            echo "No ansible command found in commit message"
-            echo "ANSIBLE_TAG=" >> $GITHUB_ENV
-          fi
+  #         if [[ $COMMIT_MSG =~ \[ansible[[:space:]]+([^\]]+)\] ]]; then
+  #           PLAYBOOK="${BASH_REMATCH[1]}"
+  #           PLAYBOOK=$(echo $PLAYBOOK | xargs)
+  #           echo "Found playbook: $PLAYBOOK"
+  #           echo "ANSIBLE_PLAYBOOK=$PLAYBOOK" >> $GITHUB_ENV
+  #           echo "ANSIBLE_TAG=[ansible $PLAYBOOK]" >> $GITHUB_ENV
+  #         else
+  #           echo "No ansible command found in commit message"
+  #           echo "ANSIBLE_TAG=" >> $GITHUB_ENV
+  #         fi
 
-      - name: Install Ansible for Inventory Validation
-        id: install-ansible
-        if: steps.apply.outcome == 'success'
-        run: |
-          python3 -m pip install --upgrade pip
-          pip install ansible
+  #     - name: Install Ansible for Inventory Validation
+  #       id: install-ansible
+  #       if: steps.apply.outcome == 'success'
+  #       run: |
+  #         python3 -m pip install --upgrade pip
+  #         pip install ansible
 
-      - name: Update Ansible Inventory
-        id: update-ansible-inventory
-        if: steps.install-ansible.outcome == 'success'
-        run: |
-          chmod +x proxmox/update-inventory.sh
-          ./proxmox/update-inventory.sh || echo "Warning: Inventory update script encountered issues but workflow will continue"
-          touch proxmox/new_hosts.txt
+  #     - name: Update Ansible Inventory
+  #       id: update-ansible-inventory
+  #       if: steps.install-ansible.outcome == 'success'
+  #       run: |
+  #         chmod +x proxmox/update-inventory.sh
+  #         ./proxmox/update-inventory.sh || echo "Warning: Inventory update script encountered issues but workflow will continue"
+  #         touch proxmox/new_hosts.txt
 
-      - name: Commit and Push Changes
-        if: steps.update-ansible-inventory.outcome == 'success'
-        id: commit-changes
-        run: |
-          OWNER_REPO="${GITHUB_REPOSITORY}"
-          OWNER=$(echo $OWNER_REPO | cut -d '/' -f 1)
-          REPO=$(echo $OWNER_REPO | cut -d '/' -f 2)
+  #     - name: Commit and Push Changes
+  #       if: steps.update-ansible-inventory.outcome == 'success'
+  #       id: commit-changes
+  #       run: |
+  #         OWNER_REPO="${GITHUB_REPOSITORY}"
+  #         OWNER=$(echo $OWNER_REPO | cut -d '/' -f 1)
+  #         REPO=$(echo $OWNER_REPO | cut -d '/' -f 2)
 
-          git config --local user.email "actions@github.com"
-          git config --local user.name "GitHub Actions"
-          git pull
-          git add proxmox/k8s.ini proxmox/new_hosts.txt || true
+  #         git config --local user.email "actions@github.com"
+  #         git config --local user.name "GitHub Actions"
+  #         git pull
+  #         git add proxmox/k8s.ini proxmox/new_hosts.txt || true
 
-          # Check if there are changes to commit
-          if git diff --quiet && git diff --staged --quiet; then
-            echo "No changes to commit"
-            echo "changes_made=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
+  #         # Check if there are changes to commit
+  #         if git diff --quiet && git diff --staged --quiet; then
+  #           echo "No changes to commit"
+  #           echo "changes_made=false" >> $GITHUB_OUTPUT
+  #           exit 0
+  #         fi
 
-          if [ -n "$ANSIBLE_TAG" ]; then
-            COMMIT_MSG="Auto-update Ansible inventory $ANSIBLE_TAG"
-          else
-            COMMIT_MSG="Auto-update Ansible inventory"
-          fi
+  #         if [ -n "$ANSIBLE_TAG" ]; then
+  #           COMMIT_MSG="Auto-update Ansible inventory $ANSIBLE_TAG"
+  #         else
+  #           COMMIT_MSG="Auto-update Ansible inventory"
+  #         fi
 
-          echo "git commit with message: $COMMIT_MSG"
-          git commit -m "$COMMIT_MSG"
-          git push
+  #         echo "git commit with message: $COMMIT_MSG"
+  #         git commit -m "$COMMIT_MSG"
+  #         git push
 
-          echo "changes_made=true" >> $GITHUB_OUTPUT
+  #         echo "changes_made=true" >> $GITHUB_OUTPUT
 
   apply-clusters:
     needs: detect-changes

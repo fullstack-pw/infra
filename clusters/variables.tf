@@ -114,32 +114,6 @@ variable "config" {
         databases = {}
         roles     = "kube,app"
       }
-      # proxmox-talos-cluster = [
-      #   {
-      #     name                      = "testing-cluster"
-      #     kubernetes_version        = "v1.33.0"
-      #     control_plane_endpoint_ip = "192.168.1.50"
-      #     ip_range_start            = "192.168.1.51"
-      #     ip_range_end              = "192.168.1.60"
-      #     gateway                   = "192.168.1.1"
-      #     prefix                    = 24
-      #     dns_servers               = ["192.168.1.3", "8.8.4.4"]
-
-      #     source_node   = "node03"
-      #     template_id   = 103
-      #     allowed_nodes = ["node03"]
-
-      #     cp_replicas = 1
-      #     wk_replicas = 2
-
-      #     cp_disk_size = 20
-      #     cp_memory    = 2048
-      #     cp_cores     = 2
-      #     wk_disk_size = 30
-      #     wk_memory    = 4096
-      #     wk_cores     = 2
-      #   },
-      # ]
       prometheus_namespaces = [
         "cluster1",
         "cluster2",
@@ -170,37 +144,109 @@ variable "config" {
         databases = {}
         roles     = "kube,app"
       }
-      proxmox-kubeadm-cluster = [
+      proxmox-talos-cluster = [
         {
-          name                      = "kubeadm-test-cluster"
-          kubernetes_version        = "v1.31.4"
-          control_plane_endpoint_ip = "192.168.1.70"
-          ip_range_start            = "192.168.1.71"
-          ip_range_end              = "192.168.1.79"
+          name                      = "dev"
+          kubernetes_version        = "v1.33.0"
+          control_plane_endpoint_ip = "192.168.1.50"
+          ip_range_start            = "192.168.1.51"
+          ip_range_end              = "192.168.1.53"
           gateway                   = "192.168.1.1"
           prefix                    = 24
           dns_servers               = ["192.168.1.3", "8.8.4.4"]
-          pod_cidr                  = "10.244.0.0/16"
-          service_cidr              = "10.96.0.0/12"
-
-          cni_type         = "calico"
-          cni_manifest_url = "https://raw.githubusercontent.com/projectcalico/calico/v3.29.1/manifests/calico.yaml"
 
           source_node   = "node03"
-          template_id   = 9004
+          template_id   = 103
           allowed_nodes = ["node03"]
 
-          cp_replicas  = 3
-          cp_disk_size = 30
-          cp_memory    = 4096
-          cp_cores     = 2
+          cp_replicas = 1
+          wk_replicas = 2
 
-          wk_replicas  = 3
+          cp_disk_size = 20
+          cp_memory    = 2048
+          cp_cores     = 2
           wk_disk_size = 30
-          wk_memory    = 8192
-          wk_cores     = 4
+          wk_memory    = 4096
+          wk_cores     = 2
+          }, {
+          name                      = "stg"
+          kubernetes_version        = "v1.33.0"
+          control_plane_endpoint_ip = "192.168.1.54"
+          ip_range_start            = "192.168.1.55"
+          ip_range_end              = "192.168.1.57"
+          gateway                   = "192.168.1.1"
+          prefix                    = 24
+          dns_servers               = ["192.168.1.3", "8.8.4.4"]
+
+          source_node   = "node03"
+          template_id   = 103
+          allowed_nodes = ["node03"]
+
+          cp_replicas = 1
+          wk_replicas = 2
+
+          cp_disk_size = 20
+          cp_memory    = 2048
+          cp_cores     = 2
+          wk_disk_size = 30
+          wk_memory    = 4096
+          wk_cores     = 2
+          }, {
+          name                      = "prd"
+          kubernetes_version        = "v1.33.0"
+          control_plane_endpoint_ip = "192.168.1.58"
+          ip_range_start            = "192.168.1.59"
+          ip_range_end              = "192.168.1.61"
+          gateway                   = "192.168.1.1"
+          prefix                    = 24
+          dns_servers               = ["192.168.1.3", "8.8.4.4"]
+
+          source_node   = "node03"
+          template_id   = 103
+          allowed_nodes = ["node03"]
+
+          cp_replicas = 1
+          wk_replicas = 2
+
+          cp_disk_size = 20
+          cp_memory    = 2048
+          cp_cores     = 2
+          wk_disk_size = 30
+          wk_memory    = 4096
+          wk_cores     = 2
         },
       ]
+      # proxmox-kubeadm-cluster = [
+      #   {
+      #     name                      = "kubeadm-test-cluster"
+      #     kubernetes_version        = "v1.31.4"
+      #     control_plane_endpoint_ip = "192.168.1.70"
+      #     ip_range_start            = "192.168.1.71"
+      #     ip_range_end              = "192.168.1.79"
+      #     gateway                   = "192.168.1.1"
+      #     prefix                    = 24
+      #     dns_servers               = ["192.168.1.3", "8.8.4.4"]
+      #     pod_cidr                  = "10.244.0.0/16"
+      #     service_cidr              = "10.96.0.0/12"
+
+      #     cni_type         = "calico"
+      #     cni_manifest_url = "https://raw.githubusercontent.com/projectcalico/calico/v3.29.1/manifests/calico.yaml"
+
+      #     source_node   = "node03"
+      #     template_id   = 9004
+      #     allowed_nodes = ["node03"]
+
+      #     cp_replicas  = 3
+      #     cp_disk_size = 30
+      #     cp_memory    = 4096
+      #     cp_cores     = 2
+
+      #     wk_replicas  = 3
+      #     wk_disk_size = 30
+      #     wk_memory    = 8192
+      #     wk_cores     = 4
+      #   },
+      # ]
       prometheus_namespaces = []
     }
     observability = {
