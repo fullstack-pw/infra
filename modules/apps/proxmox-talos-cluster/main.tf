@@ -11,9 +11,9 @@ module "namespace" {
   source = "../../base/namespace"
 
   create = true
-  name   = var.namespace
+  name   = each.value.name
   labels = {
-    "kubernetes.io/metadata.name" = var.namespace
+    "kubernetes.io/metadata.name" = each.value.name
   }
   needs_secrets = true
 }
