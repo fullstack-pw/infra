@@ -40,6 +40,11 @@ Kubernetes Management:
   make k8s-init                 - Initialize all Kubernetes clusters with k3s
   make setup-pxe                - Set up PXE boot server for k8s nodes
 
+Talos Cluster Management:
+  make update-kubeconfigs         - Update all Talos cluster kubeconfigs in Vault
+  make update-kubeconfigs ENV=<env> - Update kubeconfigs for specific environment
+  make test-kubeconfig-update     - Test kubeconfig update with dry-run mode
+
 Environment Management:
   make init                     - Initialize Terraform for all environments
   make fmt                      - Format Terraform files
@@ -282,3 +287,52 @@ install-crypto-tools: install-sops install-age
 	@echo "Setting up SOPS environment variables..."
 	@echo "SOPS_AGE_KEY_FILE=/home/runner/.sops/keys/sops-key.txt" >> $(if $(GITHUB_ENV),$(GITHUB_ENV),${HOME}/.bashrc)
 	@echo "Crypto tools installation and setup complete."
+
+# Update Talos cluster kubeconfigs in Vault
+.PHONY: update-kubeconfigs
+update-kubeconfigs:
+	@echo -e "${CYAN}Updating Talos cluster kubeconfigs in Vault...${NC}"
+	@if [ -z "$(ENV)" ]; then \
+		echo -e "${CYAN}Processing all environments with Talos clusters...${NC}"; \
+		for env in $(ENVIRONMENTS); do \
+			cd $(TERRAFORM_DIR) && terraform workspace select $${env}; \
+			CLUSTERS=$$(terraform output -json proxmox_talos_cluster_names 2>/dev/null | jq -r '.[]' || echo ""); \
+			if [ -n "$$CLUSTERS" ]; then \
+				echo -e "${GREEN}Found Talos clusters in $${env}: $$CLUSTERS${NC}"; \
+				for cluster in $$CLUSTERS; do \
+					python3 scripts/update_talos_kubeconfig.py \
+						--cluster-name $$cluster \
+						--namespace clusters \
+						--vault-path kv/cluster-secret-store/secrets \
+						--vault-addr $(VAULT_ADDR) \
+						--management-context $${env}; \
+				done; \
+			fi; \
+			cd ..; \
+		done; \
+	else \
+		echo -e "${CYAN}Updating kubeconfigs for $(ENV) environment...${NC}"; \
+		cd $(TERRAFORM_DIR) && terraform workspace select $(ENV); \
+		CLUSTERS=$$(terraform output -json proxmox_talos_cluster_names | jq -r '.[]'); \
+		for cluster in $$CLUSTERS; do \
+			python3 scripts/update_talos_kubeconfig.py \
+				--cluster-name $$cluster \
+				--namespace clusters \
+				--vault-path kv/cluster-secret-store/secrets \
+				--vault-addr $(VAULT_ADDR) \
+				--management-context $(ENV); \
+		done; \
+	fi
+
+# Test kubeconfig update with dry-run
+.PHONY: test-kubeconfig-update
+test-kubeconfig-update:
+	@echo -e "${CYAN}Testing kubeconfig update (dry-run mode)...${NC}"
+	@cd $(TERRAFORM_DIR) && python3 scripts/update_talos_kubeconfig.py \
+		--cluster-name dev \
+		--namespace clusters \
+		--vault-path kv/cluster-secret-store/secrets \
+		--vault-addr $(VAULT_ADDR) \
+		--management-context tools \
+		--dry-run \
+		--debug

@@ -213,14 +213,155 @@ jobs:
         with:
           terraform_version: 1.10.5
 
+      - name: Check if triggered by PR merge
+        id: pr_check
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            # Check if this push came from a PR merge
+            COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+            PR_NUMBER=$(echo "$COMMIT_MESSAGE" | grep -oP 'Merge pull request #\K\d+' || echo "")
+
+            if [ -n "$PR_NUMBER" ]; then
+              echo "pr_merged=true" >> $GITHUB_OUTPUT
+              echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+            else
+              echo "pr_merged=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "pr_merged=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Terraform Init
         run: |
           make init
+
+      - name: Capture Terraform Outputs Before Apply
+        id: outputs_before
+        run: |
+          cd clusters
+          mkdir -p /tmp/terraform-outputs
+
+          for workspace in sandboxy tools observability; do
+            terraform workspace select $workspace
+
+            if terraform output -json proxmox_talos_cluster_names 2>/dev/null | jq -e '. | length > 0' > /dev/null 2>&1; then
+              terraform output -json proxmox_talos_cluster_names > /tmp/terraform-outputs/${workspace}_clusters_before.json
+              echo "Captured outputs for workspace: $workspace"
+            else
+              echo "[]" > /tmp/terraform-outputs/${workspace}_clusters_before.json
+            fi
+          done
 
       - name: Terraform Apply
         id: apply
         run: |
           make apply
+
+      - name: Capture Terraform Outputs After Apply
+        id: outputs_after
+        if: steps.apply.outcome == 'success'
+        run: |
+          cd clusters
+
+          for workspace in sandboxy tools observability; do
+            terraform workspace select $workspace
+
+            if terraform output -json proxmox_talos_cluster_names 2>/dev/null | jq -e '. | length > 0' > /dev/null 2>&1; then
+              terraform output -json proxmox_talos_cluster_names > /tmp/terraform-outputs/${workspace}_clusters_after.json
+            else
+              echo "[]" > /tmp/terraform-outputs/${workspace}_clusters_after.json
+            fi
+          done
+
+      - name: Detect Cluster Changes
+        id: detect_changes
+        if: steps.apply.outcome == 'success'
+        run: |
+          cd /tmp/terraform-outputs
+          CHANGES_DETECTED=false
+          CHANGED_WORKSPACES=""
+
+          for workspace in sandboxy tools observability; do
+            BEFORE=$(cat ${workspace}_clusters_before.json)
+            AFTER=$(cat ${workspace}_clusters_after.json)
+
+            if [ "$BEFORE" != "$AFTER" ]; then
+              echo "Changes detected in workspace: $workspace"
+              echo "Before: $BEFORE"
+              echo "After: $AFTER"
+              CHANGES_DETECTED=true
+              CHANGED_WORKSPACES="$CHANGED_WORKSPACES $workspace"
+            fi
+          done
+
+          echo "changes_detected=$CHANGES_DETECTED" >> $GITHUB_OUTPUT
+          echo "changed_workspaces=$CHANGED_WORKSPACES" >> $GITHUB_OUTPUT
+
+      - name: Update Kubeconfigs in Vault
+        if: steps.detect_changes.outputs.changes_detected == 'true'
+        continue-on-error: true
+        id: kubeconfig_update
+        env:
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+          VAULT_ADDR: https://vault.fullstack.pw
+        run: |
+          cd clusters
+
+          # Install dependencies
+          pip3 install pyyaml hvac
+
+          # Process each changed workspace
+          for workspace in ${{ steps.detect_changes.outputs.changed_workspaces }}; do
+            echo "Processing kubeconfigs for workspace: $workspace"
+
+            terraform workspace select $workspace
+
+            # Get cluster names from outputs
+            CLUSTER_NAMES=$(terraform output -json proxmox_talos_cluster_names 2>/dev/null | jq -r '.[]' || echo "")
+
+            if [ -z "$CLUSTER_NAMES" ]; then
+              echo "No clusters found in workspace $workspace"
+              continue
+            fi
+
+            # Determine management context for this workspace
+            MGMT_CONTEXT="$workspace"
+
+            # Run the update script for each cluster
+            for cluster_name in $CLUSTER_NAMES; do
+              echo "Updating kubeconfig for cluster: $cluster_name"
+              python3 scripts/update_talos_kubeconfig.py \
+                --cluster-name "$cluster_name" \
+                --namespace "clusters" \
+                --vault-path "kv/cluster-secret-store/secrets" \
+                --vault-addr "$VAULT_ADDR" \
+                --management-context "$MGMT_CONTEXT" \
+                || echo "Warning: Failed to update kubeconfig for $cluster_name"
+            done
+          done
+
+      - name: Report Kubeconfig Update Failure
+        if: steps.pr_check.outputs.pr_merged == 'true' && steps.kubeconfig_update.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: ${{ steps.pr_check.outputs.pr_number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ⚠️ Warning: Kubeconfig Update Failed
+
+              Terraform apply succeeded but kubeconfig synchronization to Vault failed.
+
+              **Manual action required:**
+              \`\`\`bash
+              make update-kubeconfigs
+              \`\`\`
+
+              Check [workflow logs](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.
+              `
+            })
 
       - name: Add Apply Comment
         uses: actions/github-script@v7
@@ -228,17 +369,17 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             github.rest.issues.createComment({
-              issue_number: context.issue.number,
+              issue_number: ${{ steps.pr_check.outputs.pr_number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `## Clusters Terraform Apply
-              
+
               ✅ Successfully applied Terraform changes to Kubernetes clusters.
-              
+
               Apply completed at: ${new Date().toISOString()}
               `
             })
-        if: steps.apply.outcome == 'success'
+        if: steps.pr_check.outputs.pr_merged == 'true' && steps.apply.outcome == 'success'
 
       - name: Add Apply Error Comment
         uses: actions/github-script@v7
@@ -246,14 +387,14 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             github.rest.issues.createComment({
-              issue_number: context.issue.number,
+              issue_number: ${{ steps.pr_check.outputs.pr_number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `## Clusters Terraform Apply Failed
-              
+
               ❌ Failed to apply Terraform changes to Kubernetes clusters.
-              
+
               Please check the workflow logs for more details.
               `
             })
-        if: steps.apply.outcome != 'success'
+        if: steps.pr_check.outputs.pr_merged == 'true' && steps.apply.outcome != 'success'
