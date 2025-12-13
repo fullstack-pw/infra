@@ -1,3 +1,9 @@
+## [1.4.4](https://github.com/fullstack-pw/infra/compare/v1.4.3...v1.4.4) (2025-12-13)
+
+### Bug Fixes
+
+* **modules/apps/proxmox-talos-cluster:** unique namespace for each cluster ([bd38bf4](https://github.com/fullstack-pw/infra/commit/bd38bf45c5c2270c02797b402ba3368e3c256016))
+
 ## [1.4.3](https://github.com/fullstack-pw/infra/compare/v1.4.2...v1.4.3) (2025-12-12)
 
 ### Bug Fixes
