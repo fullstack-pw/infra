@@ -288,11 +288,20 @@ install-crypto-tools: install-sops install-age
 	@echo "SOPS_AGE_KEY_FILE=/home/runner/.sops/keys/sops-key.txt" >> $(if $(GITHUB_ENV),$(GITHUB_ENV),${HOME}/.bashrc)
 	@echo "Crypto tools installation and setup complete."
 
+# Build kubeconfig management tool
+.PHONY: build-kubeconfig-tool
+build-kubeconfig-tool:
+	@echo -e "${CYAN}Building cicd-update-kubeconfig binary...${NC}"
+	@cd cicd-update-kubeconfig && go build -o ../cicd-update-kubeconfig ./cmd/cicd-update-kubeconfig
+	@chmod +x cicd-update-kubeconfig
+	@echo -e "${GREEN}Binary built: cicd-update-kubeconfig${NC}"
+
 # Update Talos cluster kubeconfigs in Vault
 .PHONY: update-kubeconfigs
-update-kubeconfigs:
+update-kubeconfigs: build-kubeconfig-tool
 	@echo -e "${CYAN}Updating Talos cluster kubeconfigs in Vault...${NC}"
-	@if [ -z "$(ENV)" ]; then \
+	@export KUBECONFIG=$${KUBECONFIG:-$$HOME/.kube/config}; \
+	if [ -z "$(ENV)" ]; then \
 		echo -e "${CYAN}Processing all environments with Talos clusters...${NC}"; \
 		for env in $(ENVIRONMENTS); do \
 			cd $(TERRAFORM_DIR) && terraform workspace select $${env}; \
@@ -300,7 +309,7 @@ update-kubeconfigs:
 			if [ -n "$$CLUSTERS" ]; then \
 				echo -e "${GREEN}Found Talos clusters in $${env}: $$CLUSTERS${NC}"; \
 				for cluster in $$CLUSTERS; do \
-					python3 scripts/update_talos_kubeconfig.py \
+					KUBECONFIG=$$KUBECONFIG ../cicd-update-kubeconfig \
 						--cluster-name $$cluster \
 						--namespace $$cluster \
 						--vault-path kv/cluster-secret-store/secrets \
@@ -315,7 +324,7 @@ update-kubeconfigs:
 		cd $(TERRAFORM_DIR) && terraform workspace select $(ENV); \
 		CLUSTERS=$$(terraform output -json proxmox_talos_cluster_names | jq -r '.[]'); \
 		for cluster in $$CLUSTERS; do \
-			python3 scripts/update_talos_kubeconfig.py \
+			KUBECONFIG=$$KUBECONFIG ../cicd-update-kubeconfig \
 				--cluster-name $$cluster \
 				--namespace $$cluster \
 				--vault-path kv/cluster-secret-store/secrets \
@@ -328,7 +337,8 @@ update-kubeconfigs:
 .PHONY: test-kubeconfig-update
 test-kubeconfig-update:
 	@echo -e "${CYAN}Testing kubeconfig update (dry-run mode)...${NC}"
-	@cd $(TERRAFORM_DIR) && python3 scripts/update_talos_kubeconfig.py \
+	@PYTHON_BIN=$$(if [ -f "python-venv/bin/python3" ]; then echo "$$(pwd)/python-venv/bin/python3"; else echo "python3"; fi); \
+	cd $(TERRAFORM_DIR) && $$PYTHON_BIN scripts/update_talos_kubeconfig.py \
 		--cluster-name dev \
 		--namespace dev \
 		--vault-path kv/cluster-secret-store/secrets \

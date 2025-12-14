@@ -297,46 +297,59 @@ jobs:
           echo "changes_detected=$CHANGES_DETECTED" >> $GITHUB_OUTPUT
           echo "changed_workspaces=$CHANGED_WORKSPACES" >> $GITHUB_OUTPUT
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build kubeconfig manager
+        run: |
+          cd cicd-update-kubeconfig
+          go build -o ../cicd-update-kubeconfig ./cmd/cicd-update-kubeconfig
+          chmod +x ../cicd-update-kubeconfig
+
       - name: Update Kubeconfigs in Vault
-        if: steps.detect_changes.outputs.changes_detected == 'true'
+        if: steps.apply.outcome == 'success'
         continue-on-error: true
         id: kubeconfig_update
         env:
           VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
           VAULT_ADDR: https://vault.fullstack.pw
         run: |
-          cd clusters
+          cd /tmp/terraform-outputs
 
-          # Install dependencies
-          pip3 install pyyaml hvac
+          # Process changes for each workspace
+          for workspace in sandboxy tools observability; do
+            echo "Processing workspace: $workspace"
 
-          # Process each changed workspace
-          for workspace in ${{ steps.detect_changes.outputs.changed_workspaces }}; do
-            echo "Processing kubeconfigs for workspace: $workspace"
+            BEFORE=$(cat ${workspace}_clusters_before.json | jq -r '.[]' 2>/dev/null || echo "")
+            AFTER=$(cat ${workspace}_clusters_after.json | jq -r '.[]' 2>/dev/null || echo "")
 
-            terraform workspace select $workspace
-
-            # Get cluster names from outputs
-            CLUSTER_NAMES=$(terraform output -json proxmox_talos_cluster_names 2>/dev/null | jq -r '.[]' || echo "")
-
-            if [ -z "$CLUSTER_NAMES" ]; then
-              echo "No clusters found in workspace $workspace"
-              continue
-            fi
-
-            # Determine management context for this workspace
-            MGMT_CONTEXT="$workspace"
-
-            # Run the update script for each cluster
-            for cluster_name in $CLUSTER_NAMES; do
-              echo "Updating kubeconfig for cluster: $cluster_name"
-              python3 scripts/update_talos_kubeconfig.py \
-                --cluster-name "$cluster_name" \
-                --namespace "$cluster_name" \
+            # Handle CREATE/UPDATE
+            for cluster in $AFTER; do
+              echo "Upserting kubeconfig for: $cluster"
+              /home/pedro/repos/infra/cicd-update-kubeconfig \
+                --cluster-name "$cluster" \
+                --namespace "$cluster" \
                 --vault-path "kv/cluster-secret-store/secrets" \
                 --vault-addr "$VAULT_ADDR" \
-                --management-context "$MGMT_CONTEXT" \
-                || echo "Warning: Failed to update kubeconfig for $cluster_name"
+                --management-context "$workspace" \
+                --operation upsert || echo "Warning: Failed to upsert kubeconfig for $cluster"
+            done
+
+            # Handle DELETE
+            for cluster in $BEFORE; do
+              if ! echo "$AFTER" | grep -q "^${cluster}$"; then
+                echo "Deleting kubeconfig for: $cluster"
+                /home/pedro/repos/infra/cicd-update-kubeconfig \
+                  --cluster-name "$cluster" \
+                  --namespace "$cluster" \
+                  --vault-path "kv/cluster-secret-store/secrets" \
+                  --vault-addr "$VAULT_ADDR" \
+                  --management-context "$workspace" \
+                  --operation delete \
+                  --skip-readiness-check || echo "Warning: Failed to delete kubeconfig for $cluster"
+              fi
             done
           done
 
