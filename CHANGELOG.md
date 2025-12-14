@@ -1,3 +1,9 @@
+## [1.4.5](https://github.com/fullstack-pw/infra/compare/v1.4.4...v1.4.5) (2025-12-14)
+
+### Tasks
+
+* **kubeconfig:** manage kubeconfig properly ([5283f19](https://github.com/fullstack-pw/infra/commit/5283f19fd7a62b6ddc99b8b612b605329c6550b2))
+
 ## [1.4.4](https://github.com/fullstack-pw/infra/compare/v1.4.3...v1.4.4) (2025-12-13)
 
 ### Bug Fixes
