@@ -1,3 +1,9 @@
+## [1.4.8](https://github.com/fullstack-pw/infra/compare/v1.4.7...v1.4.8) (2025-12-15)
+
+### Bug Fixes
+
+* **workflow:** use correct path for cicd-update-kubeconfig binary in CI/CD ([0efd0ce](https://github.com/fullstack-pw/infra/commit/0efd0ce2ef4980b8b0323657b94494fc0f4b6616))
+
 ## [1.4.7](https://github.com/fullstack-pw/infra/compare/v1.4.6...v1.4.7) (2025-12-15)
 
 ### Bug Fixes
