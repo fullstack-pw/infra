@@ -1,3 +1,9 @@
+## [1.4.6](https://github.com/fullstack-pw/infra/compare/v1.4.5...v1.4.6) (2025-12-15)
+
+### Bug Fixes
+
+* **cicd-update-kubeconfig:** add missing cmd/main.go entry point ([8d5c00e](https://github.com/fullstack-pw/infra/commit/8d5c00e594535b1e8c2f95cabf409477f0cb9552))
+
 ## [1.4.5](https://github.com/fullstack-pw/infra/compare/v1.4.4...v1.4.5) (2025-12-14)
 
 ### Tasks
