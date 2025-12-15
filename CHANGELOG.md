@@ -1,3 +1,9 @@
+## [1.4.7](https://github.com/fullstack-pw/infra/compare/v1.4.6...v1.4.7) (2025-12-15)
+
+### Bug Fixes
+
+* **cicd-update-kubeconfig:** validate exec ([edd3a69](https://github.com/fullstack-pw/infra/commit/edd3a697f512793c2b2442cc2fd3526c17399e06))
+
 ## [1.4.6](https://github.com/fullstack-pw/infra/compare/v1.4.5...v1.4.6) (2025-12-15)
 
 ### Bug Fixes
