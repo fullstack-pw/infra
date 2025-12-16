@@ -78,11 +78,11 @@ func run(ctx context.Context, opts Options) error {
 	// Setup logger
 	log := logger.New(opts.Debug)
 
-	// Validate VAULT_TOKEN
-	vaultToken := os.Getenv("VAULT_TOKEN")
+	// Validate TF_VAR_VAULT_TOKEN
+	vaultToken := os.Getenv("TF_VAR_VAULT_TOKEN")
 	if vaultToken == "" {
-		log.Error("VAULT_TOKEN environment variable is required")
-		return fmt.Errorf("VAULT_TOKEN not set")
+		log.Error("TF_VAR_VAULT_TOKEN environment variable is required")
+		return fmt.Errorf("TF_VAR_VAULT_TOKEN not set")
 	}
 
 	// Override operation from env if set
