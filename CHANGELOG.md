@@ -1,3 +1,9 @@
+## [1.4.11](https://github.com/fullstack-pw/infra/compare/v1.4.10...v1.4.11) (2025-12-16)
+
+### Bug Fixes
+
+* **cicd-update-kubeconfig:** vault env name ([f110373](https://github.com/fullstack-pw/infra/commit/f110373172831e75a95b0cd86ac7c64696bb01a3))
+
 ## [1.4.10](https://github.com/fullstack-pw/infra/compare/v1.4.9...v1.4.10) (2025-12-16)
 
 ### Bug Fixes
