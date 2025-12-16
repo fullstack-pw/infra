@@ -216,7 +216,7 @@ variable "config" {
           wk_cores     = 2
         },
       ]
-      ##
+      #
       # proxmox-kubeadm-cluster = [
       #   {
       #     name                      = "kubeadm-test-cluster"
