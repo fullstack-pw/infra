@@ -1,3 +1,9 @@
+## [1.4.12](https://github.com/fullstack-pw/infra/compare/v1.4.11...v1.4.12) (2025-12-16)
+
+### Bug Fixes
+
+* **cicd-update-kubeconfig:** kubeconfig file ([741bb57](https://github.com/fullstack-pw/infra/commit/741bb57b4d92501882349d45b39f6dbd23871ae0))
+
 ## [1.4.11](https://github.com/fullstack-pw/infra/compare/v1.4.10...v1.4.11) (2025-12-16)
 
 ### Bug Fixes
