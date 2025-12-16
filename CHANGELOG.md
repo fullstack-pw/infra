@@ -1,3 +1,9 @@
+## [1.4.10](https://github.com/fullstack-pw/infra/compare/v1.4.9...v1.4.10) (2025-12-16)
+
+### Bug Fixes
+
+* **workflow:** rename binary to avoid directory name conflict ([16454cd](https://github.com/fullstack-pw/infra/commit/16454cdffcf580a38ed03dd8b493b2715137410d))
+
 ## [1.4.9](https://github.com/fullstack-pw/infra/compare/v1.4.8...v1.4.9) (2025-12-15)
 
 ### Bug Fixes
