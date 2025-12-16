@@ -321,6 +321,14 @@ jobs:
         run: |
           cd /tmp/terraform-outputs
 
+          # Set up kubeconfig from Vault
+          export KUBECONFIG_FILE=$(mktemp)
+          vault kv get -mount=kv -field=KUBECONFIG cluster-secret-store/secrets > "$KUBECONFIG_FILE" || {
+            echo "Warning: Could not retrieve KUBECONFIG from Vault, creating empty config"
+            touch "$KUBECONFIG_FILE"
+          }
+          export KUBECONFIG="$KUBECONFIG_FILE"
+
           # Process changes for each workspace
           for workspace in sandboxy tools observability; do
             echo "Processing workspace: $workspace"
@@ -355,6 +363,9 @@ jobs:
               fi
             done
           done
+
+          # Clean up
+          rm -f "$KUBECONFIG_FILE"
 
       - name: Report Kubeconfig Update Failure
         if: steps.pr_check.outputs.pr_merged == 'true' && steps.kubeconfig_update.outcome == 'failure'

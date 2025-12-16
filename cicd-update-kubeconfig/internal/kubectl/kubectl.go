@@ -34,7 +34,8 @@ func (c *Client) ListContexts(ctx context.Context) ([]string, error) {
 	cmd := exec.CommandContext(ctx, "kubectl", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("kubectl get-contexts failed: %w: %s", err, output)
+		// Don't include output in error as it may contain sensitive kubeconfig data
+		return nil, fmt.Errorf("kubectl get-contexts failed: %w", err)
 	}
 
 	contexts := strings.Split(strings.TrimSpace(string(output)), "\n")
@@ -49,9 +50,10 @@ func (c *Client) SetContext(ctx context.Context, contextName string) error {
 	}
 
 	cmd := exec.CommandContext(ctx, "kubectl", args...)
-	output, err := cmd.CombinedOutput()
+	_, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("kubectl use-context failed: %w: %s", err, output)
+		// Don't include output in error as it may contain sensitive kubeconfig data
+		return fmt.Errorf("kubectl use-context failed: %w", err)
 	}
 
 	return nil
@@ -88,10 +90,11 @@ func (c *Client) ExtractKubeconfig(ctx context.Context, clusterName, namespace s
 		}
 		if strings.Contains(stderrStr, "connection refused") || strings.Contains(stderrStr, "Unable to connect") {
 			return "", &KubectlConnectionError{
-				Msg: fmt.Sprintf("cannot connect to management cluster: %s", stderrStr),
+				Msg: "cannot connect to management cluster",
 			}
 		}
-		return "", fmt.Errorf("kubectl get secret failed: %w: %s", err, stderrStr)
+		// Don't include stderr in error as it may contain sensitive data
+		return "", fmt.Errorf("kubectl get secret failed: %w", err)
 	}
 
 	kubeconfigB64 := stdout.String()
@@ -122,7 +125,8 @@ func (c *Client) GetClusterPhase(ctx context.Context, clusterName, namespace str
 	cmd := exec.CommandContext(ctx, "kubectl", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("kubectl get cluster failed: %w: %s", err, output)
+		// Don't include output in error as it may contain sensitive data
+		return "", fmt.Errorf("kubectl get cluster failed: %w", err)
 	}
 
 	return strings.TrimSpace(string(output)), nil
