@@ -305,10 +305,10 @@ jobs:
       - name: Build kubeconfig manager
         run: |
           cd cicd-update-kubeconfig
-          go build -o cicd-update-kubeconfig ./cmd/cicd-update-kubeconfig
-          chmod +x cicd-update-kubeconfig
+          go build -o kubeconfig-manager ./cmd/cicd-update-kubeconfig
+          chmod +x kubeconfig-manager
           # Move binary to repo root for easy access
-          mv cicd-update-kubeconfig ../
+          mv kubeconfig-manager ../cicd-update-kubeconfig-bin
           cd ..
 
       - name: Update Kubeconfigs in Vault
@@ -331,7 +331,7 @@ jobs:
             # Handle CREATE/UPDATE
             for cluster in $AFTER; do
               echo "Upserting kubeconfig for: $cluster"
-              "${GITHUB_WORKSPACE}/cicd-update-kubeconfig" \
+              "${GITHUB_WORKSPACE}/cicd-update-kubeconfig-bin" \
                 --cluster-name "$cluster" \
                 --namespace "$cluster" \
                 --vault-path "kv/cluster-secret-store/secrets" \
@@ -344,7 +344,7 @@ jobs:
             for cluster in $BEFORE; do
               if ! echo "$AFTER" | grep -q "^${cluster}$"; then
                 echo "Deleting kubeconfig for: $cluster"
-                "${GITHUB_WORKSPACE}/cicd-update-kubeconfig" \
+                "${GITHUB_WORKSPACE}/cicd-update-kubeconfig-bin" \
                   --cluster-name "$cluster" \
                   --namespace "$cluster" \
                   --vault-path "kv/cluster-secret-store/secrets" \
