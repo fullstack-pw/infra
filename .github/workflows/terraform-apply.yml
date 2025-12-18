@@ -254,6 +254,7 @@ jobs:
 
       - name: Terraform Apply
         id: apply
+        timeout-minutes: 30
         run: |
           make apply
 
@@ -316,18 +317,9 @@ jobs:
         continue-on-error: true
         id: kubeconfig_update
         env:
-          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
           VAULT_ADDR: https://vault.fullstack.pw
         run: |
           cd /tmp/terraform-outputs
-
-          # Set up kubeconfig from Vault
-          export KUBECONFIG_FILE=$(mktemp)
-          vault kv get -mount=kv -field=KUBECONFIG cluster-secret-store/secrets > "$KUBECONFIG_FILE" || {
-            echo "Warning: Could not retrieve KUBECONFIG from Vault, creating empty config"
-            touch "$KUBECONFIG_FILE"
-          }
-          export KUBECONFIG="$KUBECONFIG_FILE"
 
           # Process changes for each workspace
           for workspace in sandboxy tools observability; do
@@ -364,9 +356,6 @@ jobs:
             done
           done
 
-          # Clean up
-          rm -f "$KUBECONFIG_FILE"
-
       - name: Report Kubeconfig Update Failure
         if: steps.pr_check.outputs.pr_merged == 'true' && steps.kubeconfig_update.outcome == 'failure'
         uses: actions/github-script@v7
@@ -377,7 +366,7 @@ jobs:
               issue_number: ${{ steps.pr_check.outputs.pr_number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## ⚠️ Warning: Kubeconfig Update Failed
+              body: `## Warning: Kubeconfig Update Failed
 
               Terraform apply succeeded but kubeconfig synchronization to Vault failed.
 
@@ -401,7 +390,7 @@ jobs:
               repo: context.repo.repo,
               body: `## Clusters Terraform Apply
 
-              ✅ Successfully applied Terraform changes to Kubernetes clusters.
+              Successfully applied Terraform changes to Kubernetes clusters.
 
               Apply completed at: ${new Date().toISOString()}
               `
@@ -419,7 +408,7 @@ jobs:
               repo: context.repo.repo,
               body: `## Clusters Terraform Apply Failed
 
-              ❌ Failed to apply Terraform changes to Kubernetes clusters.
+              Failed to apply Terraform changes to Kubernetes clusters.
 
               Please check the workflow logs for more details.
               `

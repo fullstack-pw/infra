@@ -199,6 +199,12 @@ resource "kubernetes_manifest" "cluster_api_manifests" {
     }
   }
 
+  timeouts {
+    create = "30m"
+    update = "30m"
+    delete = "30m"
+  }
+
   depends_on = [
     kubernetes_secret.proxmox_credentials,
     var.cluster_api_dependencies
