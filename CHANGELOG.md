@@ -1,3 +1,9 @@
+## [1.4.17](https://github.com/fullstack-pw/infra/compare/v1.4.16...v1.4.17) (2025-12-18)
+
+### Tasks
+
+* **gh-runner-image:** add vault ([e1d848e](https://github.com/fullstack-pw/infra/commit/e1d848e217116a7682d4adf12462146f8782792f))
+
 ## [1.4.16](https://github.com/fullstack-pw/infra/compare/v1.4.15...v1.4.16) (2025-12-18)
 
 ### Bug Fixes
