@@ -160,7 +160,7 @@ variable "config" {
           allowed_nodes = ["node03"]
 
           cp_replicas = 1
-          wk_replicas = 2
+          wk_replicas = 1
 
           cp_disk_size = 20
           cp_memory    = 2048
