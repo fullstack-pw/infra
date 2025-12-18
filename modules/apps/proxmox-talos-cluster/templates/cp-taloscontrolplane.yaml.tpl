@@ -55,8 +55,4 @@ spec:
               - os:reader
             allowedKubernetesNamespaces:
               - kube-system
-        - op: add
-          path: /machine/kubelet/extraArgs
-          value:
-            cloud-provider: external
       generateType: controlplane

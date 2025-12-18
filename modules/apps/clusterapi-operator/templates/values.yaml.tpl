@@ -9,6 +9,7 @@ core:
 infrastructure:
 %{ if enable_proxmox_provider ~}
   proxmox:
+    enabled: yes
     version: "${proxmox_provider_version}"
     configSecret:
       name: "${proxmox_secret_name}"

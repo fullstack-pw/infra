@@ -7,8 +7,12 @@ spec:
   clusterName: ${cluster_name}
   replicas: ${wk_replicas}
   selector:
-    matchLabels: null
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: ${cluster_name}
   template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: ${cluster_name}
     spec:
       bootstrap:
         configRef:

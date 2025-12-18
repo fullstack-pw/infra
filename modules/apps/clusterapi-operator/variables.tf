@@ -7,7 +7,7 @@ variable "namespace" {
 variable "operator_version" {
   description = "ClusterAPI operator chart version"
   type        = string
-  default     = "0.24.0"
+  default     = "0.24.1"
 }
 
 variable "values_files" {
@@ -57,7 +57,7 @@ variable "enable_ipam_provider" {
 variable "core_provider_version" {
   description = "Core Cluster API provider version"
   type        = string
-  default     = "v1.11.3"
+  default     = "v1.12.0"
 }
 
 variable "proxmox_provider_version" {
