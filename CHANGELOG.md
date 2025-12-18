@@ -1,3 +1,9 @@
+## [1.4.20](https://github.com/fullstack-pw/infra/compare/v1.4.19...v1.4.20) (2025-12-18)
+
+### Bug Fixes
+
+* **cicd-update-kubeconfig:** testing ([54f9853](https://github.com/fullstack-pw/infra/commit/54f9853e54dada8a0b8a1c5eba760e1223cc02aa))
+
 ## [1.4.19](https://github.com/fullstack-pw/infra/compare/v1.4.18...v1.4.19) (2025-12-18)
 
 ### Bug Fixes
