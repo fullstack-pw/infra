@@ -298,28 +298,21 @@ jobs:
           echo "changes_detected=$CHANGES_DETECTED" >> $GITHUB_OUTPUT
           echo "changed_workspaces=$CHANGED_WORKSPACES" >> $GITHUB_OUTPUT
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.22"
 
-      - name: Build kubeconfig manager
-        run: |
-          cd cicd-update-kubeconfig
-          go build -o kubeconfig-manager ./cmd/cicd-update-kubeconfig
-          chmod +x kubeconfig-manager
-          # Move binary to repo root for easy access
-          mv kubeconfig-manager ../cicd-update-kubeconfig-bin
-          cd ..
-
-      - name: Update Kubeconfigs in Vault
-        if: steps.apply.outcome == 'success'
+      - name: Update Kubeconfigs in SOPS and Commit
+        if: steps.detect_changes.outputs.changes_detected == 'true'
         continue-on-error: true
         id: kubeconfig_update
         env:
-          VAULT_ADDR: https://vault.fullstack.pw
+          KUBECONFIG: ~/.kube/config
         run: |
           cd /tmp/terraform-outputs
+
+          # Configure git
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+
+          CHANGES_MADE=false
 
           # Process changes for each workspace
           for workspace in sandboxy tools observability; do
@@ -331,30 +324,48 @@ jobs:
             # Handle CREATE/UPDATE
             for cluster in $AFTER; do
               echo "Upserting kubeconfig for: $cluster"
-              "${GITHUB_WORKSPACE}/cicd-update-kubeconfig-bin" \
-                --cluster-name "$cluster" \
-                --namespace "$cluster" \
-                --vault-path "kv/cluster-secret-store/secrets" \
-                --vault-addr "$VAULT_ADDR" \
-                --management-context "$workspace" \
-                --operation upsert || echo "Warning: Failed to upsert kubeconfig for $cluster"
+              cd "${GITHUB_WORKSPACE}"
+              if ./clusters/scripts/update_kubeconfig_sops.sh "$cluster" "$cluster" "$workspace" upsert; then
+                CHANGES_MADE=true
+              else
+                echo "Warning: Failed to upsert kubeconfig for $cluster"
+              fi
+              cd /tmp/terraform-outputs
             done
 
             # Handle DELETE
             for cluster in $BEFORE; do
               if ! echo "$AFTER" | grep -q "^${cluster}$"; then
                 echo "Deleting kubeconfig for: $cluster"
-                "${GITHUB_WORKSPACE}/cicd-update-kubeconfig-bin" \
-                  --cluster-name "$cluster" \
-                  --namespace "$cluster" \
-                  --vault-path "kv/cluster-secret-store/secrets" \
-                  --vault-addr "$VAULT_ADDR" \
-                  --management-context "$workspace" \
-                  --operation delete \
-                  --skip-readiness-check || echo "Warning: Failed to delete kubeconfig for $cluster"
+                cd "${GITHUB_WORKSPACE}"
+                if ./clusters/scripts/update_kubeconfig_sops.sh "$cluster" "$cluster" "$workspace" delete; then
+                  CHANGES_MADE=true
+                else
+                  echo "Warning: Failed to delete kubeconfig for $cluster"
+                fi
+                cd /tmp/terraform-outputs
               fi
             done
           done
+
+          cd "${GITHUB_WORKSPACE}"
+          if [ "$CHANGES_MADE" == "true" ]; then
+            if ! git diff --quiet secrets/common/cluster-secret-store/secrets/KUBECONFIG.yaml; then
+              echo "Committing KUBECONFIG changes to git"
+              git add secrets/common/cluster-secret-store/secrets/KUBECONFIG.yaml
+              git commit -m "chore: Update KUBECONFIG with Cluster API clusters"
+              git push
+              echo "kubeconfig_updated=true" >> $GITHUB_OUTPUT
+              echo "KUBECONFIG updated and committed to git"
+              echo "Next workflow run will sync changes to Vault via Terraform"
+            else
+              echo "No changes to KUBECONFIG file detected"
+              echo "kubeconfig_updated=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "No kubeconfig updates were made"
+            echo "kubeconfig_updated=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Report Kubeconfig Update Failure
         if: steps.pr_check.outputs.pr_merged == 'true' && steps.kubeconfig_update.outcome == 'failure'
@@ -368,11 +379,18 @@ jobs:
               repo: context.repo.repo,
               body: `## Warning: Kubeconfig Update Failed
 
-              Terraform apply succeeded but kubeconfig synchronization to Vault failed.
+              Terraform apply succeeded but kubeconfig extraction/update to SOPS failed.
 
               **Manual action required:**
               \`\`\`bash
-              make update-kubeconfigs
+              # Extract kubeconfig from Cluster API and update SOPS file manually
+              kubectl --context <workspace> get secret <cluster>-kubeconfig -n <cluster> -o jsonpath='{.data.value}' | base64 -d > /tmp/new-kubeconfig
+              ./secret_edit.sh secrets/common/cluster-secret-store/secrets/KUBECONFIG.yaml
+              # Manually merge /tmp/new-kubeconfig into the SOPS file
+              git add secrets/common/cluster-secret-store/secrets/KUBECONFIG.yaml
+              git commit -m "chore: Add kubeconfig for <cluster>"
+              git push
+              # Next workflow run will sync to Vault automatically
               \`\`\`
 
               Check [workflow logs](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.
