@@ -306,22 +306,18 @@ jobs:
         env:
           KUBECONFIG: ~/.kube/config
         run: |
-          cd /tmp/terraform-outputs
-
-          # Configure git
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
 
           CHANGES_MADE=false
 
-          # Process changes for each workspace
+          cd /tmp/terraform-outputs
           for workspace in sandboxy tools observability; do
             echo "Processing workspace: $workspace"
 
             BEFORE=$(cat ${workspace}_clusters_before.json | jq -r '.[]' 2>/dev/null || echo "")
             AFTER=$(cat ${workspace}_clusters_after.json | jq -r '.[]' 2>/dev/null || echo "")
 
-            # Handle CREATE/UPDATE
             for cluster in $AFTER; do
               echo "Upserting kubeconfig for: $cluster"
               cd "${GITHUB_WORKSPACE}"
@@ -333,7 +329,6 @@ jobs:
               cd /tmp/terraform-outputs
             done
 
-            # Handle DELETE
             for cluster in $BEFORE; do
               if ! echo "$AFTER" | grep -q "^${cluster}$"; then
                 echo "Deleting kubeconfig for: $cluster"
