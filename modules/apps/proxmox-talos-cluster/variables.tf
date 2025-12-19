@@ -89,7 +89,8 @@ variable "cloud_controller_manifests" {
   description = "List of cloud controller manager manifests to apply"
   type        = list(string)
   default = [
-    "https://raw.githubusercontent.com/siderolabs/talos-cloud-controller-manager/main/docs/deploy/cloud-controller-manager.yml",
+    #"https://raw.githubusercontent.com/siderolabs/talos-cloud-controller-manager/main/docs/deploy/cloud-controller-manager.yml",
+    "https://raw.githubusercontent.com/siderolabs/talos-cloud-controller-manager/refs/heads/main/docs/deploy/cloud-controller-manager-daemonset.yml",
     "https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/main/deploy/standalone-install.yaml"
   ]
 }

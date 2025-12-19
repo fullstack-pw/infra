@@ -5,24 +5,26 @@ locals {
   }
 }
 
+# Create a namespace for each cluster using its name
 module "namespace" {
-  source = "../../base/namespace"
+  source   = "../../base/namespace"
+  for_each = local.clusters
 
   create = true
-  name   = var.namespace
+  name   = each.value.name
   labels = {
-    "kubernetes.io/metadata.name" = var.namespace
+    "kubernetes.io/metadata.name" = each.value.name
   }
   needs_secrets = true
 }
 
-# Create Proxmox credentials secret
+# Create Proxmox credentials secret in each cluster's namespace
 resource "kubernetes_secret" "proxmox_credentials" {
-  count = var.create_proxmox_secret ? 1 : 0
+  for_each = var.create_proxmox_secret ? local.clusters : {}
 
   metadata {
     name      = var.credentials_ref_name
-    namespace = var.namespace
+    namespace = each.value.name
   }
 
   data = {
@@ -41,11 +43,11 @@ resource "kubernetes_manifest" "cluster" {
   for_each = local.clusters
 
   manifest = {
-    apiVersion = "cluster.x-k8s.io/v1beta1"
+    apiVersion = "cluster.x-k8s.io/v1beta2"
     kind       = "Cluster"
     metadata = {
       name      = each.value.name
-      namespace = var.namespace
+      namespace = each.value.name
     }
     spec = {
       clusterNetwork = {
@@ -57,14 +59,14 @@ resource "kubernetes_manifest" "cluster" {
         }
       }
       controlPlaneRef = {
-        kind       = "KubeadmControlPlane"
-        apiVersion = "controlplane.cluster.x-k8s.io/v1beta1"
-        name       = "${each.value.name}-control-plane"
+        apiGroup = "controlplane.cluster.x-k8s.io"
+        kind     = "KubeadmControlPlane"
+        name     = "${each.value.name}-control-plane"
       }
       infrastructureRef = {
-        kind       = "ProxmoxCluster"
-        apiVersion = "infrastructure.cluster.x-k8s.io/v1alpha1"
-        name       = each.value.name
+        apiGroup = "infrastructure.cluster.x-k8s.io"
+        kind     = "ProxmoxCluster"
+        name     = each.value.name
       }
     }
   }
@@ -81,7 +83,7 @@ resource "kubernetes_manifest" "proxmox_cluster" {
     kind       = "ProxmoxCluster"
     metadata = {
       name      = each.value.name
-      namespace = var.namespace
+      namespace = each.value.name
     }
     spec = {
       controlPlaneEndpoint = {
@@ -109,11 +111,11 @@ resource "kubernetes_manifest" "kubeadm_control_plane" {
   for_each = local.clusters
 
   manifest = {
-    apiVersion = "controlplane.cluster.x-k8s.io/v1beta1"
+    apiVersion = "controlplane.cluster.x-k8s.io/v1beta2"
     kind       = "KubeadmControlPlane"
     metadata = {
       name      = "${each.value.name}-control-plane"
-      namespace = var.namespace
+      namespace = each.value.name
     }
     spec = {
       version  = each.value.kubernetes_version
@@ -135,9 +137,12 @@ resource "kubernetes_manifest" "kubeadm_control_plane" {
             ]
           }
           controllerManager = {
-            extraArgs = {
-              "enable-hostpath-provisioner" = "true"
-            }
+            extraArgs = [
+              {
+                name  = "enable-hostpath-provisioner"
+                value = "true"
+              }
+            ]
           }
         }
         preKubeadmCommands = [
@@ -307,17 +312,23 @@ resource "kubernetes_manifest" "kubeadm_control_plane" {
         initConfiguration = {
           nodeRegistration = {
             criSocket = "unix:///var/run/containerd/containerd.sock"
-            kubeletExtraArgs = {
-              "provider-id" = "proxmox://'{{ ds.meta_data.instance_id }}'"
-            }
+            kubeletExtraArgs = [
+              {
+                name  = "provider-id"
+                value = "proxmox://'{{ ds.meta_data.instance_id }}'"
+              }
+            ]
           }
         }
         joinConfiguration = {
           nodeRegistration = {
             criSocket = "unix:///var/run/containerd/containerd.sock"
-            kubeletExtraArgs = {
-              "provider-id" = "proxmox://'{{ ds.meta_data.instance_id }}'"
-            }
+            kubeletExtraArgs = [
+              {
+                name  = "provider-id"
+                value = "proxmox://'{{ ds.meta_data.instance_id }}'"
+              }
+            ]
           }
         }
         postKubeadmCommands = [
@@ -325,10 +336,12 @@ resource "kubernetes_manifest" "kubeadm_control_plane" {
         ]
       }
       machineTemplate = {
-        infrastructureRef = {
-          kind       = "ProxmoxMachineTemplate"
-          apiVersion = "infrastructure.cluster.x-k8s.io/v1alpha1"
-          name       = "${each.value.name}-control-plane-template"
+        spec = {
+          infrastructureRef = {
+            apiGroup = "infrastructure.cluster.x-k8s.io"
+            kind     = "ProxmoxMachineTemplate"
+            name     = "${each.value.name}-control-plane-template"
+          }
         }
       }
     }
@@ -346,7 +359,7 @@ resource "kubernetes_manifest" "control_plane_machine_template" {
     kind       = "ProxmoxMachineTemplate"
     metadata = {
       name      = "${each.value.name}-control-plane-template"
-      namespace = var.namespace
+      namespace = each.value.name
     }
     spec = {
       template = {
@@ -358,6 +371,10 @@ resource "kubernetes_manifest" "control_plane_machine_template" {
           numCores   = each.value.cp_cores
           numSockets = each.value.cp_sockets
           memoryMiB  = each.value.cp_memory
+          vmIDRange = {
+            start = 301
+            end   = 350
+          }
           disks = {
             bootVolume = {
               disk   = "scsi0"
@@ -386,11 +403,11 @@ resource "kubernetes_manifest" "machine_deployment" {
   for_each = local.clusters
 
   manifest = {
-    apiVersion = "cluster.x-k8s.io/v1beta1"
+    apiVersion = "cluster.x-k8s.io/v1beta2"
     kind       = "MachineDeployment"
     metadata = {
       name      = "${each.value.name}-workers"
-      namespace = var.namespace
+      namespace = each.value.name
     }
     spec = {
       clusterName = each.value.name
@@ -398,6 +415,15 @@ resource "kubernetes_manifest" "machine_deployment" {
       selector = {
         matchLabels = {
           "cluster.x-k8s.io/cluster-name" = each.value.name
+        }
+      }
+      rollout = {
+        strategy = {
+          type = "RollingUpdate"
+          rollingUpdate = {
+            maxSurge       = 1
+            maxUnavailable = 0
+          }
         }
       }
       template = {
@@ -411,15 +437,15 @@ resource "kubernetes_manifest" "machine_deployment" {
           version     = each.value.kubernetes_version
           bootstrap = {
             configRef = {
-              kind       = "KubeadmConfigTemplate"
-              apiVersion = "bootstrap.cluster.x-k8s.io/v1beta1"
-              name       = "${each.value.name}-worker-config"
+              kind     = "KubeadmConfigTemplate"
+              apiGroup = "bootstrap.cluster.x-k8s.io"
+              name     = "${each.value.name}-worker-config"
             }
           }
           infrastructureRef = {
-            kind       = "ProxmoxMachineTemplate"
-            apiVersion = "infrastructure.cluster.x-k8s.io/v1alpha1"
-            name       = "${each.value.name}-worker-template"
+            kind     = "ProxmoxMachineTemplate"
+            apiGroup = "infrastructure.cluster.x-k8s.io"
+            name     = "${each.value.name}-worker-template"
           }
         }
       }
@@ -434,11 +460,11 @@ resource "kubernetes_manifest" "kubeadm_config_template" {
   for_each = local.clusters
 
   manifest = {
-    apiVersion = "bootstrap.cluster.x-k8s.io/v1beta1"
+    apiVersion = "bootstrap.cluster.x-k8s.io/v1beta2"
     kind       = "KubeadmConfigTemplate"
     metadata = {
       name      = "${each.value.name}-worker-config"
-      namespace = var.namespace
+      namespace = each.value.name
     }
     spec = {
       template = {
@@ -453,9 +479,12 @@ resource "kubernetes_manifest" "kubeadm_config_template" {
           joinConfiguration = {
             nodeRegistration = {
               criSocket = "unix:///var/run/containerd/containerd.sock"
-              kubeletExtraArgs = {
-                "provider-id" = "proxmox://'{{ ds.meta_data.instance_id }}'"
-              }
+              kubeletExtraArgs = [
+                {
+                  name  = "provider-id"
+                  value = "proxmox://'{{ ds.meta_data.instance_id }}'"
+                }
+              ]
             }
           }
         }
@@ -475,7 +504,7 @@ resource "kubernetes_manifest" "worker_machine_template" {
     kind       = "ProxmoxMachineTemplate"
     metadata = {
       name      = "${each.value.name}-worker-template"
-      namespace = var.namespace
+      namespace = each.value.name
     }
     spec = {
       template = {
@@ -487,6 +516,10 @@ resource "kubernetes_manifest" "worker_machine_template" {
           numCores   = each.value.wk_cores
           numSockets = each.value.wk_sockets
           memoryMiB  = each.value.wk_memory
+          vmIDRange = {
+            start = 351
+            end   = 400
+          }
           disks = {
             bootVolume = {
               disk   = "scsi0"

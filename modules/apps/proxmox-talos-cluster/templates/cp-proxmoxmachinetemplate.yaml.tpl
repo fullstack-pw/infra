@@ -13,6 +13,9 @@ spec:
       format: ${disk_format}
       full: true
       memoryMiB: ${cp_memory}
+      vmIDRange:
+        start: 351
+        end: 400
       network:
         default:
           bridge: ${network_bridge}

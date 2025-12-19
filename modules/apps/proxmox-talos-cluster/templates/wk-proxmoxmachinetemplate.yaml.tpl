@@ -13,6 +13,9 @@ spec:
       format: ${disk_format}
       full: true
       memoryMiB: ${wk_memory}
+      vmIDRange:
+        start: 301
+        end: 350
       network:
         default:
           bridge: ${network_bridge}

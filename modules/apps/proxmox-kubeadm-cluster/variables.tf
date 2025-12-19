@@ -14,7 +14,7 @@ variable "clusters" {
     wk_replicas = optional(number, 3)
 
     # CNI configuration
-    cni_type = optional(string, "cilium") # cilium, calico, or flannel
+    cni_type         = optional(string, "cilium") # cilium, calico, or flannel
     cni_manifest_url = optional(string, "https://raw.githubusercontent.com/cilium/cilium/v1.14.5/install/kubernetes/quick-install.yaml")
 
     # Network configuration
@@ -71,7 +71,7 @@ variable "clusters" {
 }
 
 variable "namespace" {
-  description = "Namespace for cluster-api resources"
+  description = "DEPRECATED: Each cluster now uses its own name as the namespace. This variable is kept for backward compatibility but is not used."
   type        = string
   default     = "clusters"
 }

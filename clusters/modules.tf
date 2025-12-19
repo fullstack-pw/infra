@@ -218,7 +218,9 @@ module "observability-box" {
   count  = contains(local.workload, "observability-box") ? 1 : 0
   source = "../modules/apps/observability-box"
 
-  prometheus_namespaces = var.config[terraform.workspace].prometheus_namespaces
+  prometheus_namespaces     = var.config[terraform.workspace].prometheus_namespaces
+  prometheus_memory_limit   = var.config[terraform.workspace].prometheus_memory_limit
+  prometheus_memory_request = var.config[terraform.workspace].prometheus_memory_request
 }
 
 module "postgres" {

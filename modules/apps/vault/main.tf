@@ -51,7 +51,6 @@ module "helm" {
   set_values = var.additional_set_values
 }
 
-# Only create these resources if initialize_vault is true
 resource "vault_mount" "kv" {
   count       = var.initialize_vault ? 1 : 0
   path        = var.kv_path
@@ -79,7 +78,6 @@ resource "vault_kubernetes_auth_backend_config" "config" {
   depends_on         = [module.helm]
 }
 
-# Dynamic block to create initial secrets
 resource "vault_kv_secret_v2" "initial_secrets" {
   for_each = var.initialize_vault ? var.initial_secrets : {}
 
@@ -90,7 +88,6 @@ resource "vault_kv_secret_v2" "initial_secrets" {
   depends_on = [vault_mount.kv]
 }
 
-# Dynamic block to create initial policies
 resource "vault_policy" "policies" {
   for_each = var.initialize_vault ? var.policies : {}
 

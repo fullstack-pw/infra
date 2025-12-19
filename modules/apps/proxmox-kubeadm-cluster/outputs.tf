@@ -3,7 +3,7 @@ output "cluster_names" {
   value       = [for cluster in var.clusters : cluster.name]
 }
 
-output "namespace" {
-  description = "Namespace where cluster resources are created"
-  value       = module.namespace.name
+output "namespaces" {
+  description = "Map of cluster names to their namespaces"
+  value       = { for name, ns in module.namespace : name => ns.name }
 }
