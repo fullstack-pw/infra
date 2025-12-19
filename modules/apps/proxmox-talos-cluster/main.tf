@@ -1,7 +1,4 @@
-# modules/apps/proxmox-talos-cluster/main.tf
-
 locals {
-  # Flatten the clusters configuration for for_each
   clusters = {
     for cluster in var.clusters : cluster.name => cluster
   }
@@ -20,7 +17,6 @@ module "namespace" {
   needs_secrets = true
 }
 
-# Create Proxmox credentials secret (one per namespace/cluster)
 resource "kubernetes_secret" "proxmox_credentials" {
   for_each = var.create_proxmox_secret ? local.clusters : {}
 
@@ -40,14 +36,12 @@ resource "kubernetes_secret" "proxmox_credentials" {
   depends_on = [module.namespace]
 }
 
-# Template rendering for cluster manifests
 module "cluster_templates" {
   source = "../../base/values-template"
 
   for_each = local.clusters
 
   template_files = [
-    # Main Cluster resource
     {
       path = "${path.module}/templates/cp-cluster.yaml.tpl"
       vars = {
@@ -57,7 +51,6 @@ module "cluster_templates" {
         proxmox_cluster_name     = "${each.value.name}-proxmox-cluster"
       }
     },
-    # ProxmoxCluster infrastructure
     {
       path = "${path.module}/templates/cp-proxmoxcluster.yaml.tpl"
       vars = {
@@ -76,7 +69,6 @@ module "cluster_templates" {
         memory_adjustment           = each.value.memory_adjustment
       }
     },
-    # TalosControlPlane
     {
       path = "${path.module}/templates/cp-taloscontrolplane.yaml.tpl"
       vars = {
@@ -92,7 +84,6 @@ module "cluster_templates" {
         cloud_controller_manifests  = jsonencode(var.cloud_controller_manifests)
       }
     },
-    # Control Plane ProxmoxMachineTemplate
     {
       path = "${path.module}/templates/cp-proxmoxmachinetemplate.yaml.tpl"
       vars = {
@@ -113,7 +104,6 @@ module "cluster_templates" {
         provider_id_injection       = each.value.provider_id_injection
       }
     },
-    # Worker ProxmoxMachineTemplate
     {
       path = "${path.module}/templates/wk-proxmoxmachinetemplate.yaml.tpl"
       vars = {
@@ -134,7 +124,6 @@ module "cluster_templates" {
         provider_id_injection  = each.value.provider_id_injection
       }
     },
-    # Worker TalosConfigTemplate
     {
       path = "${path.module}/templates/wk-talosconfigtemplate.yaml.tpl"
       vars = {
@@ -144,7 +133,6 @@ module "cluster_templates" {
         install_disk             = each.value.install_disk
       }
     },
-    # Worker MachineDeployment
     {
       path = "${path.module}/templates/wk-machinedeployment.yaml.tpl"
       vars = {
@@ -160,9 +148,7 @@ module "cluster_templates" {
   ]
 }
 
-# Parse the rendered YAML manifests and apply them
 locals {
-  # Parse all rendered manifests for each cluster
   all_manifests = flatten([
     for cluster_name, cluster_config in local.clusters : [
       for template_content in module.cluster_templates[cluster_name].rendered_values :
@@ -170,14 +156,12 @@ locals {
     ]
   ])
 
-  # Create a map for kubernetes_manifest resources
   manifest_map = {
     for i, manifest in local.all_manifests :
     "${manifest.kind}-${manifest.metadata.name}-${manifest.metadata.namespace}" => manifest
   }
 }
 
-# Apply all cluster-api manifests
 resource "kubernetes_manifest" "cluster_api_manifests" {
   for_each = local.manifest_map
 
@@ -187,13 +171,23 @@ resource "kubernetes_manifest" "cluster_api_manifests" {
     for_each = contains([
       "Cluster",
       "ProxmoxCluster",
-      "TalosControlPlane",
-      "MachineDeployment"
+      "TalosControlPlane"
     ], each.value.kind) ? [1] : []
 
     content {
       condition {
         type   = "Ready"
+        status = "True"
+      }
+    }
+  }
+
+  dynamic "wait" {
+    for_each = each.value.kind == "MachineDeployment" ? [1] : []
+
+    content {
+      condition {
+        type   = "Available"
         status = "True"
       }
     }

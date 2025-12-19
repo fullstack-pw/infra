@@ -1,5 +1,3 @@
-# modules/apps/proxmox-talos-cluster/outputs.tf
-
 output "cluster_names" {
   description = "Names of the created clusters"
   value       = [for cluster in var.clusters : cluster.name]

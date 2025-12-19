@@ -1,11 +1,9 @@
 locals {
-  # Flatten the clusters configuration for for_each
   clusters = {
     for cluster in var.clusters : cluster.name => cluster
   }
 }
 
-# Create a namespace for each cluster using its name
 module "namespace" {
   source   = "../../base/namespace"
   for_each = local.clusters
@@ -18,7 +16,6 @@ module "namespace" {
   needs_secrets = true
 }
 
-# Create Proxmox credentials secret in each cluster's namespace
 resource "kubernetes_secret" "proxmox_credentials" {
   for_each = var.create_proxmox_secret ? local.clusters : {}
 
@@ -38,7 +35,6 @@ resource "kubernetes_secret" "proxmox_credentials" {
   depends_on = [module.namespace]
 }
 
-# Cluster resource
 resource "kubernetes_manifest" "cluster" {
   for_each = local.clusters
 
@@ -74,7 +70,6 @@ resource "kubernetes_manifest" "cluster" {
   depends_on = [module.namespace]
 }
 
-# ProxmoxCluster resource
 resource "kubernetes_manifest" "proxmox_cluster" {
   for_each = local.clusters
 
@@ -106,7 +101,6 @@ resource "kubernetes_manifest" "proxmox_cluster" {
   depends_on = [module.namespace]
 }
 
-# KubeadmControlPlane resource
 resource "kubernetes_manifest" "kubeadm_control_plane" {
   for_each = local.clusters
 
@@ -350,7 +344,6 @@ resource "kubernetes_manifest" "kubeadm_control_plane" {
   depends_on = [module.namespace]
 }
 
-# ProxmoxMachineTemplate for control plane
 resource "kubernetes_manifest" "control_plane_machine_template" {
   for_each = local.clusters
 
@@ -398,7 +391,6 @@ resource "kubernetes_manifest" "control_plane_machine_template" {
   depends_on = [module.namespace]
 }
 
-# MachineDeployment for workers
 resource "kubernetes_manifest" "machine_deployment" {
   for_each = local.clusters
 
@@ -455,7 +447,6 @@ resource "kubernetes_manifest" "machine_deployment" {
   depends_on = [module.namespace]
 }
 
-# KubeadmConfigTemplate for workers
 resource "kubernetes_manifest" "kubeadm_config_template" {
   for_each = local.clusters
 
@@ -495,7 +486,6 @@ resource "kubernetes_manifest" "kubeadm_config_template" {
   depends_on = [module.namespace]
 }
 
-# ProxmoxMachineTemplate for workers
 resource "kubernetes_manifest" "worker_machine_template" {
   for_each = local.clusters
 

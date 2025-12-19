@@ -1,54 +1,42 @@
-# modules/apps/proxmox-talos-cluster/variables.tf
-
 variable "clusters" {
   description = "List of Talos clusters to create"
   type = list(object({
-    # Basic cluster configuration
     name               = string
     kubernetes_version = optional(string, "v1.33.0")
 
-    # Control plane configuration
     cp_replicas                 = optional(number, 3)
     control_plane_endpoint_ip   = string
     control_plane_endpoint_port = optional(number, 6443)
 
-    # Worker configuration
     wk_replicas = optional(number, 3)
 
-    # Network configuration
     ip_range_start = string
     ip_range_end   = string
     gateway        = string
     prefix         = number
     dns_servers    = optional(list(string), ["192.168.1.3", "8.8.4.4"])
 
-    # Proxmox configuration
     source_node       = string
     template_id       = number
     allowed_nodes     = optional(list(string), [])
     memory_adjustment = optional(number, 0)
 
-    # Control plane machine specs
     cp_disk_size = optional(number, 20)
     cp_memory    = optional(number, 2048)
     cp_cores     = optional(number, 2)
     cp_sockets   = optional(number, 1)
 
-    # Worker machine specs
     wk_disk_size = optional(number, 20)
     wk_memory    = optional(number, 2048)
     wk_cores     = optional(number, 2)
     wk_sockets   = optional(number, 1)
 
-    # Network settings
     network_bridge = optional(string, "vmbr0")
     network_model  = optional(string, "virtio")
 
-    # Disk settings
     disk_format  = optional(string, "qcow2")
     install_disk = optional(string, "/dev/sda")
 
-    # VM settings
     skip_cloud_init_status = optional(bool, true)
     skip_qemu_guest_agent  = optional(bool, true)
     provider_id_injection  = optional(bool, true)
