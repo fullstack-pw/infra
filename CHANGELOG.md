@@ -1,3 +1,9 @@
+## [1.4.24](https://github.com/fullstack-pw/infra/compare/v1.4.23...v1.4.24) (2025-12-19)
+
+### Bug Fixes
+
+* **cluster-bootstrap:** dev ([d5882dd](https://github.com/fullstack-pw/infra/commit/d5882ddf57cf5e8042ef3c95c9d879a92b6ef90c))
+
 ## [1.4.23](https://github.com/fullstack-pw/infra/compare/v1.4.22...v1.4.23) (2025-12-19)
 
 ### Tasks
