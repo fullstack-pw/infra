@@ -1,3 +1,13 @@
+## [1.4.22](https://github.com/fullstack-pw/infra/compare/v1.4.21...v1.4.22) (2025-12-19)
+
+### Tasks
+
+* **cluster-bootstrap:** dev ([5fe5576](https://github.com/fullstack-pw/infra/commit/5fe557618f0a20140fe1b390047b908fd7aa7d72))
+
+### Bug Fixes
+
+* **proxmox-kubeadm-cluster:** fully working ([07f67e7](https://github.com/fullstack-pw/infra/commit/07f67e7a6517688012af0785dfa60bf9b3c8d529))
+
 ## [1.4.21](https://github.com/fullstack-pw/infra/compare/v1.4.20...v1.4.21) (2025-12-18)
 
 ### Bug Fixes
