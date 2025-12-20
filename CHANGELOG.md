@@ -1,3 +1,14 @@
+## [1.4.25](https://github.com/fullstack-pw/infra/compare/v1.4.24...v1.4.25) (2025-12-20)
+
+### Tasks
+
+* **cleaning:** removing old stuff ([ede10c9](https://github.com/fullstack-pw/infra/commit/ede10c955eee17f3c10e946f9c719c1e5c2bca93))
+* **cluster:** bootstrap dev infra ([6a5cfcb](https://github.com/fullstack-pw/infra/commit/6a5cfcba53fe0422761567e718aa3cba9435b2a6))
+
+### Bug Fixes
+
+* **cluster-bootstrap:** dev ([e343bee](https://github.com/fullstack-pw/infra/commit/e343bee418cf8b9ec4703cdeec4a012d5cf2f0e1))
+
 ## [1.4.24](https://github.com/fullstack-pw/infra/compare/v1.4.23...v1.4.24) (2025-12-19)
 
 ### Bug Fixes
