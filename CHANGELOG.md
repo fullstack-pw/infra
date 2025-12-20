@@ -1,3 +1,9 @@
+## [1.4.27](https://github.com/fullstack-pw/infra/compare/v1.4.26...v1.4.27) (2025-12-20)
+
+### Bug Fixes
+
+* **terraform-apply:** commit KUBECONFIG changes ([b40fdda](https://github.com/fullstack-pw/infra/commit/b40fddafaeaf87abec5ecf0a3fc2e452e75b8294))
+
 ## [1.4.26](https://github.com/fullstack-pw/infra/compare/v1.4.25...v1.4.26) (2025-12-20)
 
 ### Bug Fixes
