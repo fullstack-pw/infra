@@ -1,10 +1,5 @@
-# Makefile for fullstack.pw infrastructure management
-# This Makefile provides commands to manage infrastructure across multiple environments
-
-# Default shell for make
 SHELL := /bin/bash
 
-# Configuration
 ENVIRONMENTS := sandboxy tools observability
 DEFAULT_ENV := tools
 TERRAFORM_DIR := clusters
@@ -12,14 +7,12 @@ PROXMOX_DIR := proxmox
 MODULES_DIR := modules
 EXTRA_ARGS ?=
 
-# Colors for pretty output
 CYAN := \033[0;36m
 GREEN := \033[0;32m
 YELLOW := \033[0;33m
 RED := \033[0;31m
-NC := \033[0m # No Color
+NC := \033[0m
 
-# Help message
 define HELP_MESSAGE
 Fullstack.pw Infrastructure Management Commands:
 
@@ -66,18 +59,15 @@ Examples:
 endef
 export HELP_MESSAGE
 
-# Default target
 .PHONY: help
 help:
 	@echo -e "$$HELP_MESSAGE"
 
-# Initialize Terraform for clusters
 .PHONY: init
 init: install-crypto-tools
 	@echo -e "${CYAN}Initializing Terraform for all environments...${NC}"
 	@cd $(TERRAFORM_DIR) && terraform init -upgrade
 
-# Create a new workspace
 .PHONY: create-workspace
 create-workspace:
 	@if [ -z "$(ENV)" ]; then \
@@ -87,13 +77,11 @@ create-workspace:
 	@echo -e "${CYAN}Creating workspace for $(ENV)...${NC}"
 	@cd $(TERRAFORM_DIR) && terraform workspace new $(ENV)
 
-# List workspaces
 .PHONY: workspace
 workspace:
 	@echo -e "${CYAN}Listing Terraform workspaces...${NC}"
 	@cd $(TERRAFORM_DIR) && terraform workspace list
 
-# Plan changes for all environments or a specific one
 .PHONY: plan
 plan:
 	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TERRAFORM_DIR) && python3 load_secrets.py && cd ..
@@ -121,7 +109,6 @@ plan:
 		fi; \
 	fi
 
-# Apply changes for all environments or a specific one
 .PHONY: apply
 apply:
 	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TERRAFORM_DIR) && python3 load_secrets.py && cd ..
@@ -147,7 +134,6 @@ apply:
 		fi; \
 	fi
 	
-# Destroy resources in a specific environment
 .PHONY: destroy
 destroy:
 	@if [ -z "$(ENV)" ]; then \
@@ -164,13 +150,12 @@ destroy:
 		echo -e "${YELLOW}Destroy operation cancelled.${NC}"; \
 	fi
 
-# Format Terraform files
 .PHONY: fmt
 fmt:
 	@echo -e "${CYAN}Formatting Terraform files...${NC}"
 	@terraform fmt -recursive
 
-# Validate Terraform configuration
+
 .PHONY: validate
 validate:
 	@echo -e "${CYAN}Validating Terraform files...${NC}"
@@ -178,7 +163,7 @@ validate:
 	@echo -e "${CYAN}Validating Proxmox files...${NC}"
 	@cd $(PROXMOX_DIR) && terraform validate
 
-# Clean up temporary files
+
 .PHONY: clean
 clean:
 	@echo -e "${CYAN}Cleaning up temporary files...${NC}"
@@ -186,7 +171,7 @@ clean:
 	@find . -name ".terraform" -type d -exec rm -rf {} +
 	@find . -name ".terraform.lock.hcl" -delete
 
-# Proxmox VM management
+
 .PHONY: proxmox-init
 proxmox-init:
 	@echo -e "${CYAN}Initializing Terraform for Proxmox...${NC}"
@@ -207,7 +192,7 @@ proxmox-import:
 	@echo -e "${CYAN}Importing existing Proxmox VMs...${NC}"
 	@cd $(PROXMOX_DIR) && terraform import -var="PROXMOX_PASSWORD=${PROXMOX_PASSWORD}"
 
-# Kubernetes management
+
 .PHONY: k8s-init
 k8s-init:
 	@echo -e "${CYAN}Initializing Kubernetes clusters...${NC}"
@@ -218,7 +203,7 @@ setup-pxe:
 	@echo -e "${CYAN}Setting up PXE boot server...${NC}"
 	@cd $(PROXMOX_DIR) && ansible-playbook -i inventory.ini boot-server.yml
 
-# Test a specific module
+
 .PHONY: module-test
 module-test:
 	@if [ -z "$(MODULE)" ]; then \
@@ -228,7 +213,7 @@ module-test:
 	@echo -e "${CYAN}Testing module $(MODULE)...${NC}"
 	@cd $(MODULES_DIR)/$(MODULE) && terraform init && terraform validate
 
-# Generate documentation for all modules
+
 .PHONY: docs
 docs:
 	@echo -e "${CYAN}Generating documentation for all modules...${NC}"
@@ -238,7 +223,7 @@ docs:
 		cd $${module} && terraform-docs markdown . > README.md; \
 	done
 
-# Install SOPS
+
 install-sops:
 	@echo "Installing SOPS..."
 	@if ! command -v sops &> /dev/null; then \
@@ -254,7 +239,7 @@ install-sops:
 		echo "SOPS is already installed."; \
 	fi
 
-# Install age
+
 install-age:
 	@echo "Installing age..."
 	@if ! command -v age &> /dev/null; then \
@@ -272,23 +257,12 @@ install-age:
 		echo "age is already installed."; \
 	fi
 
-# # Install deps
-# install-deps:
-# 	@echo "Installing deps..."
-# 	@if ! python -c "import pyyaml" &> /dev/null; then \
-# 		echo "Installing pyyaml..."; \
-# 			pip3 install pyyaml; \
-# 	else \
-# 		echo "pyyaml is already installed."; \
-# 	fi
-
-# Combined target to install both tools and configure environment
 install-crypto-tools: install-sops install-age
 	@echo "Setting up SOPS environment variables..."
 	@echo "SOPS_AGE_KEY_FILE=/home/runner/.sops/keys/sops-key.txt" >> $(if $(GITHUB_ENV),$(GITHUB_ENV),${HOME}/.bashrc)
 	@echo "Crypto tools installation and setup complete."
 
-# Build kubeconfig management tool
+
 .PHONY: build-kubeconfig-tool
 build-kubeconfig-tool:
 	@echo -e "${CYAN}Building cicd-update-kubeconfig binary...${NC}"
@@ -296,7 +270,7 @@ build-kubeconfig-tool:
 	@chmod +x cicd-update-kubeconfig
 	@echo -e "${GREEN}Binary built: cicd-update-kubeconfig${NC}"
 
-# Update Talos cluster kubeconfigs in Vault
+
 .PHONY: update-kubeconfigs
 update-kubeconfigs: build-kubeconfig-tool
 	@echo -e "${CYAN}Updating Talos cluster kubeconfigs in Vault...${NC}"
@@ -333,7 +307,7 @@ update-kubeconfigs: build-kubeconfig-tool
 		done; \
 	fi
 
-# Test kubeconfig update with dry-run
+
 .PHONY: test-kubeconfig-update
 test-kubeconfig-update:
 	@echo -e "${CYAN}Testing kubeconfig update (dry-run mode)...${NC}"

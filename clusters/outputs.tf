@@ -1,4 +1,3 @@
-# Expose proxmox-talos-cluster module outputs
 output "proxmox_talos_cluster_names" {
   description = "Names of the created Talos clusters"
   value       = length(module.proxmox_talos_clusters) > 0 ? module.proxmox_talos_clusters[0].cluster_names : []

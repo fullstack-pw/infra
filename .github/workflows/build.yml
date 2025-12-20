@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetch all history for all tags and branches
+          fetch-depth: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -43,19 +43,15 @@ jobs:
 
       - name: Find and Build Modified Dockerfiles
         run: |
-          # Get list of changed files
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # For PRs, compare against the base branch
             CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.sha }})
           else
-            # For pushes, compare against the previous commit
             CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD)
           fi
 
           echo "Changed files:"
           echo "$CHANGED_FILES"
 
-          # Filter for Dockerfiles and extract unique directories
           MODIFIED_DOCKERFILES=$(echo "$CHANGED_FILES" | grep -E "(^|/)Dockerfile$" | grep -v "/\." | grep -v "/node_modules/")
 
           if [ -z "$MODIFIED_DOCKERFILES" ]; then
@@ -66,22 +62,18 @@ jobs:
           echo "Modified Dockerfiles:"
           echo "$MODIFIED_DOCKERFILES"
 
-          # Process each modified Dockerfile
           echo "$MODIFIED_DOCKERFILES" | while read -r DOCKERFILE; do
             if [ -n "$DOCKERFILE" ]; then
-              # Get parent directory name for image name
               DIR=$(dirname "$DOCKERFILE")
               IMAGE_NAME=$(basename "$DIR")
               
               echo "Building $DOCKERFILE as registry.fullstack.pw/library/$IMAGE_NAME:latest"
               
-              # Build with both tags
               docker build \
                 -t registry.fullstack.pw/library/$IMAGE_NAME:latest \
                 -t registry.fullstack.pw/library/$IMAGE_NAME:${{ steps.get_version.outputs.version }} \
                 -f "$DOCKERFILE" "$DIR"
               
-              # Push both tags
               docker push registry.fullstack.pw/library/$IMAGE_NAME:latest
               docker push registry.fullstack.pw/library/$IMAGE_NAME:${{ steps.get_version.outputs.version }}
             fi
