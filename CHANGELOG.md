@@ -1,3 +1,9 @@
+## [1.4.26](https://github.com/fullstack-pw/infra/compare/v1.4.25...v1.4.26) (2025-12-20)
+
+### Bug Fixes
+
+* **update_kubeconfig_sops:** kubeconfig ([c74c13e](https://github.com/fullstack-pw/infra/commit/c74c13e9eae736378a6e1e9beaa5690d5d499301))
+
 ## [1.4.25](https://github.com/fullstack-pw/infra/compare/v1.4.24...v1.4.25) (2025-12-20)
 
 ### Tasks
