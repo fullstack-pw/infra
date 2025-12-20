@@ -347,9 +347,13 @@ jobs:
           if [ "$CHANGES_MADE" == "true" ]; then
             if ! git diff --quiet secrets/common/cluster-secret-store/secrets/KUBECONFIG.yaml; then
               echo "Committing KUBECONFIG changes to git"
+
+              git stash push -u -m "Temporary stash before pull"
+              git pull --rebase origin main
+              git stash pop
+
               git add secrets/common/cluster-secret-store/secrets/KUBECONFIG.yaml
               git commit -m "chore: Update KUBECONFIG with Cluster API clusters"
-              git pull --rebase origin main
               git push
               echo "kubeconfig_updated=true" >> $GITHUB_OUTPUT
               echo "KUBECONFIG updated and committed to git"
