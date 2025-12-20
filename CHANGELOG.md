@@ -1,3 +1,9 @@
+## [1.4.29](https://github.com/fullstack-pw/infra/compare/v1.4.28...v1.4.29) (2025-12-20)
+
+### Tasks
+
+* **cluster:** bootstrap dev infra ([7ddd747](https://github.com/fullstack-pw/infra/commit/7ddd74726c22094c36ff12de423a948b5cf31c42))
+
 ## [1.4.28](https://github.com/fullstack-pw/infra/compare/v1.4.27...v1.4.28) (2025-12-20)
 
 ### Tasks
