@@ -167,7 +167,7 @@ variable "config" {
           cp_cores     = 2
           wk_disk_size = 30
           wk_memory    = 4096
-          wk_cores     = 2
+          wk_cores     = 4
         },
         #   {
         #   name                      = "stg"
