@@ -13,11 +13,26 @@ if [ -z "$CLUSTER_NAME" ] || [ -z "$NAMESPACE" ] || [ -z "$MANAGEMENT_CONTEXT" ]
 fi
 
 SOPS_FILE="secrets/common/cluster-secret-store/secrets/KUBECONFIG.yaml"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+SOPS_CONFIG="$SCRIPT_DIR/.sops.yaml"
 
 if [ ! -f "$SOPS_FILE" ]; then
   echo "Error: SOPS file not found: $SOPS_FILE"
   exit 1
 fi
+
+if [ ! -f "$SOPS_CONFIG" ]; then
+  echo "Error: SOPS config not found: $SOPS_CONFIG"
+  exit 1
+fi
+
+yaml_to_json() {
+  python3 -c 'import sys, yaml, json; json.dump(yaml.safe_load(sys.stdin), sys.stdout)'
+}
+
+json_to_yaml() {
+  python3 -c 'import sys, yaml, json; yaml.dump(json.load(sys.stdin), sys.stdout, default_flow_style=False, sort_keys=False)'
+}
 
 merge_kubeconfig() {
   local EXISTING_KUBECONFIG="$1"
@@ -28,38 +43,41 @@ merge_kubeconfig() {
   local TMP_NEW=$(mktemp)
   local TMP_MERGED=$(mktemp)
 
-  echo "$EXISTING_KUBECONFIG" > "$TMP_EXISTING"
-  echo "$NEW_KUBECONFIG" > "$TMP_NEW"
+  echo "$EXISTING_KUBECONFIG" | yaml_to_json > "$TMP_EXISTING"
+  echo "$NEW_KUBECONFIG" | yaml_to_json > "$TMP_NEW"
 
-  cp "$TMP_EXISTING" "$TMP_MERGED"
+  jq --arg cluster "$CLUSTER_NAME" '
+    .clusters |= map(if .name == $cluster then .name = "TO_DELETE" else . end) |
+    .users |= map(if .name == $cluster then .name = "TO_DELETE" else . end) |
+    .contexts |= map(if .name == $cluster then .name = "TO_DELETE" else . end)
+  ' "$TMP_EXISTING" > "$TMP_MERGED"
 
-  yq eval "
-    .clusters[] |= (select(.name == \"$CLUSTER_NAME\") | .name = \"TO_DELETE\") |
-    .users[] |= (select(.name == \"$CLUSTER_NAME\") | .name = \"TO_DELETE\") |
-    .contexts[] |= (select(.name == \"$CLUSTER_NAME\") | .name = \"TO_DELETE\")
-  " -i "$TMP_MERGED"
+  jq '
+    .clusters |= map(select(.name != "TO_DELETE")) |
+    .users |= map(select(.name != "TO_DELETE")) |
+    .contexts |= map(select(.name != "TO_DELETE"))
+  ' "$TMP_MERGED" > "$TMP_MERGED.clean"
 
-  yq eval "del(.clusters[] | select(.name == \"TO_DELETE\"))" -i "$TMP_MERGED"
-  yq eval "del(.users[] | select(.name == \"TO_DELETE\"))" -i "$TMP_MERGED"
-  yq eval "del(.contexts[] | select(.name == \"TO_DELETE\"))" -i "$TMP_MERGED"
+  NEW_CLUSTER=$(jq --arg cluster "$CLUSTER_NAME" '.clusters[0] | .name = $cluster' "$TMP_NEW")
+  NEW_USER=$(jq --arg cluster "$CLUSTER_NAME" '.users[0] | .name = $cluster' "$TMP_NEW")
+  NEW_CONTEXT=$(jq --arg cluster "$CLUSTER_NAME" '
+    .contexts[0] |
+    .name = $cluster |
+    .context.cluster = $cluster |
+    .context.user = $cluster
+  ' "$TMP_NEW")
 
-  NEW_CLUSTER=$(yq eval '.clusters[0]' "$TMP_NEW")
-  NEW_USER=$(yq eval '.users[0]' "$TMP_NEW")
-  NEW_CONTEXT=$(yq eval '.contexts[0]' "$TMP_NEW")
+  jq --argjson new_cluster "$NEW_CLUSTER" \
+     --argjson new_user "$NEW_USER" \
+     --argjson new_context "$NEW_CONTEXT" \
+     --arg cluster "$CLUSTER_NAME" '
+    .clusters += [$new_cluster] |
+    .users += [$new_user] |
+    .contexts += [$new_context] |
+    ."current-context" = $cluster
+  ' "$TMP_MERGED.clean" | json_to_yaml
 
-  NORMALIZED_CLUSTER=$(echo "$NEW_CLUSTER" | yq eval ".name = \"$CLUSTER_NAME\"" -)
-  NORMALIZED_USER=$(echo "$NEW_USER" | yq eval ".name = \"$CLUSTER_NAME\"" -)
-  NORMALIZED_CONTEXT=$(echo "$NEW_CONTEXT" | yq eval ".name = \"$CLUSTER_NAME\" | .context.cluster = \"$CLUSTER_NAME\" | .context.user = \"$CLUSTER_NAME\"" -)
-
-  yq eval ".clusters += [$NORMALIZED_CLUSTER]" -i "$TMP_MERGED"
-  yq eval ".users += [$NORMALIZED_USER]" -i "$TMP_MERGED"
-  yq eval ".contexts += [$NORMALIZED_CONTEXT]" -i "$TMP_MERGED"
-
-  yq eval ".current-context = \"$CLUSTER_NAME\"" -i "$TMP_MERGED"
-
-  cat "$TMP_MERGED"
-
-  rm -f "$TMP_EXISTING" "$TMP_NEW" "$TMP_MERGED"
+  rm -f "$TMP_EXISTING" "$TMP_NEW" "$TMP_MERGED" "$TMP_MERGED.clean"
 }
 
 delete_cluster_from_kubeconfig() {
@@ -68,25 +86,27 @@ delete_cluster_from_kubeconfig() {
 
   local TMP_EXISTING=$(mktemp)
 
-  echo "$EXISTING_KUBECONFIG" > "$TMP_EXISTING"
+  echo "$EXISTING_KUBECONFIG" | yaml_to_json > "$TMP_EXISTING"
 
-  yq eval "del(.clusters[] | select(.name == \"$CLUSTER_NAME\"))" -i "$TMP_EXISTING"
-  yq eval "del(.users[] | select(.name == \"$CLUSTER_NAME\"))" -i "$TMP_EXISTING"
-  yq eval "del(.contexts[] | select(.name == \"$CLUSTER_NAME\"))" -i "$TMP_EXISTING"
+  jq --arg cluster "$CLUSTER_NAME" '
+    .clusters |= map(select(.name != $cluster)) |
+    .users |= map(select(.name != $cluster)) |
+    .contexts |= map(select(.name != $cluster))
+  ' "$TMP_EXISTING" > "$TMP_EXISTING.filtered"
 
-  CURRENT_CONTEXT=$(yq eval '.current-context' "$TMP_EXISTING")
+  CURRENT_CONTEXT=$(jq -r '."current-context" // ""' "$TMP_EXISTING.filtered")
   if [ "$CURRENT_CONTEXT" == "$CLUSTER_NAME" ]; then
-    FIRST_CONTEXT=$(yq eval '.contexts[0].name' "$TMP_EXISTING")
-    if [ "$FIRST_CONTEXT" != "null" ] && [ -n "$FIRST_CONTEXT" ]; then
-      yq eval ".current-context = \"$FIRST_CONTEXT\"" -i "$TMP_EXISTING"
+    FIRST_CONTEXT=$(jq -r '.contexts[0].name // ""' "$TMP_EXISTING.filtered")
+    if [ -n "$FIRST_CONTEXT" ] && [ "$FIRST_CONTEXT" != "null" ]; then
+      jq --arg first "$FIRST_CONTEXT" '."current-context" = $first' "$TMP_EXISTING.filtered" | json_to_yaml
     else
-      yq eval "del(.current-context)" -i "$TMP_EXISTING"
+      jq 'del(."current-context")' "$TMP_EXISTING.filtered" | json_to_yaml
     fi
+  else
+    cat "$TMP_EXISTING.filtered" | json_to_yaml
   fi
 
-  cat "$TMP_EXISTING"
-
-  rm -f "$TMP_EXISTING"
+  rm -f "$TMP_EXISTING" "$TMP_EXISTING.filtered"
 }
 
 if [ "$OPERATION" == "upsert" ]; then
@@ -103,7 +123,7 @@ if [ "$OPERATION" == "upsert" ]; then
       echo "Cluster API secret not found for $CLUSTER_NAME"
       exit 0
     else
-      echo "Failed to extract kubeconfig"
+      echo "Failed to extract kubeconfig: $KUBECONFIG_B64"
       exit 1
     fi
   fi
@@ -115,42 +135,67 @@ if [ "$OPERATION" == "upsert" ]; then
 
   NEW_KUBECONFIG=$(echo "$KUBECONFIG_B64" | base64 -d)
 
-  EXISTING_KUBECONFIG=$(sops -d "$SOPS_FILE" | yq '.vault.kv."cluster-secret-store".secrets.KUBECONFIG.KUBECONFIG')
+  TMP_SOPS_JSON=$(mktemp)
+  
+  sops -d --output-type=json "$SOPS_FILE" > "$TMP_SOPS_JSON"
+
+  EXISTING_KUBECONFIG=$(jq -r '.vault.kv."cluster-secret-store".secrets.KUBECONFIG.KUBECONFIG' "$TMP_SOPS_JSON")
+  rm -f "$TMP_SOPS_JSON"
 
   MERGED_KUBECONFIG=$(merge_kubeconfig "$EXISTING_KUBECONFIG" "$NEW_KUBECONFIG" "$CLUSTER_NAME")
 
-  TMP_FILE=$(mktemp)
-  sops -d "$SOPS_FILE" > "$TMP_FILE"
+  TMP_DECRYPTED="${SOPS_FILE%.yaml}.tmp.yaml"
+  TMP_JSON=$(mktemp)
+
+  sops -d "$SOPS_FILE" > "$TMP_DECRYPTED"
+  yaml_to_json < "$TMP_DECRYPTED" > "$TMP_JSON"
 
   TMP_MERGED=$(mktemp)
   echo "$MERGED_KUBECONFIG" > "$TMP_MERGED"
   MERGED_KUBECONFIG_STR=$(cat "$TMP_MERGED")
 
-  yq eval ".vault.kv.\"cluster-secret-store\".secrets.KUBECONFIG.KUBECONFIG = \"$MERGED_KUBECONFIG_STR\"" "$TMP_FILE" > "$TMP_FILE.updated"
+  jq --arg kubeconfig "$MERGED_KUBECONFIG_STR" \
+    '.vault.kv."cluster-secret-store".secrets.KUBECONFIG.KUBECONFIG = $kubeconfig' \
+    "$TMP_JSON" | json_to_yaml > "$TMP_DECRYPTED"
 
-  sops -e "$TMP_FILE.updated" > "$SOPS_FILE"
+  SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE:-$HOME/.sops/keys/sops-key.txt}" \
+    sops --encrypt --in-place "$TMP_DECRYPTED"
 
-  rm -f "$TMP_FILE" "$TMP_FILE.updated" "$TMP_MERGED"
+  mv "$TMP_DECRYPTED" "$SOPS_FILE"
+
+  rm -f "$TMP_JSON" "$TMP_MERGED"
 
   echo "Updated SOPS file with kubeconfig for cluster: $CLUSTER_NAME"
 
 elif [ "$OPERATION" == "delete" ]; then
-  EXISTING_KUBECONFIG=$(sops -d "$SOPS_FILE" | yq '.vault.kv."cluster-secret-store".secrets.KUBECONFIG.KUBECONFIG')
+  TMP_SOPS_JSON=$(mktemp)
+  sops -d --output-type=json "$SOPS_FILE" > "$TMP_SOPS_JSON"
+
+  EXISTING_KUBECONFIG=$(jq -r '.vault.kv."cluster-secret-store".secrets.KUBECONFIG.KUBECONFIG' "$TMP_SOPS_JSON")
+  rm -f "$TMP_SOPS_JSON"
 
   UPDATED_KUBECONFIG=$(delete_cluster_from_kubeconfig "$EXISTING_KUBECONFIG" "$CLUSTER_NAME")
 
-  TMP_FILE=$(mktemp)
-  sops -d "$SOPS_FILE" > "$TMP_FILE"
+  TMP_DECRYPTED="${SOPS_FILE%.yaml}.tmp.yaml"
+  TMP_JSON=$(mktemp)
 
-  TMP_UPDATED=$(mktemp)
-  echo "$UPDATED_KUBECONFIG" > "$TMP_UPDATED"
-  UPDATED_KUBECONFIG_STR=$(cat "$TMP_UPDATED")
+  sops -d "$SOPS_FILE" > "$TMP_DECRYPTED"
+  yaml_to_json < "$TMP_DECRYPTED" > "$TMP_JSON"
 
-  yq eval ".vault.kv.\"cluster-secret-store\".secrets.KUBECONFIG.KUBECONFIG = \"$UPDATED_KUBECONFIG_STR\"" "$TMP_FILE" > "$TMP_FILE.updated"
+  TMP_UPDATED_KC=$(mktemp)
+  echo "$UPDATED_KUBECONFIG" > "$TMP_UPDATED_KC"
+  UPDATED_KUBECONFIG_STR=$(cat "$TMP_UPDATED_KC")
 
-  sops -e "$TMP_FILE.updated" > "$SOPS_FILE"
+  jq --arg kubeconfig "$UPDATED_KUBECONFIG_STR" \
+    '.vault.kv."cluster-secret-store".secrets.KUBECONFIG.KUBECONFIG = $kubeconfig' \
+    "$TMP_JSON" | json_to_yaml > "$TMP_DECRYPTED"
 
-  rm -f "$TMP_FILE" "$TMP_FILE.updated" "$TMP_UPDATED"
+  SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE:-$HOME/.sops/keys/sops-key.txt}" \
+    sops --encrypt --in-place "$TMP_DECRYPTED"
+
+  mv "$TMP_DECRYPTED" "$SOPS_FILE"
+
+  rm -f "$TMP_JSON" "$TMP_UPDATED_KC"
 
   echo "Removed kubeconfig for cluster: $CLUSTER_NAME from SOPS file"
 
