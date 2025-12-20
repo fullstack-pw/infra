@@ -12,7 +12,7 @@ on:
       - "secrets/**"
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
@@ -349,6 +349,7 @@ jobs:
               echo "Committing KUBECONFIG changes to git"
               git add secrets/common/cluster-secret-store/secrets/KUBECONFIG.yaml
               git commit -m "chore: Update KUBECONFIG with Cluster API clusters"
+              git pull --rebase origin main
               git push
               echo "kubeconfig_updated=true" >> $GITHUB_OUTPUT
               echo "KUBECONFIG updated and committed to git"
