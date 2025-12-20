@@ -111,7 +111,9 @@ delete_cluster_from_kubeconfig() {
 
 if [ "$OPERATION" == "upsert" ]; then
   set +e
-  KUBECONFIG_B64=$(kubectl --context "$MANAGEMENT_CONTEXT" \
+  KUBECONFIG_B64=$(kubectl \
+    --context "$MANAGEMENT_CONTEXT" \
+    --kubeconfig /home/runner/.kube/config \
     get secret "${CLUSTER_NAME}-kubeconfig" \
     -n "$NAMESPACE" \
     -o jsonpath='{.data.value}' 2>&1)
