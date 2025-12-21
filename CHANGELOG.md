@@ -1,3 +1,9 @@
+## [1.4.39](https://github.com/fullstack-pw/infra/compare/v1.4.38...v1.4.39) (2025-12-21)
+
+### Tasks
+
+* **cluster:** install dev modules ([a5dd8cb](https://github.com/fullstack-pw/infra/commit/a5dd8cb7798d8be41668ba379fe17705ee245f6a))
+
 ## [1.4.38](https://github.com/fullstack-pw/infra/compare/v1.4.37...v1.4.38) (2025-12-21)
 
 ### Tasks
