@@ -376,9 +376,9 @@ jobs:
           echo "Running Terraform apply to sync KUBECONFIG changes to Vault"
           cd clusters
           python3 load_secrets.py
+          cd ..
           make apply
           echo "KUBECONFIG successfully synced to Vault"
-          cd ..
 
       - name: Report Kubeconfig Update Failure
         if: steps.pr_check.outputs.pr_merged == 'true' && steps.kubeconfig_update.outcome == 'failure'
