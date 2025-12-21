@@ -1,3 +1,10 @@
+## [1.4.37](https://github.com/fullstack-pw/infra/compare/v1.4.36...v1.4.37) (2025-12-21)
+
+### Tasks
+
+* **cluster:** bootstrap dev infra ([2fbbb54](https://github.com/fullstack-pw/infra/commit/2fbbb54371e3393021088e15d76e79bfe6fcc0ad))
+* Update KUBECONFIG with Cluster API clusters ([543ffb7](https://github.com/fullstack-pw/infra/commit/543ffb7fba5213ead5059f39ca7dad5a6812eb0a))
+
 ## [1.4.36](https://github.com/fullstack-pw/infra/compare/v1.4.35...v1.4.36) (2025-12-21)
 
 ### Tasks
