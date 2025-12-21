@@ -77,8 +77,8 @@ variable "config" {
     }
     dev = {
       kubernetes_context   = "dev"
-      install_crd          = false
-      cert_manager_crd     = false
+      install_crd          = true
+      cert_manager_crd     = true
       argocd_ingress_class = "istio"
       argocd_domain        = "dev.argocd.fullstack.pw"
       teleport = {
