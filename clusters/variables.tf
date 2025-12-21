@@ -13,11 +13,11 @@ variable "workload" {
       "externaldns",
       "cert_manager",
       "external_secrets",
-      "istio",
-      "argocd",
-      "teleport-agent",
-      "dev-postgres",
-      "observability-box"
+      # "istio",
+      # "argocd",
+      # "teleport-agent",
+      # "dev-postgres",
+      # "observability-box"
     ]
     stg = [
       "externaldns",
@@ -77,8 +77,8 @@ variable "config" {
     }
     dev = {
       kubernetes_context   = "dev"
-      install_crd          = true
-      cert_manager_crd     = true
+      install_crd          = false
+      cert_manager_crd     = false
       argocd_ingress_class = "istio"
       argocd_domain        = "dev.argocd.fullstack.pw"
       teleport = {
@@ -91,7 +91,9 @@ variable "config" {
           "dev-postgres" = "dev.postgres.fullstack.pw:5432"
         }
       }
-      prometheus_namespaces = []
+      prometheus_namespaces     = []
+      prometheus_memory_limit   = "1024Mi"
+      prometheus_memory_request = "256Mi"
     }
     stg = {
       kubernetes_context = "stg"

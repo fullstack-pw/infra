@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-ENVIRONMENTS := sandboxy tools observability
+ENVIRONMENTS := dev sandboxy tools observability
 DEFAULT_ENV := tools
 TERRAFORM_DIR := clusters
 PROXMOX_DIR := proxmox
