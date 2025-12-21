@@ -378,6 +378,7 @@ jobs:
           python3 load_secrets.py
           make apply
           echo "KUBECONFIG successfully synced to Vault"
+          cd ..
 
       - name: Report Kubeconfig Update Failure
         if: steps.pr_check.outputs.pr_merged == 'true' && steps.kubeconfig_update.outcome == 'failure'
