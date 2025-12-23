@@ -15,5 +15,5 @@ output "gateway_service_name" {
 
 output "default_gateway_name" {
   description = "Default gateway resource name"
-  value       = var.create_default_gateway ? "default-gateway" : ""
+  value       = var.istio_CRDs ? "default-gateway" : ""
 }

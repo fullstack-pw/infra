@@ -50,9 +50,8 @@ module "helm" {
   depends_on = [module.namespace]
 }
 
-# Istio VirtualService for routing traffic to Argo CD
 resource "kubernetes_manifest" "argocd_virtualservice" {
-  count = var.use_istio && var.ingress_enabled ? 1 : 0
+  count = var.istio_CRDs && var.ingress_enabled ? 1 : 0
 
   manifest = {
     apiVersion = "networking.istio.io/v1beta1"

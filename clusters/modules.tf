@@ -1,3 +1,28 @@
+module "local_path_provisioner" {
+  count  = contains(local.workload, "local-path-provisioner") ? 1 : 0
+  source = "../modules/apps/local-path-provisioner"
+
+  namespace                 = "local-path-storage"
+  storage_class_name        = "local-path"
+  set_default_storage_class = true
+}
+
+module "metallb" {
+  count  = contains(local.workload, "metallb") ? 1 : 0
+  source = "../modules/apps/metallb"
+
+  namespace      = "metallb-system"
+  chart_version  = "0.14.9"
+  create_ip_pool = var.config[terraform.workspace].metallb_create_ip_pool
+  ip_pool_name   = "default-pool"
+  ip_pool_addresses = lookup(
+    var.config[terraform.workspace],
+    "metallb_ip_pool_addresses",
+    []
+  )
+  l2_advertisement_name = "default-l2"
+}
+
 module "externaldns" {
   count  = contains(local.workload, "externaldns") ? 1 : 0
   source = "../modules/apps/externaldns"
@@ -105,24 +130,18 @@ module "istio" {
   count  = contains(local.workload, "istio") ? 1 : 0
   source = "../modules/apps/istio"
 
-  # Gateway configuration - K3s has built-in ServiceLB (Klipper-LB)
   gateway_service_type = "LoadBalancer"
 
-  # Control plane configuration
   pilot_replicas   = 1
   gateway_replicas = 1
 
-  # Enable telemetry and observability
   enable_telemetry = true
   enable_tracing   = false # Can be enabled later to integrate with Jaeger
   access_log_file  = "/dev/stdout"
 
-  # IMPORTANT: Set to false for initial deployment, then set to true after CRDs are installed
-  # This avoids the chicken-and-egg problem with Terraform validating manifests during plan
-  create_default_gateway = true # TODO: Change to true after first apply
-  default_tls_secret     = "default-gateway-tls"
+  istio_CRDs         = true
+  default_tls_secret = "default-gateway-tls"
 
-  # Certificate configuration for default gateway
   cert_issuer_name = "letsencrypt-prod"
   cert_issuer_kind = "ClusterIssuer"
   gateway_dns_names = [
@@ -149,6 +168,7 @@ module "argocd" {
   application_namespaces = "*"
   enable_notifications   = true
   enable_dex             = false
+  istio_CRDs             = true
 }
 
 module "minio" {
@@ -224,8 +244,9 @@ module "observability-box" {
 }
 
 module "postgres" {
-  count  = contains(local.workload, "postgres") ? 1 : 0
-  source = "../modules/apps/postgres"
+  count      = contains(local.workload, "postgres") ? 1 : 0
+  source     = "../modules/apps/postgres"
+  istio_CRDs = false
 }
 
 module "redis" {
@@ -365,16 +386,20 @@ module "testing_postgres" {
   count  = contains(local.workload, "dev-postgres") ? 1 : 0
   source = "../modules/apps/postgres"
 
-  memory_request          = "512Mi"
-  cpu_request             = "250m"
-  memory_limit            = "1Gi"
-  cpu_limit               = "500m"
-  ingress_host            = "dev.postgres.fullstack.pw"
-  ingress_tls_secret_name = "postgres-tls"
-  enable_ssl              = true
-  ssl_ca_cert_key         = "SSL_CA"
-  ssl_server_cert_key     = "SSL_CERT"
-  ssl_server_key_key      = "SSL_KEY"
+  namespace                    = "dev-postgres"
+  create_namespace             = true
+  needs_secrets                = true
+  preserve_existing_vault_data = false
+  memory_request               = "512Mi"
+  cpu_request                  = "250m"
+  memory_limit                 = "1Gi"
+  cpu_limit                    = "500m"
+  ingress_host                 = "dev.postgres.fullstack.pw"
+  ingress_tls_secret_name      = "postgres-tls"
+  enable_ssl                   = true
+  ssl_ca_cert_key              = "SSL_CA"
+  ssl_server_cert_key          = "SSL_CERT"
+  ssl_server_key_key           = "SSL_KEY"
 
   # Application user for password-based authentication
   create_app_user            = true
@@ -387,5 +412,6 @@ module "testing_postgres" {
   istio_gateway_namespace = "istio-system"
   istio_gateway_name      = "istio-system/default-gateway"
   ingress_class_name      = "istio"
+  istio_CRDs              = true
 }
 

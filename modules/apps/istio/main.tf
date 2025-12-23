@@ -1,11 +1,3 @@
-/**
- * Istio Module
- *
- * This module deploys Istio service mesh with ingress gateway.
- * Installs Istio base, istiod (control plane), and ingress gateway.
- */
-
-// Create istio-system namespace
 module "namespace" {
   source = "../../base/namespace"
 
@@ -13,14 +5,10 @@ module "namespace" {
   name   = var.namespace
   labels = {
     "kubernetes.io/metadata.name" = var.namespace
-    "istio-injection"              = "enabled"
+    "istio-injection"             = "enabled"
   }
 }
 
-// Deploy Istio base chart (CRDs and cluster roles)
-// This chart installs ALL Istio CRDs including Gateway, VirtualService,
-// DestinationRule, ServiceEntry, AuthorizationPolicy, and 30+ others.
-// No manual CRD installation required - Helm manages the full lifecycle.
 module "istio_base" {
   source = "../../base/helm"
 
@@ -35,7 +23,6 @@ module "istio_base" {
   set_values       = []
 }
 
-// Deploy istiod (Istio control plane)
 module "istiod" {
   source     = "../../base/helm"
   depends_on = [module.istio_base]
@@ -49,17 +36,16 @@ module "istiod" {
   create_namespace = false
   values_files = [
     templatefile("${path.module}/templates/istiod-values.yaml.tpl", {
-      pilot_replicas     = var.pilot_replicas
-      enable_telemetry   = var.enable_telemetry
-      access_log_file    = var.access_log_file
-      enable_tracing     = var.enable_tracing
-      tracing_endpoint   = var.tracing_endpoint
+      pilot_replicas   = var.pilot_replicas
+      enable_telemetry = var.enable_telemetry
+      access_log_file  = var.access_log_file
+      enable_tracing   = var.enable_tracing
+      tracing_endpoint = var.tracing_endpoint
     })
   ]
   set_values = []
 }
 
-// Deploy Istio Ingress Gateway
 module "istio_ingress" {
   source     = "../../base/helm"
   depends_on = [module.istiod]
@@ -83,10 +69,8 @@ module "istio_ingress" {
   set_values = []
 }
 
-// Create Certificate resource for default Gateway TLS
-// This tells cert-manager to provision a wildcard certificate
 resource "kubernetes_manifest" "default_certificate" {
-  count      = var.create_default_gateway ? 1 : 0
+  count      = var.istio_CRDs ? 1 : 0
   depends_on = [module.istio_base]
 
   manifest = {
@@ -107,11 +91,8 @@ resource "kubernetes_manifest" "default_certificate" {
   }
 }
 
-// Create default Gateway resource for HTTPS traffic
-// Note: This requires Istio CRDs to be installed first.
-// On first apply, the istio-base chart will install CRDs, so this will work.
 resource "kubernetes_manifest" "default_gateway" {
-  count      = var.create_default_gateway ? 1 : 0
+  count      = var.istio_CRDs ? 1 : 0
   depends_on = [module.istio_base, module.istio_ingress, kubernetes_manifest.default_certificate]
 
   manifest = {

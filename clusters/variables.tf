@@ -10,14 +10,16 @@ variable "workload" {
       "immich"
     ]
     dev = [
+      "local-path-provisioner",
+      "metallb",
       "externaldns",
       "cert_manager",
       "external_secrets",
-      # "istio",
-      # "argocd",
-      # "teleport-agent",
-      # "dev-postgres",
-      # "observability-box"
+      "istio",
+      "argocd",
+      "teleport-agent",
+      "dev-postgres",
+      "observability-box"
     ]
     stg = [
       "externaldns",
@@ -76,9 +78,10 @@ variable "config" {
       cert_manager_crd   = true
     }
     dev = {
-      kubernetes_context   = "dev"
+      kubernetes_context   = "dev-admin@dev"
       install_crd          = true
       cert_manager_crd     = true
+      istio_CRDs           = true
       argocd_ingress_class = "istio"
       argocd_domain        = "dev.argocd.fullstack.pw"
       teleport = {
@@ -94,6 +97,8 @@ variable "config" {
       prometheus_namespaces     = []
       prometheus_memory_limit   = "1024Mi"
       prometheus_memory_request = "256Mi"
+      metallb_create_ip_pool    = true
+      metallb_ip_pool_addresses = ["192.168.1.70-192.168.1.80"]
     }
     stg = {
       kubernetes_context = "stg"

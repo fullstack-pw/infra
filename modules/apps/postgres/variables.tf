@@ -10,6 +10,12 @@ variable "create_namespace" {
   default     = false
 }
 
+variable "needs_secrets" {
+  description = "Add cluster-secrets=true label to namespace for external-secrets sync"
+  type        = bool
+  default     = false
+}
+
 variable "release_name" {
   description = "Name of the Helm release"
   type        = string
@@ -321,4 +327,10 @@ variable "app_user_password" {
   type        = string
   default     = ""
   sensitive   = true
+}
+
+variable "istio_CRDs" {
+  description = "Enable after installing core istio to install resources that need CRDs"
+  type        = bool
+  default     = true
 }

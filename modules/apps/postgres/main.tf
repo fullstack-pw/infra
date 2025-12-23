@@ -1,8 +1,9 @@
 module "namespace" {
   source = "../../base/namespace"
 
-  create = var.create_namespace
-  name   = var.namespace
+  create        = var.create_namespace
+  name          = var.namespace
+  needs_secrets = var.needs_secrets
 }
 
 module "credentials" {
@@ -162,7 +163,7 @@ module "ingress" {
 # Using kubernetes_manifest directly because the base module doesn't handle
 # TLS PASSTHROUGH mode properly (Terraform strict type validation issue)
 resource "kubernetes_manifest" "istio_gateway" {
-  count      = var.ingress_enabled && var.use_istio ? 1 : 0
+  count      = var.ingress_enabled && var.istio_CRDs ? 1 : 0
   depends_on = []
 
   # Wait for Istio CRD to be available before validating
@@ -201,7 +202,7 @@ resource "kubernetes_manifest" "istio_gateway" {
 
 # Istio VirtualService for PostgreSQL (TCP routing with TLS passthrough)
 resource "kubernetes_manifest" "istio_virtualservice" {
-  count      = var.ingress_enabled && var.use_istio ? 1 : 0
+  count      = var.ingress_enabled && var.istio_CRDs ? 1 : 0
   depends_on = [kubernetes_manifest.istio_gateway]
 
   # Wait for Istio CRD to be available before validating

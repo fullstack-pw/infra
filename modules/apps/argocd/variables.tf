@@ -134,3 +134,10 @@ variable "controller_resources" {
     }
   }
 }
+
+variable "istio_CRDs" {
+  description = "Enable after installing core istio to install resources that need CRDs"
+  type        = bool
+  default     = true
+}
+

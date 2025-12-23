@@ -70,8 +70,8 @@ variable "tracing_endpoint" {
   default     = ""
 }
 
-variable "create_default_gateway" {
-  description = "Create a default Gateway resource for all hosts"
+variable "istio_CRDs" {
+  description = "Enable after installing core istio to install resources that need CRDs"
   type        = bool
   default     = true
 }
