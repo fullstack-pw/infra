@@ -1,3 +1,9 @@
+## [1.5.0](https://github.com/fullstack-pw/infra/compare/v1.4.42...v1.5.0) (2025-12-24)
+
+### Features
+
+* **argocd:** migrate cks-backend and cks-frontend to ArgoCD ([0aa2cc5](https://github.com/fullstack-pw/infra/commit/0aa2cc53e5d81ea51a6bf55e81abd25a8df16879))
+
 ## [1.4.42](https://github.com/fullstack-pw/infra/compare/v1.4.41...v1.4.42) (2025-12-24)
 
 ### Tasks
