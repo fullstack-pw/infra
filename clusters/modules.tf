@@ -390,6 +390,7 @@ module "testing_postgres" {
   create_namespace             = true
   needs_secrets                = true
   preserve_existing_vault_data = false
+  vault_secret_path            = "cluster-secret-store/secrets/DEV_POSTGRES"
   memory_request               = "512Mi"
   cpu_request                  = "250m"
   memory_limit                 = "1Gi"
