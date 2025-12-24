@@ -49,7 +49,7 @@ variable "workload" {
       "external_secrets",
       "postgres",
       "redis",
-      #"nats",
+      "nats",
       "observability-box",
       #"gitlab_runner",
       "github_runner",

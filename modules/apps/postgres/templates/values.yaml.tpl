@@ -16,11 +16,15 @@ global:
       existingSecret: ""
 
 postgresql:
-  extraEnvVars:
-    - name: POSTGRESQL_EXTRA_FLAGS
-      value: "-c shared_preload_libraries=vectors.so -c listen_addresses=* -c max_connections=200"
 
 primary:
+%{if enable_ssl}
+  configuration: |-
+    ssl = on
+    ssl_cert_file = '/var/lib/postgresql/certs/server.crt'
+    ssl_key_file = '/var/lib/postgresql/certs/server.key'
+    ssl_ca_file = '/var/lib/postgresql/certs/ca.crt'
+%{endif}
   service:
     type: ${service_type}
     port: ${service_port}
@@ -57,35 +61,44 @@ primary:
     - name: POSTGRESQL_WAL_LEVEL
       value: logical
 %{if enable_ssl}
-    - name: POSTGRESQL_ENABLE_TLS
-      value: "yes"
-    - name: POSTGRESQL_TLS_CERT_FILE
-      value: "/opt/bitnami/postgresql/certs/server.crt"
-    - name: POSTGRESQL_TLS_KEY_FILE
-      value: "/opt/bitnami/postgresql/certs/server.key"
-    - name: POSTGRESQL_TLS_CA_FILE
-      value: "/opt/bitnami/postgresql/certs/ca.crt"
+  initContainers:
+    - name: copy-certs
+      image: ${registry}/${repository}:${pg_version}
+      securityContext:
+        runAsUser: 1001
+        runAsGroup: 1001
+      command:
+        - sh
+        - -c
+        - |
+          cp /tmp/certs/* /certs/
+          chmod 600 /certs/server.key
+          chmod 644 /certs/server.crt /certs/ca.crt
+      volumeMounts:
+        - name: teleport-certs-source
+          mountPath: /tmp/certs
+          readOnly: true
+        - name: teleport-certs
+          mountPath: /certs
   extraVolumes:
-    - name: teleport-certs
+    - name: teleport-certs-source
       secret:
         secretName: cluster-secrets
         items:
           - key: ${ssl_ca_cert_key}
             path: ca.crt
-            mode: 0600
           - key: ${ssl_server_cert_key}
             path: server.crt
-            mode: 0600
           - key: ${ssl_server_key_key}
             path: server.key
-            mode: 0600
+    - name: teleport-certs
+      emptyDir: {}
 
   extraVolumeMounts:
     - name: teleport-certs
-      mountPath: /opt/bitnami/postgresql/certs
-      readOnly: true
+      mountPath: /var/lib/postgresql/certs
   pgHbaConfiguration: |-
-    local   all             all                                     peer
+    local   all             all                                     scram-sha-256
     host    all             all             127.0.0.1/32            scram-sha-256
     host    all             all             ::1/128                 scram-sha-256
     hostssl all             appuser         10.42.0.0/16            scram-sha-256
