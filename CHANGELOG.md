@@ -1,3 +1,9 @@
+## [1.4.41](https://github.com/fullstack-pw/infra/compare/v1.4.40...v1.4.41) (2025-12-23)
+
+### Tasks
+
+* **postgres:** docker image ([86b0100](https://github.com/fullstack-pw/infra/commit/86b0100d06cdb5251d56ebb8ffdfc620c231d852))
+
 ## [1.4.40](https://github.com/fullstack-pw/infra/compare/v1.4.39...v1.4.40) (2025-12-23)
 
 ### Tasks
