@@ -1,3 +1,14 @@
+## [1.4.42](https://github.com/fullstack-pw/infra/compare/v1.4.41...v1.4.42) (2025-12-24)
+
+### Tasks
+
+* **argo:** migrate ascii-frontend ([460f0ab](https://github.com/fullstack-pw/infra/commit/460f0ab6c9251b27cee74510ab8916120ea4bf4b))
+
+### Bug Fixes
+
+* **postgres:** dev ([0989f4b](https://github.com/fullstack-pw/infra/commit/0989f4b34b0b3748141d429155bb3486d0defc24))
+* **postgres:** SSL ([da9e115](https://github.com/fullstack-pw/infra/commit/da9e115743c153fef3b2ce5d47d4f3e4b762abc5))
+
 ## [1.4.41](https://github.com/fullstack-pw/infra/compare/v1.4.40...v1.4.41) (2025-12-23)
 
 ### Tasks
