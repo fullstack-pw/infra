@@ -1,3 +1,9 @@
+## [1.5.1](https://github.com/fullstack-pw/infra/compare/v1.5.0...v1.5.1) (2025-12-28)
+
+### Bug Fixes
+
+* **dev-postgres:** migrate to cloudnativepg ([794209e](https://github.com/fullstack-pw/infra/commit/794209ed76ec1f15c9dfd65279b2556daf33ea20))
+
 ## [1.5.0](https://github.com/fullstack-pw/infra/compare/v1.4.42...v1.5.0) (2025-12-24)
 
 ### Features
