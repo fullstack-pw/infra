@@ -416,3 +416,70 @@ module "testing_postgres" {
   istio_CRDs              = true
 }
 
+# CloudNativePG Operator (required for cloudnative-postgres module)
+module "cloudnative_pg_operator" {
+  count  = contains(local.workload, "cloudnative-pg-operator") ? 1 : 0
+  source = "../modules/apps/cloudnative-postgres-operator"
+
+  namespace        = "cnpg-system"
+  create_namespace = true
+  chart_version    = "0.22.1"
+}
+
+# CloudNativePG PostgreSQL Cluster for dev environment
+module "dev_postgres_cnpg" {
+  count  = contains(local.workload, "dev-postgres-cnpg") ? 1 : 0
+  source = "../modules/apps/cloudnative-postgres"
+
+  cluster_name     = "dev-postgres"
+  namespace        = "dev-postgres"
+  create_namespace = true
+  create_cluster   = true # Set to true after operator CRDs are installed
+
+  # Image configuration
+  registry   = "ghcr.io"
+  repository = "cloudnative-pg/postgresql" # Use CloudNativePG's PostgreSQL image
+  pg_version = "15"
+
+  # Database configuration
+  postgres_database = "postgres"
+  postgres_username = "admin"
+  postgres_password = random_password.dev_postgres_password.result
+
+  # Storage
+  persistence_size = "1Gi"
+  storage_class    = "" # Use default
+
+  # Resources
+  memory_request = "512Mi"
+  cpu_request    = "250m"
+  memory_limit   = "1Gi"
+  cpu_limit      = "500m"
+
+  # SSL - Pass certificates directly from Vault
+  enable_ssl       = true
+  ssl_ca_cert      = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_SSL_CA"]
+  ssl_server_cert  = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_SSL_CERT"]
+  ssl_server_key   = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_SSL_KEY"]
+
+  # Application user
+  create_app_user            = true
+  app_username               = "appuser"
+  app_user_generate_password = true
+
+  # Vault
+  needs_secrets     = true
+  vault_secret_path = "cluster-secret-store/secrets/DEV_POSTGRES"
+
+  # Export credentials to default namespace for writer app
+  export_credentials_to_namespace  = "default"
+  export_credentials_secret_name   = "dev-postgres-credentials"
+
+  depends_on = [module.cloudnative_pg_operator]
+}
+
+resource "random_password" "dev_postgres_password" {
+  length  = 32
+  special = true
+}
+

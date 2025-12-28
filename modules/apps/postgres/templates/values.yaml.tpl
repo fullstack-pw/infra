@@ -18,13 +18,6 @@ global:
 postgresql:
 
 primary:
-%{if enable_ssl}
-  configuration: |-
-    ssl = on
-    ssl_cert_file = '/var/lib/postgresql/certs/server.crt'
-    ssl_key_file = '/var/lib/postgresql/certs/server.key'
-    ssl_ca_file = '/var/lib/postgresql/certs/ca.crt'
-%{endif}
   service:
     type: ${service_type}
     port: ${service_port}
@@ -62,11 +55,25 @@ primary:
       value: logical
 %{if enable_ssl}
   initContainers:
+    - name: fix-data-permissions
+      image: ${registry}/${repository}:${pg_version}
+      command:
+        - sh
+        - -c
+        - |
+          mkdir -p /bitnami/postgresql/data
+          chown -R 999:999 /bitnami/postgresql
+          chmod 700 /bitnami/postgresql/data
+      volumeMounts:
+        - name: data
+          mountPath: /bitnami/postgresql
+      securityContext:
+        runAsUser: 0  # Run as root to change ownership
     - name: copy-certs
       image: ${registry}/${repository}:${pg_version}
       securityContext:
-        runAsUser: 1001
-        runAsGroup: 1001
+        runAsUser: 999  # Changed from 1001 to match official postgres UID
+        runAsGroup: 999
       command:
         - sh
         - -c
@@ -97,6 +104,18 @@ primary:
   extraVolumeMounts:
     - name: teleport-certs
       mountPath: /var/lib/postgresql/certs
+  command:
+    - postgres
+    - "-c"
+    - "shared_preload_libraries=vectors.so"
+    - "-c"
+    - "ssl=on"
+    - "-c"
+    - "ssl_cert_file=/var/lib/postgresql/certs/server.crt"
+    - "-c"
+    - "ssl_key_file=/var/lib/postgresql/certs/server.key"
+    - "-c"
+    - "ssl_ca_file=/var/lib/postgresql/certs/ca.crt"
   pgHbaConfiguration: |-
     local   all             all                                     scram-sha-256
     host    all             all             127.0.0.1/32            scram-sha-256
@@ -112,6 +131,7 @@ primary:
     enabled: ${persistence_enabled}
 %{if persistence_enabled && storage_class != ""}
     storageClass: "${storage_class}"
+    mountPath: "/var/lib/postgresql/data"
 %{endif}
     size: "${persistence_size}"
   

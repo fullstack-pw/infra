@@ -18,7 +18,9 @@ variable "workload" {
       "istio",
       "argocd",
       "teleport-agent",
-      "dev-postgres",
+      "cloudnative-pg-operator",  # CloudNativePG operator
+      "dev-postgres-cnpg",        # New CloudNativePG-based PostgreSQL
+      # "dev-postgres",           # Old Bitnami-based PostgreSQL - commented out for migration
       "observability-box"
     ]
     stg = [
@@ -170,11 +172,11 @@ variable "config" {
           wk_replicas = 2
 
           cp_disk_size = 20
-          cp_memory    = 2048
-          cp_cores     = 2
+          cp_memory    = 4096
+          cp_cores     = 4
           wk_disk_size = 30
-          wk_memory    = 4096
-          wk_cores     = 4
+          wk_memory    = 8192
+          wk_cores     = 8
         },
         #   {
         #   name                      = "stg"

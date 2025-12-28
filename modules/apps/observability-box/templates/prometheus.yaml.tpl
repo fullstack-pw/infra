@@ -36,6 +36,8 @@ server:
     requests:
       cpu: ${cpu_request}
       memory: ${memory_request}
+  persistentVolume:
+    size: 2Gi
 serverFiles:
   prometheus.yml:
     scrape_configs:

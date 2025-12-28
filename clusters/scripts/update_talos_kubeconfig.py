@@ -76,8 +76,20 @@ class TalosKubeconfigUpdater:
         secret_name = f"{cluster_name}-kubeconfig"
 
         try:
-            # Set context to management cluster
+            # Verify context exists first
             self.logger.info(f"Using management cluster context: {self.management_context}")
+            check_context = subprocess.run(
+                ["kubectl", "config", "get-contexts", "-o", "name"],
+                check=True,
+                capture_output=True,
+                text=True
+            )
+            available_contexts = check_context.stdout.strip().split('\n')
+
+            if self.management_context not in available_contexts:
+                raise ValueError(f"Context '{self.management_context}' not found in kubeconfig. Available contexts: {', '.join(available_contexts)}")
+
+            # Set context to management cluster
             subprocess.run(
                 ["kubectl", "config", "use-context", self.management_context],
                 check=True,
