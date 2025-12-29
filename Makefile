@@ -38,6 +38,15 @@ Talos Cluster Management:
   make update-kubeconfigs ENV=<env> - Update kubeconfigs for specific environment
   make test-kubeconfig-update     - Test kubeconfig update with dry-run mode
 
+OpenTofu Commands (Migration):
+  make tofu-init                  - Initialize OpenTofu for all environments
+  make tofu-plan                  - Plan changes with OpenTofu (all environments)
+  make tofu-plan ENV=<env>        - Plan changes with OpenTofu (specific environment)
+  make tofu-apply                 - Apply changes with OpenTofu (all environments)
+  make tofu-apply ENV=<env>       - Apply changes with OpenTofu (specific environment)
+  make tofu-validate              - Validate with OpenTofu
+  make tofu-workspace             - List OpenTofu workspaces
+
 Environment Management:
   make init                     - Initialize Terraform for all environments
   make fmt                      - Format Terraform files
@@ -66,7 +75,7 @@ help:
 .PHONY: init
 init: install-crypto-tools
 	@echo -e "${CYAN}Initializing Terraform for all environments...${NC}"
-	@cd $(TERRAFORM_DIR) && terraform init -upgrade
+	@cd $(TERRAFORM_DIR) && terraform init -reconfigure
 
 .PHONY: create-workspace
 create-workspace:
@@ -320,3 +329,72 @@ test-kubeconfig-update:
 		--management-context tools \
 		--dry-run \
 		--debug
+
+
+# OpenTofu Commands (Migration)
+.PHONY: tofu-init
+tofu-init: install-crypto-tools
+	@echo -e "${CYAN}Initializing OpenTofu for all environments...${NC}"
+	@cd $(TERRAFORM_DIR) && tofu init -reconfigure -upgrade
+
+.PHONY: tofu-plan
+tofu-plan:
+	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TERRAFORM_DIR) && source ../python-venv/bin/activate && python3 load_secrets.py && cd ..
+	@if [ -z "$(ENV)" ]; then \
+		echo -e "${CYAN}Planning changes for all environments (OpenTofu)...${NC}"; \
+		for env in $(ENVIRONMENTS); do \
+			cd $(TERRAFORM_DIR) && tofu workspace select $${env} || tofu workspace new $${env}; \
+			echo -e "\n#########################################################" | tee -a plan.txt; \
+			echo -e "##\n##   Planning changes for $${env} environment (OpenTofu)..." | tee -a plan.txt; \
+			echo -e "##\n#########################################################" | tee -a plan.txt; \
+			if tofu plan $(EXTRA_ARGS) -no-color -out=$${env}.tfplan 2>&1 | tee -a plan.txt; then \
+				tofu show -no-color $${env}.tfplan >> plan.txt 2>&1; \
+			else \
+				echo -e "\n❌ OpenTofu plan failed for $${env} environment" | tee -a plan.txt; \
+			fi; \
+			cd ..; \
+		done; \
+	else \
+		echo -e "${CYAN}Planning changes for $(ENV) environment (OpenTofu)...${NC}"; \
+		cd $(TERRAFORM_DIR) && tofu workspace select $(ENV) || tofu workspace new $(ENV); \
+		if tofu plan $(EXTRA_ARGS) -no-color -out=$(ENV).tfplan 2>&1 | tee -a plan.txt; then \
+			tofu show -no-color $(ENV).tfplan >> plan.txt 2>&1; \
+		else \
+			echo -e "\n❌ OpenTofu plan failed for $(ENV) environment" | tee -a plan.txt; \
+		fi; \
+	fi
+
+.PHONY: tofu-apply
+tofu-apply:
+	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TERRAFORM_DIR) && source ../python-venv/bin/activate && python3 load_secrets.py && cd ..
+	@if [ -z "$(ENV)" ]; then \
+		for env in $(ENVIRONMENTS); do \
+			cd $(TERRAFORM_DIR) && tofu workspace select $${env} || tofu workspace new $${env}; \
+			echo -e "\n#########################################################"; \
+			echo -e "##\n## Applying changes to $${env} environment (OpenTofu)..."; \
+			echo -e "##\n#########################################################"; \
+			if [ -f "$${env}.tfplan" ]; then \
+				tofu apply $${env}.tfplan && cd .. || cd ..; \
+			else \
+				tofu apply $(EXTRA_ARGS) -auto-approve && cd .. || cd ..; \
+			fi; \
+		done; \
+	else \
+		echo -e "${CYAN}Applying changes to $(ENV) environment (OpenTofu)...${NC}"; \
+		cd $(TERRAFORM_DIR) && tofu workspace select $(ENV); \
+		if [ -f "$(ENV).tfplan" ]; then \
+			tofu apply $(ENV).tfplan; \
+		else \
+			tofu apply $(EXTRA_ARGS) -auto-approve; \
+		fi; \
+	fi
+
+.PHONY: tofu-validate
+tofu-validate:
+	@echo -e "${CYAN}Validating with OpenTofu...${NC}"
+	@cd $(TERRAFORM_DIR) && tofu validate
+
+.PHONY: tofu-workspace
+tofu-workspace:
+	@echo -e "${CYAN}Listing OpenTofu workspaces...${NC}"
+	@cd $(TERRAFORM_DIR) && tofu workspace list

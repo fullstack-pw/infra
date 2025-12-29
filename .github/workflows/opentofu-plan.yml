@@ -1,0 +1,70 @@
+name: OpenTofu
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "clusters/**"
+      - "secrets/**"
+      - ".github/workflows/opentofu-*.yml"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  plan-clusters:
+    runs-on: self-hosted
+    environment: terraform
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.9.0
+
+      - name: OpenTofu Init
+        run: |
+          make tofu-init
+
+      - name: OpenTofu Plan
+        id: plan
+        run: |
+          make tofu-plan
+        continue-on-error: true
+
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opentofu-clusters-plan
+          path: clusters/plan.txt
+
+      - name: Add Plan Comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const planOutput = fs.readFileSync('./clusters/plan.txt', 'utf8');
+            const truncatedOutput = planOutput.length > 65000
+              ? planOutput.substring(0, 65000) + "\n\n... Output truncated due to size. See artifacts for full plan."
+              : planOutput;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## OpenTofu Plan (Migration Testing)
+              \`\`\`hcl
+              ${truncatedOutput}
+              \`\`\`
+
+              Plan exit code: ${{ steps.plan.outcome == 'success' && '0' || '1' }}
+              `
+            })
