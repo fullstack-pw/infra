@@ -183,3 +183,9 @@ variable "prometheus_namespaces" {
   default     = []
   description = "List of namespaces to exclude from metric collection. Metrics from pods and services in these namespaces will be dropped."
 }
+
+variable "prometheus_storage_size" {
+  type        = string
+  default     = ""
+  description = "Prometheus persistent volume size. If empty, no persistentVolume will be configured (uses emptyDir)"
+}

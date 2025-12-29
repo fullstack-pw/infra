@@ -36,8 +36,10 @@ server:
     requests:
       cpu: ${cpu_request}
       memory: ${memory_request}
+%{ if storage_size != "" ~}
   persistentVolume:
-    size: 2Gi
+    size: ${storage_size}
+%{ endif ~}
 serverFiles:
   prometheus.yml:
     scrape_configs:

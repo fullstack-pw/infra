@@ -16,7 +16,14 @@ terraform {
 }
 
 locals {
-  app_user_password = var.create_app_user && var.app_user_generate_password ? random_password.app_user_password[0].result : ""
+  app_user_password     = var.create_app_user && var.app_user_generate_password ? random_password.app_user_password[0].result : ""
+  postgres_password     = var.postgres_generate_password ? random_password.postgres_password[0].result : var.postgres_password
+}
+
+resource "random_password" "postgres_password" {
+  count   = var.postgres_generate_password ? 1 : 0
+  length  = 32
+  special = true
 }
 
 resource "random_password" "app_user_password" {
@@ -59,13 +66,13 @@ resource "kubernetes_secret" "superuser" {
 
   data = {
     username = var.postgres_username
-    password = var.postgres_password
+    password = local.postgres_password
   }
 
   depends_on = [kubernetes_namespace.this]
 }
 
-# Export credentials to another namespace for app access
+# Export credentials to another namespace for app access (uses appuser if available, otherwise admin)
 resource "kubernetes_secret" "exported_credentials" {
   count = var.create_cluster && var.export_credentials_to_namespace != "" ? 1 : 0
 
@@ -75,8 +82,8 @@ resource "kubernetes_secret" "exported_credentials" {
   }
 
   data = {
-    username = var.postgres_username
-    password = var.postgres_password
+    username = var.create_app_user ? var.app_username : var.postgres_username
+    password = var.create_app_user ? local.app_user_password : local.postgres_password
   }
 }
 
@@ -193,7 +200,7 @@ resource "vault_kv_secret_v2" "postgres_credentials" {
   data_json = jsonencode(merge(
     {
       POSTGRES_USER     = var.postgres_username
-      POSTGRES_PASSWORD = var.postgres_password
+      POSTGRES_PASSWORD = local.postgres_password
       POSTGRES_DB       = var.postgres_database
       POSTGRES_HOST     = "${var.cluster_name}-rw.${var.namespace}.svc.cluster.local"
       POSTGRES_PORT     = "5432"

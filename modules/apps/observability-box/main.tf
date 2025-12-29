@@ -3,6 +3,11 @@ module "namespace" {
 
   create = var.create_namespace
   name   = var.namespace
+  labels = {
+    "pod-security.kubernetes.io/enforce" = "privileged"
+    "pod-security.kubernetes.io/audit"   = "privileged"
+    "pod-security.kubernetes.io/warn"    = "privileged"
+  }
 }
 
 module "otel_collector_values" {
@@ -164,6 +169,7 @@ module "prometheus_values" {
         remote_write_url = var.prometheus_remote_write_url
         cluster_name     = terraform.workspace
         namespaces       = var.prometheus_namespaces
+        storage_size     = var.prometheus_storage_size
       }
     }
   ]

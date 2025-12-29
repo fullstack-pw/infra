@@ -55,9 +55,16 @@ variable "postgres_username" {
 }
 
 variable "postgres_password" {
-  description = "Superuser password"
+  description = "Superuser password (only used if postgres_generate_password is false)"
   type        = string
+  default     = ""
   sensitive   = true
+}
+
+variable "postgres_generate_password" {
+  description = "Generate random password for postgres superuser"
+  type        = bool
+  default     = true
 }
 
 variable "persistence_size" {

@@ -238,9 +238,10 @@ module "observability-box" {
   count  = contains(local.workload, "observability-box") ? 1 : 0
   source = "../modules/apps/observability-box"
 
-  prometheus_namespaces     = var.config[terraform.workspace].prometheus_namespaces
-  prometheus_memory_limit   = var.config[terraform.workspace].prometheus_memory_limit
-  prometheus_memory_request = var.config[terraform.workspace].prometheus_memory_request
+  prometheus_namespaces     = try(var.config[terraform.workspace].prometheus_namespaces, [])
+  prometheus_memory_limit   = try(var.config[terraform.workspace].prometheus_memory_limit, "1024Mi")
+  prometheus_memory_request = try(var.config[terraform.workspace].prometheus_memory_request, "256Mi")
+  prometheus_storage_size   = try(var.config[terraform.workspace].prometheus_storage_size, "")
 }
 
 module "postgres" {
@@ -376,7 +377,8 @@ module "teleport-agent" {
   source = "../modules/apps/teleport-agent"
 
   kubernetes_cluster_name = terraform.workspace
-  join_token              = "76756646e90d1f740646aa5e30fdd216"
+  join_token              = "743ac3c5eac5b41f11e359c8e1c0a4b4"
+  ca_pin                  = "sha256:1e52c4604734aa88884feb503f99283fbec590aa6ad084bcafdc93c34d8c64db"
   roles                   = var.config[terraform.workspace].teleport.roles
   apps                    = var.config[terraform.workspace].teleport.apps
   databases               = var.config[terraform.workspace].teleport.databases
@@ -442,9 +444,9 @@ module "dev_postgres_cnpg" {
   pg_version = "15"
 
   # Database configuration
-  postgres_database = "postgres"
-  postgres_username = "admin"
-  postgres_password = random_password.dev_postgres_password.result
+  postgres_database          = "postgres"
+  postgres_username          = "admin"
+  postgres_generate_password = true
 
   # Storage
   persistence_size = "1Gi"
@@ -476,10 +478,5 @@ module "dev_postgres_cnpg" {
   export_credentials_secret_name   = "dev-postgres-credentials"
 
   depends_on = [module.cloudnative_pg_operator]
-}
-
-resource "random_password" "dev_postgres_password" {
-  length  = 32
-  special = true
 }
 

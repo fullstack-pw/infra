@@ -18,8 +18,8 @@ variable "workload" {
       "istio",
       "argocd",
       "teleport-agent",
-      "cloudnative-pg-operator",  # CloudNativePG operator
-      "dev-postgres-cnpg",        # New CloudNativePG-based PostgreSQL
+      "cloudnative-pg-operator", # CloudNativePG operator
+      "dev-postgres-cnpg",       # New CloudNativePG-based PostgreSQL
       # "dev-postgres",           # Old Bitnami-based PostgreSQL - commented out for migration
       "observability-box"
     ]
@@ -93,12 +93,13 @@ variable "config" {
         }
         roles = "kube,app,db"
         databases = {
-          "dev-postgres" = "dev.postgres.fullstack.pw:5432"
+          "dev-postgres" = "dev-postgres-rw.dev-postgres.svc.cluster.local:5432"
         }
       }
       prometheus_namespaces     = []
       prometheus_memory_limit   = "1024Mi"
       prometheus_memory_request = "256Mi"
+      prometheus_storage_size   = "2Gi"
       metallb_create_ip_pool    = true
       metallb_ip_pool_addresses = ["192.168.1.70-192.168.1.80"]
     }

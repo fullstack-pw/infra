@@ -2,6 +2,10 @@ roles: "${roles}"
 proxyAddr: "${proxy_server}"
 enterprise: false
 authToken: "${join_token}"
+%{if ca_pin != ""}
+caPin:
+  - "${ca_pin}"
+%{endif}
 teleportClusterName: "${cluster_name}"
 kubeClusterName: "${kubernetes_cluster_name}"
 
