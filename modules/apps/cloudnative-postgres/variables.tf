@@ -104,7 +104,13 @@ variable "cpu_limit" {
 }
 
 variable "enable_ssl" {
-  description = "Enable SSL/TLS"
+  description = "Enable SSL/TLS for pg_hba.conf rules (hostssl). CNPG always generates its own server certificates."
+  type        = bool
+  default     = false
+}
+
+variable "use_custom_server_certs" {
+  description = "Use custom server certificates instead of CNPG-managed ones. Only set to true if you have valid CA/cert/key that form a proper chain."
   type        = bool
   default     = false
 }
@@ -188,4 +194,10 @@ variable "export_credentials_secret_name" {
   description = "Name of the exported credentials secret"
   type        = string
   default     = "postgres-credentials"
+}
+
+variable "additional_client_ca_certs" {
+  description = "Additional CA certificates to trust for client authentication (e.g., Teleport DB CA). List of PEM-encoded certificates."
+  type        = list(string)
+  default     = []
 }

@@ -45,7 +45,7 @@ resource "kubernetes_namespace" "this" {
 
 # Read SSL certificates from cluster-secrets (managed by External Secrets Operator) if not provided directly
 data "kubernetes_secret" "cluster_secrets" {
-  count = var.enable_ssl && var.create_cluster && var.ssl_server_cert == "" ? 1 : 0
+  count = var.use_custom_server_certs && var.create_cluster && var.ssl_server_cert == "" ? 1 : 0
 
   metadata {
     name      = "cluster-secrets"
@@ -87,9 +87,9 @@ resource "kubernetes_secret" "exported_credentials" {
   }
 }
 
-# SSL certificates secret (only if SSL is enabled)
+# SSL certificates secret (only if custom server certs are provided)
 resource "kubernetes_secret" "ssl_certs" {
-  count = var.enable_ssl && var.create_cluster ? 1 : 0
+  count = var.use_custom_server_certs && var.create_cluster ? 1 : 0
 
   metadata {
     name      = "${var.cluster_name}-ssl-certs"
@@ -180,8 +180,9 @@ resource "kubernetes_manifest" "postgres_cluster" {
         }
       }
 
-      # SSL certificates from secret
-      certificates = var.enable_ssl ? {
+      # SSL certificates from secret (only if using custom server certs)
+      # When use_custom_server_certs=false, CNPG manages its own server certificates
+      certificates = var.use_custom_server_certs ? {
         serverTLSSecret = kubernetes_secret.ssl_certs[0].metadata[0].name
         serverCASecret  = kubernetes_secret.ssl_certs[0].metadata[0].name
       } : null
@@ -210,4 +211,60 @@ resource "vault_kv_secret_v2" "postgres_credentials" {
       POSTGRES_APP_PASSWORD = local.app_user_password
     } : {}
   ))
+}
+
+resource "terraform_data" "append_client_ca" {
+  count = var.create_cluster && length(var.additional_client_ca_certs) > 0 ? 1 : 0
+
+  triggers_replace = {
+    cluster_name     = var.cluster_name
+    namespace        = var.namespace
+    additional_certs = sha256(join("\n", var.additional_client_ca_certs))
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["bash", "-c"]
+    command     = <<-EOT
+      set -e
+
+      # Wait for CNPG to create the CA secret
+      echo "Waiting for ${var.cluster_name}-ca secret..."
+      for i in {1..60}; do
+        if kubectl get secret ${var.cluster_name}-ca -n ${var.namespace} >/dev/null 2>&1; then
+          break
+        fi
+        sleep 2
+      done
+
+      # Get existing CA data
+      EXISTING_CA=$(kubectl get secret ${var.cluster_name}-ca -n ${var.namespace} -o jsonpath='{.data.ca\.crt}' | base64 -d)
+      EXISTING_KEY=$(kubectl get secret ${var.cluster_name}-ca -n ${var.namespace} -o jsonpath='{.data.ca\.key}' | base64 -d)
+
+      # Count existing certs
+      CERT_COUNT=$(echo "$EXISTING_CA" | grep -c "BEGIN CERTIFICATE" || true)
+
+      if [ "$CERT_COUNT" -gt 1 ]; then
+        echo "CA bundle already contains multiple certificates, skipping"
+        exit 0
+      fi
+
+      # Create combined CA bundle
+      COMBINED_CA="$EXISTING_CA
+${join("\n", var.additional_client_ca_certs)}"
+
+      # Update secret with combined CA
+      kubectl create secret generic ${var.cluster_name}-ca \
+        --from-literal=ca.crt="$COMBINED_CA" \
+        --from-literal=ca.key="$EXISTING_KEY" \
+        -n ${var.namespace} \
+        --dry-run=client -o yaml | kubectl apply -f -
+
+      # Add reload label so CNPG picks up the change
+      kubectl label secret ${var.cluster_name}-ca cnpg.io/reload=true -n ${var.namespace} --overwrite
+
+      echo "Additional CA certificates appended to ${var.cluster_name}-ca"
+    EOT
+  }
+
+  depends_on = [kubernetes_manifest.postgres_cluster]
 }

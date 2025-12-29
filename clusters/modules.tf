@@ -381,7 +381,12 @@ module "teleport-agent" {
   ca_pin                  = "sha256:1e52c4604734aa88884feb503f99283fbec590aa6ad084bcafdc93c34d8c64db"
   roles                   = var.config[terraform.workspace].teleport.roles
   apps                    = var.config[terraform.workspace].teleport.apps
-  databases               = var.config[terraform.workspace].teleport.databases
+  databases = {
+    for name, db in var.config[terraform.workspace].teleport.databases : name => {
+      uri     = db.uri
+      ca_cert = db.ca_cert != "" ? local.secrets_json["kv/cluster-secret-store/secrets/${db.ca_cert}"][db.ca_cert] : ""
+    }
+  }
 }
 
 module "testing_postgres" {
@@ -458,11 +463,9 @@ module "dev_postgres_cnpg" {
   memory_limit   = "1Gi"
   cpu_limit      = "500m"
 
-  # SSL - Pass certificates directly from Vault
-  enable_ssl       = true
-  ssl_ca_cert      = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_SSL_CA"]
-  ssl_server_cert  = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_SSL_CERT"]
-  ssl_server_key   = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_SSL_KEY"]
+  # SSL - Enable hostssl in pg_hba.conf but let CNPG manage its own server certificates
+  # use_custom_server_certs=false (default) means CNPG generates and manages server certs
+  enable_ssl = true
 
   # Application user
   create_app_user            = true
@@ -476,6 +479,9 @@ module "dev_postgres_cnpg" {
   # Export credentials to default namespace for writer app
   export_credentials_to_namespace  = "default"
   export_credentials_secret_name   = "dev-postgres-credentials"
+
+  # Additional client CA for Teleport database access
+  additional_client_ca_certs = [local.secrets_json["kv/cluster-secret-store/secrets/TELEPORT_DB_CA"]["TELEPORT_DB_CA"]]
 
   depends_on = [module.cloudnative_pg_operator]
 }

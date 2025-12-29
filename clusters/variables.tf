@@ -93,7 +93,10 @@ variable "config" {
         }
         roles = "kube,app,db"
         databases = {
-          "dev-postgres" = "dev-postgres-rw.dev-postgres.svc.cluster.local:5432"
+          "dev-postgres" = {
+            uri     = "dev-postgres-rw.dev-postgres.svc.cluster.local:5432"
+            ca_cert = "DEV_POSTGRES_CA"
+          }
         }
       }
       prometheus_namespaces     = []
