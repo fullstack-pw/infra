@@ -93,7 +93,9 @@ workspace:
 
 .PHONY: plan
 plan:
-	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TERRAFORM_DIR) && source ../python-venv/bin/activate && python3 load_secrets.py && cd ..
+	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TERRAFORM_DIR) && \
+		if [ -f "../python-venv/bin/activate" ]; then source ../python-venv/bin/activate; fi && \
+		python3 load_secrets.py && cd ..
 	@if [ -z "$(ENV)" ]; then \
 		echo -e "${CYAN}Planning changes for all environments...${NC}"; \
 		for env in $(ENVIRONMENTS); do \
@@ -120,7 +122,9 @@ plan:
 
 .PHONY: apply
 apply:
-	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TERRAFORM_DIR) && source ../python-venv/bin/activate && python3 load_secrets.py && cd ..
+	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TERRAFORM_DIR) && \
+		if [ -f "../python-venv/bin/activate" ]; then source ../python-venv/bin/activate; fi && \
+		python3 load_secrets.py && cd ..
 	@if [ -z "$(ENV)" ]; then \
 		for env in $(ENVIRONMENTS); do \
 			cd $(TERRAFORM_DIR) && terraform workspace select $${env} || terraform workspace new $${env}; \
@@ -339,7 +343,9 @@ tofu-init: install-crypto-tools
 
 .PHONY: tofu-plan
 tofu-plan:
-	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TERRAFORM_DIR) && source ../python-venv/bin/activate && python3 load_secrets.py && cd ..
+	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TERRAFORM_DIR) && \
+		if [ -f "../python-venv/bin/activate" ]; then source ../python-venv/bin/activate; fi && \
+		python3 load_secrets.py && cd ..
 	@if [ -z "$(ENV)" ]; then \
 		echo -e "${CYAN}Planning changes for all environments (OpenTofu)...${NC}"; \
 		for env in $(ENVIRONMENTS); do \
@@ -366,7 +372,9 @@ tofu-plan:
 
 .PHONY: tofu-apply
 tofu-apply:
-	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TERRAFORM_DIR) && source ../python-venv/bin/activate && python3 load_secrets.py && cd ..
+	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TERRAFORM_DIR) && \
+		if [ -f "../python-venv/bin/activate" ]; then source ../python-venv/bin/activate; fi && \
+		python3 load_secrets.py && cd ..
 	@if [ -z "$(ENV)" ]; then \
 		for env in $(ENVIRONMENTS); do \
 			cd $(TERRAFORM_DIR) && tofu workspace select $${env} || tofu workspace new $${env}; \
