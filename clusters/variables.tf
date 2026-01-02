@@ -80,7 +80,7 @@ variable "config" {
       cert_manager_crd   = true
     }
     dev = {
-      kubernetes_context   = "dev-admin@dev"
+      kubernetes_context   = "dev"
       install_crd          = true
       cert_manager_crd     = true
       istio_CRDs           = true

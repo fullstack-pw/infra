@@ -20,14 +20,14 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
+      # - uses: actions/setup-node@v4
+      #   with:
+      #     node-version: "20"
 
-      - name: Setup OpenTofu
-        uses: opentofu/setup-opentofu@v1
-        with:
-          tofu_version: 1.9.0
+      # - name: Setup OpenTofu
+      #   uses: opentofu/setup-opentofu@v1
+      #   with:
+      #     tofu_version: 1.9.0
 
       - name: OpenTofu Init
         run: |
