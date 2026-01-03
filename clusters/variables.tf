@@ -21,7 +21,7 @@ variable "workload" {
       "cloudnative-pg-operator",
       "dev-postgres-cnpg",
       "observability-box",
-      "freqtrade"
+      #"freqtrade"
     ]
     stg = [
       "externaldns",

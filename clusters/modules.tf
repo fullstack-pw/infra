@@ -528,31 +528,31 @@ module "tools_postgres_cnpg" {
   depends_on = [module.cloudnative_pg_operator]
 }
 
-module "freqtrade" {
-  count  = contains(local.workload, "freqtrade") ? 1 : 0
-  source = "../modules/apps/freqtrade"
+# module "freqtrade" {
+#   count  = contains(local.workload, "freqtrade") ? 1 : 0
+#   source = "../modules/apps/freqtrade"
 
-  environment     = terraform.workspace
-  domain          = var.config[terraform.workspace].freqtrade.domain
-  dry_run         = var.config[terraform.workspace].freqtrade.dry_run
-  stake_amount    = var.config[terraform.workspace].freqtrade.stake_amount
-  max_open_trades = var.config[terraform.workspace].freqtrade.max_open_trades
-  freqai_enabled  = var.config[terraform.workspace].freqtrade.freqai
+#   environment     = terraform.workspace
+#   domain          = var.config[terraform.workspace].freqtrade.domain
+#   dry_run         = var.config[terraform.workspace].freqtrade.dry_run
+#   stake_amount    = var.config[terraform.workspace].freqtrade.stake_amount
+#   max_open_trades = var.config[terraform.workspace].freqtrade.max_open_trades
+#   freqai_enabled  = var.config[terraform.workspace].freqtrade.freqai
 
-  binance_api_key    = local.secrets_json["kv/cluster-secret-store/secrets/FREQTRADE"]["BINANCE_API_KEY"]
-  binance_api_secret = local.secrets_json["kv/cluster-secret-store/secrets/FREQTRADE"]["BINANCE_API_SECRET"]
-  frequi_password    = local.secrets_json["kv/cluster-secret-store/secrets/FREQTRADE"]["FREQUI_PASSWORD"]
-  jwt_secret_key     = local.secrets_json["kv/cluster-secret-store/secrets/FREQTRADE"]["JWT_SECRET_KEY"]
-  telegram_token     = local.secrets_json["kv/cluster-secret-store/secrets/FREQTRADE"]["TELEGRAM_TOKEN"]
-  telegram_chat_id   = local.secrets_json["kv/cluster-secret-store/secrets/FREQTRADE"]["TELEGRAM_CHAT_ID"]
+#   binance_api_key    = local.secrets_json["kv/cluster-secret-store/secrets/FREQTRADE"]["BINANCE_API_KEY"]
+#   binance_api_secret = local.secrets_json["kv/cluster-secret-store/secrets/FREQTRADE"]["BINANCE_API_SECRET"]
+#   frequi_password    = local.secrets_json["kv/cluster-secret-store/secrets/FREQTRADE"]["FREQUI_PASSWORD"]
+#   jwt_secret_key     = local.secrets_json["kv/cluster-secret-store/secrets/FREQTRADE"]["JWT_SECRET_KEY"]
+#   telegram_token     = local.secrets_json["kv/cluster-secret-store/secrets/FREQTRADE"]["TELEGRAM_TOKEN"]
+#   telegram_chat_id   = local.secrets_json["kv/cluster-secret-store/secrets/FREQTRADE"]["TELEGRAM_CHAT_ID"]
 
-  minio_endpoint   = "minio.fullstack.pw"
-  minio_bucket     = "freqtrade"
-  minio_access_key = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootUser"]
-  minio_secret_key = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootPassword"]
+#   minio_endpoint   = "minio.fullstack.pw"
+#   minio_bucket     = "freqtrade"
+#   minio_access_key = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootUser"]
+#   minio_secret_key = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootPassword"]
 
-  storage_class = "local-path"
-  use_istio     = contains(local.workload, "istio")
-  istio_gateway = "istio-system/default-gateway"
-}
+#   storage_class = "local-path"
+#   use_istio     = contains(local.workload, "istio")
+#   istio_gateway = "istio-system/default-gateway"
+# }
 
