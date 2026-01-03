@@ -334,3 +334,9 @@ variable "istio_CRDs" {
   type        = bool
   default     = true
 }
+
+variable "grant_replication_to_admin" {
+  description = "Grant REPLICATION permission to the admin user (required for Teleport)"
+  type        = bool
+  default     = true
+}
