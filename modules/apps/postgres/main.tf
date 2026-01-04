@@ -116,6 +116,7 @@ module "values" {
         create_app_user                    = var.create_app_user
         app_username                       = var.app_username
         app_user_password                  = local.app_user_password
+        grant_replication_to_admin         = var.grant_replication_to_admin
       }
     }
   ]

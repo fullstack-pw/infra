@@ -21,9 +21,19 @@ primary:
   service:
     type: ${service_type}
     port: ${service_port}
-%{if create_app_user}
+%{if create_app_user || grant_replication_to_admin}
   initdb:
     scripts:
+%{if grant_replication_to_admin}
+      grant-replication.sh: |
+        #!/bin/bash
+        set -e
+        export PGPASSWORD="$POSTGRES_POSTGRES_PASSWORD"
+        psql -v ON_ERROR_STOP=1 --username="postgres" --dbname="${postgres_database}" <<-EOSQL
+          ALTER USER ${postgres_username} WITH REPLICATION;
+        EOSQL
+%{endif}
+%{if create_app_user}
       create-app-user.sh: |
         #!/bin/bash
         set -e
@@ -44,13 +54,12 @@ primary:
           ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ${app_username};
         EOSQL
 %{endif}
+%{endif}
   extraEnvVars:
     - name: ALLOW_EMPTY_PASSWORD
       value: "no"
     - name: POSTGRESQL_CLIENT_MIN_MESSAGES
       value: "error"
-    - name: POSTGRESQL_SKIP_INITDB
-      value: "false"
     - name: POSTGRESQL_WAL_LEVEL
       value: logical
 %{if enable_ssl}

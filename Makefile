@@ -2,7 +2,7 @@ SHELL := /bin/bash
 
 ENVIRONMENTS := dev sandboxy tools observability
 DEFAULT_ENV := tools
-TERRAFORM_DIR := clusters
+TOFU_DIR := clusters
 PROXMOX_DIR := proxmox
 MODULES_DIR := modules
 EXTRA_ARGS ?=
@@ -16,18 +16,18 @@ NC := \033[0m
 define HELP_MESSAGE
 Fullstack.pw Infrastructure Management Commands:
 
-Terraform Environment Commands:
+OpenTofu Environment Commands:
   make plan                     - Plan changes for all environments
   make plan ENV=<environment>   - Plan changes for a specific environment
   make apply                    - Apply changes for all environments
   make apply ENV=<environment>  - Apply changes for a specific environment
   make destroy ENV=<environment>- Destroy resources in a specific environment (requires confirmation)
 
-Proxmox VM Management:
-  make proxmox-init             - Initialize Terraform for Proxmox
+Proxmox VM Management (legacy):
+  make proxmox-init             - Initialize OpenTofu for Proxmox
   make proxmox-plan             - Plan Proxmox VM changes
   make proxmox-apply            - Apply Proxmox VM changes
-  make proxmox-import           - Import existing Proxmox VMs to Terraform state
+  make proxmox-import           - Import existing Proxmox VMs to state
 
 Kubernetes Management:
   make k8s-init                 - Initialize all Kubernetes clusters with k3s
@@ -39,14 +39,14 @@ Talos Cluster Management:
   make test-kubeconfig-update     - Test kubeconfig update with dry-run mode
 
 Environment Management:
-  make init                     - Initialize Terraform for all environments
-  make fmt                      - Format Terraform files
-  make validate                 - Validate Terraform files
-  make workspace                - List all Terraform workspaces
-  make create-workspace ENV=<env> - Create a new Terraform workspace
+  make init                     - Initialize OpenTofu for all environments
+  make fmt                      - Format OpenTofu files
+  make validate                 - Validate OpenTofu files
+  make workspace                - List all OpenTofu workspaces
+  make create-workspace ENV=<env> - Create a new OpenTofu workspace
 
 Module Management:
-  make module-test MODULE=<name> - Test a specific Terraform module
+  make module-test MODULE=<name> - Test a specific OpenTofu module
 
 Utilities:
   make clean                    - Clean up temporary files
@@ -54,7 +54,7 @@ Utilities:
 
 Examples:
   make plan ENV=dev             - Plan changes for dev environment
-  make apply ENV=sandbox        - Apply changes to sandbox environment
+  make apply ENV=sandboxy       - Apply changes to sandboxy environment
   make proxmox-apply            - Apply changes to Proxmox VMs
 endef
 export HELP_MESSAGE
@@ -65,8 +65,8 @@ help:
 
 .PHONY: init
 init: install-crypto-tools
-	@echo -e "${CYAN}Initializing Terraform for all environments...${NC}"
-	@cd $(TERRAFORM_DIR) && terraform init -upgrade
+	@echo -e "${CYAN}Initializing OpenTofu for all environments...${NC}"
+	@cd $(TOFU_DIR) && tofu init -reconfigure -upgrade
 
 .PHONY: create-workspace
 create-workspace:
@@ -75,65 +75,69 @@ create-workspace:
 		exit 1; \
 	fi
 	@echo -e "${CYAN}Creating workspace for $(ENV)...${NC}"
-	@cd $(TERRAFORM_DIR) && terraform workspace new $(ENV)
+	@cd $(TOFU_DIR) && tofu workspace new $(ENV)
 
 .PHONY: workspace
 workspace:
-	@echo -e "${CYAN}Listing Terraform workspaces...${NC}"
-	@cd $(TERRAFORM_DIR) && terraform workspace list
+	@echo -e "${CYAN}Listing OpenTofu workspaces...${NC}"
+	@cd $(TOFU_DIR) && tofu workspace list
 
 .PHONY: plan
 plan:
-	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TERRAFORM_DIR) && source ../python-venv/bin/activate && python3 load_secrets.py && cd ..
+	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TOFU_DIR) && \
+		if [ -f "../python-venv/bin/activate" ]; then source ../python-venv/bin/activate; fi && \
+		python3 load_secrets.py && cd ..
 	@if [ -z "$(ENV)" ]; then \
 		echo -e "${CYAN}Planning changes for all environments...${NC}"; \
 		for env in $(ENVIRONMENTS); do \
-			cd $(TERRAFORM_DIR) && terraform workspace select $${env} || terraform workspace new $${env}; \
+			cd $(TOFU_DIR) && tofu workspace select $${env} || tofu workspace new $${env}; \
 			echo -e "\n#########################################################" | tee -a plan.txt; \
 			echo -e "##\n##   Planning changes for $${env} environment..." | tee -a plan.txt; \
 			echo -e "##\n#########################################################" | tee -a plan.txt; \
-			if terraform plan $(EXTRA_ARGS) -no-color -out=$${env}.tfplan 2>&1 | tee -a plan.txt; then \
-				terraform show -no-color $${env}.tfplan >> plan.txt 2>&1; \
+			if tofu plan $(EXTRA_ARGS) -no-color -out=$${env}.tfplan 2>&1 | tee -a plan.txt; then \
+				tofu show -no-color $${env}.tfplan >> plan.txt 2>&1; \
 			else \
-				echo -e "\n❌ Terraform plan failed for $${env} environment" | tee -a plan.txt; \
+				echo -e "\n❌ OpenTofu plan failed for $${env} environment" | tee -a plan.txt; \
 			fi; \
 			cd ..; \
 		done; \
 	else \
 		echo -e "${CYAN}Planning changes for $(ENV) environment...${NC}"; \
-		cd $(TERRAFORM_DIR) && terraform workspace select $(ENV) || terraform workspace new $(ENV); \
-		if terraform plan $(EXTRA_ARGS) -no-color -out=$(ENV).tfplan 2>&1 | tee -a plan.txt; then \
-			terraform show -no-color $(ENV).tfplan >> plan.txt 2>&1; \
+		cd $(TOFU_DIR) && tofu workspace select $(ENV) || tofu workspace new $(ENV); \
+		if tofu plan $(EXTRA_ARGS) -no-color -out=$(ENV).tfplan 2>&1 | tee -a plan.txt; then \
+			tofu show -no-color $(ENV).tfplan >> plan.txt 2>&1; \
 		else \
-			echo -e "\n❌ Terraform plan failed for $(ENV) environment" | tee -a plan.txt; \
+			echo -e "\n❌ OpenTofu plan failed for $(ENV) environment" | tee -a plan.txt; \
 		fi; \
 	fi
 
 .PHONY: apply
 apply:
-	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TERRAFORM_DIR) && source ../python-venv/bin/activate && python3 load_secrets.py && cd ..
+	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TOFU_DIR) && \
+		if [ -f "../python-venv/bin/activate" ]; then source ../python-venv/bin/activate; fi && \
+		python3 load_secrets.py && cd ..
 	@if [ -z "$(ENV)" ]; then \
 		for env in $(ENVIRONMENTS); do \
-			cd $(TERRAFORM_DIR) && terraform workspace select $${env} || terraform workspace new $${env}; \
+			cd $(TOFU_DIR) && tofu workspace select $${env} || tofu workspace new $${env}; \
 			echo -e "\n#########################################################"; \
 			echo -e "##\n## Applying changes to $${env} environment..."; \
 			echo -e "##\n#########################################################"; \
 			if [ -f "$${env}.tfplan" ]; then \
-				terraform apply $${env}.tfplan && cd .. || cd ..; \
+				tofu apply $${env}.tfplan && cd .. || cd ..; \
 			else \
-				terraform apply $(EXTRA_ARGS) -auto-approve && cd .. || cd ..; \
+				tofu apply $(EXTRA_ARGS) -auto-approve && cd .. || cd ..; \
 			fi; \
 		done; \
 	else \
 		echo -e "${CYAN}Applying changes to $(ENV) environment...${NC}"; \
-		cd $(TERRAFORM_DIR) && terraform workspace select $(ENV); \
+		cd $(TOFU_DIR) && tofu workspace select $(ENV); \
 		if [ -f "$(ENV).tfplan" ]; then \
-			terraform apply $(ENV).tfplan; \
+			tofu apply $(ENV).tfplan; \
 		else \
-			terraform apply $(EXTRA_ARGS) -auto-approve; \
+			tofu apply $(EXTRA_ARGS) -auto-approve; \
 		fi; \
 	fi
-	
+
 .PHONY: destroy
 destroy:
 	@if [ -z "$(ENV)" ]; then \
@@ -145,23 +149,22 @@ destroy:
 	@read confirmation; \
 	if [ "$$confirmation" = "$(ENV)" ]; then \
 		echo -e "${YELLOW}Destroying resources in $(ENV) environment...${NC}"; \
-		cd $(TERRAFORM_DIR) && terraform workspace select $(ENV) && terraform destroy -var="vault_token=${VAULT_TOKEN}"; \
+		cd $(TOFU_DIR) && tofu workspace select $(ENV) && tofu destroy -var="vault_token=${VAULT_TOKEN}"; \
 	else \
 		echo -e "${YELLOW}Destroy operation cancelled.${NC}"; \
 	fi
 
 .PHONY: fmt
 fmt:
-	@echo -e "${CYAN}Formatting Terraform files...${NC}"
-	@terraform fmt -recursive
-
+	@echo -e "${CYAN}Formatting OpenTofu files...${NC}"
+	@tofu fmt -recursive
 
 .PHONY: validate
 validate:
-	@echo -e "${CYAN}Validating Terraform files...${NC}"
-	@cd $(TERRAFORM_DIR) && terraform validate
+	@echo -e "${CYAN}Validating OpenTofu files...${NC}"
+	@cd $(TOFU_DIR) && tofu validate
 	@echo -e "${CYAN}Validating Proxmox files...${NC}"
-	@cd $(PROXMOX_DIR) && terraform validate
+	@cd $(PROXMOX_DIR) && tofu validate
 
 
 .PHONY: clean
@@ -174,23 +177,23 @@ clean:
 
 .PHONY: proxmox-init
 proxmox-init:
-	@echo -e "${CYAN}Initializing Terraform for Proxmox...${NC}"
-	@cd $(PROXMOX_DIR) && terraform init
+	@echo -e "${CYAN}Initializing OpenTofu for Proxmox...${NC}"
+	@cd $(PROXMOX_DIR) && tofu init
 
 .PHONY: proxmox-plan
 proxmox-plan:
 	@echo -e "${CYAN}Planning Proxmox VM changes...${NC}"
-	@cd $(PROXMOX_DIR) && terraform plan -var="PROXMOX_PASSWORD=${PROXMOX_PASSWORD}" -out=proxmox.tfplan
+	@cd $(PROXMOX_DIR) && tofu plan -var="PROXMOX_PASSWORD=${PROXMOX_PASSWORD}" -out=proxmox.tfplan
 
 .PHONY: proxmox-apply
 proxmox-apply:
 	@echo -e "${CYAN}Applying Proxmox VM changes...${NC}"
-	@cd $(PROXMOX_DIR) && terraform apply -var="PROXMOX_PASSWORD=${PROXMOX_PASSWORD}" proxmox.tfplan
+	@cd $(PROXMOX_DIR) && tofu apply -var="PROXMOX_PASSWORD=${PROXMOX_PASSWORD}" proxmox.tfplan
 
 .PHONY: proxmox-import
 proxmox-import:
 	@echo -e "${CYAN}Importing existing Proxmox VMs...${NC}"
-	@cd $(PROXMOX_DIR) && terraform import -var="PROXMOX_PASSWORD=${PROXMOX_PASSWORD}"
+	@cd $(PROXMOX_DIR) && tofu import -var="PROXMOX_PASSWORD=${PROXMOX_PASSWORD}"
 
 
 .PHONY: k8s-init
@@ -211,7 +214,7 @@ module-test:
 		exit 1; \
 	fi
 	@echo -e "${CYAN}Testing module $(MODULE)...${NC}"
-	@cd $(MODULES_DIR)/$(MODULE) && terraform init && terraform validate
+	@cd $(MODULES_DIR)/$(MODULE) && tofu init && tofu validate
 
 
 .PHONY: docs
@@ -278,8 +281,8 @@ update-kubeconfigs: build-kubeconfig-tool
 	if [ -z "$(ENV)" ]; then \
 		echo -e "${CYAN}Processing all environments with Talos clusters...${NC}"; \
 		for env in $(ENVIRONMENTS); do \
-			cd $(TERRAFORM_DIR) && terraform workspace select $${env}; \
-			CLUSTERS=$$(terraform output -json proxmox_talos_cluster_names 2>/dev/null | jq -r '.[]' || echo ""); \
+			cd $(TOFU_DIR) && tofu workspace select $${env}; \
+			CLUSTERS=$$(tofu output -json proxmox_talos_cluster_names 2>/dev/null | jq -r '.[]' || echo ""); \
 			if [ -n "$$CLUSTERS" ]; then \
 				echo -e "${GREEN}Found Talos clusters in $${env}: $$CLUSTERS${NC}"; \
 				for cluster in $$CLUSTERS; do \
@@ -295,8 +298,8 @@ update-kubeconfigs: build-kubeconfig-tool
 		done; \
 	else \
 		echo -e "${CYAN}Updating kubeconfigs for $(ENV) environment...${NC}"; \
-		cd $(TERRAFORM_DIR) && terraform workspace select $(ENV); \
-		CLUSTERS=$$(terraform output -json proxmox_talos_cluster_names | jq -r '.[]'); \
+		cd $(TOFU_DIR) && tofu workspace select $(ENV); \
+		CLUSTERS=$$(tofu output -json proxmox_talos_cluster_names | jq -r '.[]'); \
 		for cluster in $$CLUSTERS; do \
 			KUBECONFIG=$$KUBECONFIG ../cicd-update-kubeconfig \
 				--cluster-name $$cluster \
@@ -312,7 +315,7 @@ update-kubeconfigs: build-kubeconfig-tool
 test-kubeconfig-update:
 	@echo -e "${CYAN}Testing kubeconfig update (dry-run mode)...${NC}"
 	@PYTHON_BIN=$$(if [ -f "python-venv/bin/python3" ]; then echo "$$(pwd)/python-venv/bin/python3"; else echo "python3"; fi); \
-	cd $(TERRAFORM_DIR) && $$PYTHON_BIN scripts/update_talos_kubeconfig.py \
+	cd $(TOFU_DIR) && $$PYTHON_BIN scripts/update_talos_kubeconfig.py \
 		--cluster-name dev \
 		--namespace dev \
 		--vault-path kv/cluster-secret-store/secrets \

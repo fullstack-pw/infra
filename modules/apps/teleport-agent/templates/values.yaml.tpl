@@ -17,22 +17,39 @@ apps:
 %{endfor}
 %{endif}
 
-# Database service configuration
 %{if length(databases) > 0}
-db_service:
-  enabled: true
-  resources:
-  - labels:
-      "*": "*"
 databases:
-%{for key, value in databases}
-  - name: ${key}
-    uri: ${value}
+%{for name, db in databases}
+  - name: ${name}
+    uri: ${db.uri}
     protocol: postgres
+%{if db.ca_cert != ""}
+    tls:
+      ca_cert_file: "/etc/teleport-tls-db/${name}/ca.pem"
+%{endif}
 %{endfor}
 %{endif}
 
-# Labels and annotations
+%{if length([for name, db in databases : name if db.ca_cert != ""]) > 0}
+extraVolumes:
+%{for name, db in databases}
+%{if db.ca_cert != ""}
+  - name: ${name}-ca
+    secret:
+      secretName: ${name}-ca
+%{endif}
+%{endfor}
+
+extraVolumeMounts:
+%{for name, db in databases}
+%{if db.ca_cert != ""}
+  - name: ${name}-ca
+    mountPath: /etc/teleport-tls-db/${name}
+    readOnly: true
+%{endif}
+%{endfor}
+%{endif}
+
 labels:
   cluster: "${kubernetes_cluster_name}"
   component: "teleport-agent"

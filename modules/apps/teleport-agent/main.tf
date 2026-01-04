@@ -21,6 +21,10 @@ data "external" "join_token" {
   program = ["bash", "-c", "echo '{\"token\":\"'$TELEPORT_JOIN_TOKEN'\"}'"]
 }
 
+locals {
+  databases_with_ca = { for name, db in var.databases : name => db if db.ca_cert != "" }
+}
+
 module "values" {
   source = "../../base/values-template"
 
@@ -48,6 +52,19 @@ module "values" {
   ]
 }
 
+resource "kubernetes_secret" "db_ca" {
+  for_each = local.databases_with_ca
+
+  metadata {
+    name      = "${each.key}-ca"
+    namespace = module.namespace.name
+  }
+
+  data = {
+    "ca.pem" = each.value.ca_cert
+  }
+}
+
 module "helm" {
   source = "../../base/helm"
 
@@ -61,6 +78,8 @@ module "helm" {
   values_files     = module.values.rendered_values
 
   set_values = var.additional_set_values
+
+  depends_on = [kubernetes_secret.db_ca]
 }
 
 # Create RBAC for Teleport agent

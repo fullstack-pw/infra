@@ -267,6 +267,7 @@ module "harbor" {
   count  = contains(local.workload, "harbor") ? 1 : 0
   source = "../modules/apps/harbor"
 
+  external_database_host     = "tools-postgres-rw.tools-postgres.svc.cluster.local"
   external_database_password = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
   external_redis_password    = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
   #ingress_annotations        = var.config[terraform.workspace].harbor.ingress
@@ -279,7 +280,7 @@ module "immich" {
 
   redis         = "redis.fullstack.pw"
   redis_pass    = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
-  db_hostname   = "postgres.fullstack.pw"
+  db_hostname   = "tools.postgres.fullstack.pw"
   db_user       = "admin"
   db_name       = "immich"
   db_pass       = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
@@ -377,48 +378,18 @@ module "teleport-agent" {
   source = "../modules/apps/teleport-agent"
 
   kubernetes_cluster_name = terraform.workspace
-  join_token              = "743ac3c5eac5b41f11e359c8e1c0a4b4"
-  ca_pin                  = "sha256:1e52c4604734aa88884feb503f99283fbec590aa6ad084bcafdc93c34d8c64db"
+  join_token              = "2875dbe2e37eac947af86de3b0631e45"
+  ca_pin                  = "sha256:7f9b9e8c1ec072c967ac3f6693f88f3e464a1e6e34e76a6e4d7e97502eb0a93c"
   roles                   = var.config[terraform.workspace].teleport.roles
   apps                    = var.config[terraform.workspace].teleport.apps
-  databases               = var.config[terraform.workspace].teleport.databases
+  databases = {
+    for name, db in var.config[terraform.workspace].teleport.databases : name => {
+      uri     = db.uri
+      ca_cert = db.ca_cert != "" ? local.secrets_json["kv/cluster-secret-store/secrets/${db.ca_cert}"][db.ca_cert] : ""
+    }
+  }
 }
 
-module "testing_postgres" {
-  count  = contains(local.workload, "dev-postgres") ? 1 : 0
-  source = "../modules/apps/postgres"
-
-  namespace                    = "dev-postgres"
-  create_namespace             = true
-  needs_secrets                = true
-  preserve_existing_vault_data = false
-  vault_secret_path            = "cluster-secret-store/secrets/DEV_POSTGRES"
-  memory_request               = "512Mi"
-  cpu_request                  = "250m"
-  memory_limit                 = "1Gi"
-  cpu_limit                    = "500m"
-  ingress_host                 = "dev.postgres.fullstack.pw"
-  ingress_tls_secret_name      = "postgres-tls"
-  enable_ssl                   = true
-  ssl_ca_cert_key              = "SSL_CA"
-  ssl_server_cert_key          = "SSL_CERT"
-  ssl_server_key_key           = "SSL_KEY"
-
-  # Application user for password-based authentication
-  create_app_user            = true
-  app_username               = "appuser"
-  app_user_generate_password = true
-
-  # IMPORTANT: Set to false for initial deployment, then set to true after Istio CRDs are installed
-  # This avoids the chicken-and-egg problem with Terraform validating manifests during plan
-  use_istio               = true # TODO: Change to true after Istio is deployed
-  istio_gateway_namespace = "istio-system"
-  istio_gateway_name      = "istio-system/default-gateway"
-  ingress_class_name      = "istio"
-  istio_CRDs              = true
-}
-
-# CloudNativePG Operator (required for cloudnative-postgres module)
 module "cloudnative_pg_operator" {
   count  = contains(local.workload, "cloudnative-pg-operator") ? 1 : 0
   source = "../modules/apps/cloudnative-postgres-operator"
@@ -428,7 +399,6 @@ module "cloudnative_pg_operator" {
   chart_version    = "0.22.1"
 }
 
-# CloudNativePG PostgreSQL Cluster for dev environment
 module "dev_postgres_cnpg" {
   count  = contains(local.workload, "dev-postgres-cnpg") ? 1 : 0
   source = "../modules/apps/cloudnative-postgres"
@@ -458,11 +428,9 @@ module "dev_postgres_cnpg" {
   memory_limit   = "1Gi"
   cpu_limit      = "500m"
 
-  # SSL - Pass certificates directly from Vault
-  enable_ssl       = true
-  ssl_ca_cert      = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_SSL_CA"]
-  ssl_server_cert  = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_SSL_CERT"]
-  ssl_server_key   = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_SSL_KEY"]
+  # SSL - Enable hostssl in pg_hba.conf but let CNPG manage its own server certificates
+  # use_custom_server_certs=false (default) means CNPG generates and manages server certs
+  enable_ssl = true
 
   # Application user
   create_app_user            = true
@@ -474,9 +442,117 @@ module "dev_postgres_cnpg" {
   vault_secret_path = "cluster-secret-store/secrets/DEV_POSTGRES"
 
   # Export credentials to default namespace for writer app
-  export_credentials_to_namespace  = "default"
-  export_credentials_secret_name   = "dev-postgres-credentials"
+  export_credentials_to_namespace = "default"
+  export_credentials_secret_name  = "dev-postgres-credentials"
+
+  # Additional client CA for Teleport database access
+  additional_client_ca_certs = [local.secrets_json["kv/cluster-secret-store/secrets/TELEPORT_DB_CA"]["TELEPORT_DB_CA"]]
+
+  # External access via Istio
+  ingress_enabled = true
+  ingress_host    = "dev.postgres.fullstack.pw"
+  use_istio       = true
+  istio_CRDs      = true
 
   depends_on = [module.cloudnative_pg_operator]
 }
+
+module "tools_postgres_cnpg" {
+  count  = contains(local.workload, "tools-postgres-cnpg") ? 1 : 0
+  source = "../modules/apps/cloudnative-postgres"
+
+  cluster_name     = "tools-postgres"
+  namespace        = "tools-postgres"
+  create_namespace = true
+  create_cluster   = true
+
+  # Image configuration
+  registry   = "registry.fullstack.pw"
+  repository = "library/postgresql"
+  pg_version = "15-wal2json"
+  # registry   = "ghcr.io"
+  # repository = "cloudnative-pg/postgresql"
+  # pg_version = "15"
+  # Database configuration
+  postgres_database          = "postgres"
+  postgres_username          = "admin"
+  postgres_generate_password = false
+  postgres_password          = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
+
+  # Storage
+  persistence_size = "10Gi"
+  storage_class    = ""
+
+  # Resources
+  memory_request = "512Mi"
+  cpu_request    = "250m"
+  memory_limit   = "1Gi"
+  cpu_limit      = "500m"
+
+  # SSL - Enable hostssl in pg_hba.conf but let CNPG manage its own server certificates
+  enable_ssl = true
+
+  # Allow password auth for admin user from external networks (Teleport server uses password auth)
+  require_cert_auth_for_admin = true
+
+  # No app user needed for tools cluster
+  create_app_user = false
+
+  # Additional databases for Harbor and Teleport
+  additional_databases = ["registry", "teleport_backend", "teleport_audit"]
+
+  # Teleport user with password auth for Teleport server backend
+  additional_users = [
+    {
+      username  = "teleport"
+      password  = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
+      databases = ["teleport_backend", "teleport_audit"]
+    }
+  ]
+
+  # Vault - don't write to vault, use existing POSTGRES secret
+  needs_secrets = false
+
+  # No credential export needed for tools cluster
+  export_credentials_to_namespace = ""
+
+  # Additional client CA for Teleport database access
+  additional_client_ca_certs = [local.secrets_json["kv/cluster-secret-store/secrets/TELEPORT_DB_CA"]["TELEPORT_DB_CA"]]
+
+  # Ingress via Traefik (tools cluster uses traefik, not istio)
+  ingress_enabled    = true
+  ingress_host       = "tools.postgres.fullstack.pw"
+  ingress_class_name = "traefik"
+  use_istio          = false
+
+  depends_on = [module.cloudnative_pg_operator]
+}
+
+# module "freqtrade" {
+#   count  = contains(local.workload, "freqtrade") ? 1 : 0
+#   source = "../modules/apps/freqtrade"
+
+#   environment     = terraform.workspace
+#   domain          = var.config[terraform.workspace].freqtrade.domain
+#   dry_run         = var.config[terraform.workspace].freqtrade.dry_run
+#   stake_amount    = var.config[terraform.workspace].freqtrade.stake_amount
+#   max_open_trades = var.config[terraform.workspace].freqtrade.max_open_trades
+#   freqai_enabled  = var.config[terraform.workspace].freqtrade.freqai
+
+#   binance_api_key    = local.secrets_json["kv/cluster-secret-store/secrets/FREQTRADE"]["BINANCE_API_KEY"]
+#   binance_api_secret = local.secrets_json["kv/cluster-secret-store/secrets/FREQTRADE"]["BINANCE_API_SECRET"]
+#   frequi_password    = local.secrets_json["kv/cluster-secret-store/secrets/FREQTRADE"]["FREQUI_PASSWORD"]
+#   jwt_secret_key     = local.secrets_json["kv/cluster-secret-store/secrets/FREQTRADE"]["JWT_SECRET_KEY"]
+#   telegram_token     = local.secrets_json["kv/cluster-secret-store/secrets/FREQTRADE"]["TELEGRAM_TOKEN"]
+#   telegram_chat_id   = local.secrets_json["kv/cluster-secret-store/secrets/FREQTRADE"]["TELEGRAM_CHAT_ID"]
+
+#   minio_endpoint   = "minio.fullstack.pw"
+#   minio_bucket     = "freqtrade"
+#   minio_access_key = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootUser"]
+#   minio_secret_key = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootPassword"]
+
+#   storage_class = "local-path"
+#   use_istio     = contains(local.workload, "istio")
+#   istio_gateway = "istio-system/default-gateway"
+# }
 

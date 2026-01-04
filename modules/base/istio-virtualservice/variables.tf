@@ -186,3 +186,33 @@ variable "cluster_issuer" {
   type        = string
   default     = "letsencrypt-prod"
 }
+
+variable "routing_mode" {
+  description = "Routing mode: 'http' for HTTP routes only, 'tls' for TLS/TCP routes only, 'both' for both"
+  type        = string
+  default     = "http"
+  validation {
+    condition     = contains(["http", "tls", "both"], var.routing_mode)
+    error_message = "routing_mode must be 'http', 'tls', or 'both'"
+  }
+}
+
+variable "tls_routes" {
+  description = "TLS routes for TCP passthrough (databases, etc.)"
+  type = list(object({
+    match = list(object({
+      port     = number
+      sniHosts = list(string)
+    }))
+    route = list(object({
+      destination = object({
+        host = string
+        port = object({
+          number = number
+        })
+      })
+      weight = optional(number)
+    }))
+  }))
+  default = []
+}
