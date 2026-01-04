@@ -252,9 +252,6 @@ jobs:
         if: steps.kubeconfig_update.outputs.kubeconfig_updated == 'true'
         run: |
           echo "Running OpenTofu apply to sync KUBECONFIG changes to Vault"
-          cd clusters
-          python3 load_secrets.py
-          cd ..
           make apply
           echo "KUBECONFIG successfully synced to Vault"
 
