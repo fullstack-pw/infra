@@ -46,12 +46,12 @@ jobs:
 
       - name: OpenTofu Init
         run: |
-          make tofu-init
+          make init
 
       - name: OpenTofu Plan
         id: plan
         run: |
-          make tofu-plan
+          make plan
         continue-on-error: true
 
       - name: Upload Plan Artifact
@@ -115,7 +115,7 @@ jobs:
 
       - name: OpenTofu Init
         run: |
-          make tofu-init
+          make init
 
       - name: Capture OpenTofu Outputs Before Apply
         id: outputs_before
@@ -138,7 +138,7 @@ jobs:
         id: apply
         timeout-minutes: 30
         run: |
-          make tofu-apply
+          make apply
 
       - name: Capture OpenTofu Outputs After Apply
         id: outputs_after
@@ -255,7 +255,7 @@ jobs:
           cd clusters
           python3 load_secrets.py
           cd ..
-          make tofu-apply
+          make apply
           echo "KUBECONFIG successfully synced to Vault"
 
       - name: Report Kubeconfig Update Failure
