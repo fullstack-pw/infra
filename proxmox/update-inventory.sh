@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script to manage Ansible inventory based on Terraform output
+# Script to manage Ansible inventory based on OpenTofu output
 # Handles both adding new hosts and removing destroyed ones
 
 set -e
@@ -18,10 +18,10 @@ fi
 # Backup inventory before changes
 cp "$INVENTORY_FILE" "${INVENTORY_FILE}.backup"
 
-# Parse Terraform output
-echo "Getting Terraform outputs..."
+# Parse OpenTofu output
+echo "Getting OpenTofu outputs..."
 cd proxmox
-terraform output -json > ../tf_output.json
+tofu output -json > ../tf_output.json
 cd ..
 
 echo "Analyzing output structure..."
@@ -46,7 +46,7 @@ else
         echo "Using $FIRST_KEY for VM data extraction"
         VM_DATA=$(jq -c --arg key "$FIRST_KEY" '.[$key] | to_entries | map({key: .key, ip: .value})' tf_output.json)
     else
-        echo "No VM data found in Terraform output - possibly all VMs destroyed"
+        echo "No VM data found in OpenTofu output - possibly all VMs destroyed"
         VM_DATA='[]'
     fi
 fi
@@ -66,7 +66,7 @@ if [ "$VM_DATA" != "[]" ]; then
     readarray -t NAMES < <(echo "$VM_NAMES" | jq -r '.[]')
     readarray -t IPS < <(echo "$VM_IPS" | jq -r '.[]')
 else
-    echo "No VMs found in terraform output"
+    echo "No VMs found in OpenTofu output"
     NAMES=()
     IPS=()
 fi
@@ -79,7 +79,7 @@ if [ ${#NAMES[@]} -gt 0 ]; then
     NEW_VMS=($(cat /tmp/new_vms.txt))
 fi
 
-# Determine VMs to remove (exist in inventory but not in terraform)
+# Determine VMs to remove (exist in inventory but not in OpenTofu)
 VMS_TO_REMOVE=()
 if [ -n "$CURRENT_VMS" ]; then
     echo "$CURRENT_VMS" > /tmp/current_vms.txt
@@ -271,7 +271,7 @@ fi
 
 # Add new VMs and update existing ones
 if [ ${#NAMES[@]} -gt 0 ]; then
-    echo "Processing VMs from terraform output..."
+    echo "Processing VMs from OpenTofu output..."
     
     for i in "${!NAMES[@]}"; do
         name="${NAMES[i]}"

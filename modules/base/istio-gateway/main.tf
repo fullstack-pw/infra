@@ -6,11 +6,38 @@
  * It typically pairs with VirtualServices for routing.
  */
 
-resource "kubernetes_manifest" "gateway" {
-  count = var.enabled ? 1 : 0
-
-  # Wait for Istio CRD to be available before validating
-  computed_fields = ["spec"]
+locals {
+  servers = concat(
+    var.http_enabled ? [
+      {
+        port = {
+          number   = 80
+          name     = "http"
+          protocol = "HTTP"
+        }
+        hosts = var.hosts
+        tls = var.https_redirect ? {
+          httpsRedirect = true
+        } : null
+      }
+    ] : [],
+    var.https_enabled ? [
+      {
+        port = {
+          number   = 443
+          name     = "https"
+          protocol = "HTTPS"
+        }
+        hosts = var.hosts
+        tls = {
+          mode               = var.tls_mode
+          credentialName     = var.tls_secret_name != "" ? var.tls_secret_name : "${replace(var.hosts[0], ".", "-")}-tls"
+          minProtocolVersion = var.tls_min_version
+        }
+      }
+    ] : [],
+    var.additional_servers
+  )
 
   manifest = {
     apiVersion = "networking.istio.io/v1beta1"
@@ -27,40 +54,13 @@ resource "kubernetes_manifest" "gateway" {
     }
     spec = {
       selector = var.selector
-      servers = concat(
-        # HTTP server with optional HTTPS redirect
-        var.http_enabled ? [
-          {
-            port = {
-              number   = 80
-              name     = "http"
-              protocol = "HTTP"
-            }
-            hosts = var.hosts
-            tls = var.https_redirect ? {
-              httpsRedirect = true
-            } : null
-          }
-        ] : [],
-        # HTTPS server with TLS
-        var.https_enabled ? [
-          {
-            port = {
-              number   = 443
-              name     = "https"
-              protocol = "HTTPS"
-            }
-            hosts = var.hosts
-            tls = {
-              mode           = var.tls_mode
-              credentialName = var.tls_secret_name != "" ? var.tls_secret_name : "${replace(var.hosts[0], ".", "-")}-tls"
-              minProtocolVersion = var.tls_min_version
-            }
-          }
-        ] : [],
-        # Additional custom servers
-        var.additional_servers
-      )
+      servers  = local.servers
     }
   }
+}
+
+resource "kubectl_manifest" "gateway" {
+  count = var.enabled ? 1 : 0
+
+  yaml_body = yamlencode(local.manifest)
 }

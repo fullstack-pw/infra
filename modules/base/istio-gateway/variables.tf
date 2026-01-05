@@ -64,17 +64,9 @@ variable "tls_min_version" {
 }
 
 variable "additional_servers" {
-  description = "Additional custom server configurations"
-  type = list(object({
-    port = object({
-      number   = number
-      name     = string
-      protocol = string
-    })
-    hosts = list(string)
-    tls   = optional(map(any))
-  }))
-  default = []
+  description = "Additional custom server configurations (use for TCP/TLS passthrough, etc.)"
+  type        = list(any)
+  default     = []
 }
 
 variable "annotations" {

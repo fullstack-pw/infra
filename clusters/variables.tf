@@ -18,10 +18,10 @@ variable "workload" {
       "istio",
       "argocd",
       "teleport-agent",
-      "cloudnative-pg-operator", # CloudNativePG operator
-      "dev-postgres-cnpg",       # New CloudNativePG-based PostgreSQL
-      # "dev-postgres",           # Old Bitnami-based PostgreSQL - commented out for migration
-      "observability-box"
+      "cloudnative-pg-operator",
+      "dev-postgres-cnpg",
+      "observability-box",
+      #"freqtrade"
     ]
     stg = [
       "externaldns",
@@ -49,7 +49,6 @@ variable "workload" {
       "externaldns",
       "cert_manager",
       "external_secrets",
-      "postgres",
       "redis",
       "nats",
       "observability-box",
@@ -60,7 +59,9 @@ variable "workload" {
       "terraform_state_backup",
       "vault",
       "teleport-agent",
-      "clusterapi-operator"
+      "clusterapi-operator",
+      "cloudnative-pg-operator",
+      "tools-postgres-cnpg",
     ]
     observability = [
       "externaldns",
@@ -80,7 +81,7 @@ variable "config" {
       cert_manager_crd   = true
     }
     dev = {
-      kubernetes_context   = "dev-admin@dev"
+      kubernetes_context   = "dev"
       install_crd          = true
       cert_manager_crd     = true
       istio_CRDs           = true
@@ -93,7 +94,10 @@ variable "config" {
         }
         roles = "kube,app,db"
         databases = {
-          "dev-postgres" = "dev-postgres-rw.dev-postgres.svc.cluster.local:5432"
+          "dev-postgres" = {
+            uri     = "dev-postgres-rw.dev-postgres.svc.cluster.local:5432"
+            ca_cert = "DEV_POSTGRES_CA"
+          }
         }
       }
       prometheus_namespaces     = []
@@ -102,6 +106,13 @@ variable "config" {
       prometheus_storage_size   = "2Gi"
       metallb_create_ip_pool    = true
       metallb_ip_pool_addresses = ["192.168.1.70-192.168.1.80"]
+      freqtrade = {
+        domain          = "freqtrade.dev.fullstack.pw"
+        dry_run         = true
+        stake_amount    = 50
+        max_open_trades = 5
+        freqai          = true
+      }
     }
     stg = {
       kubernetes_context = "stg"

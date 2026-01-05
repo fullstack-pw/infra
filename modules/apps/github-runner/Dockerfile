@@ -40,6 +40,14 @@ RUN wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/shar
     && terraform --version \
     && rm -rf /var/lib/apt/lists/*
 
+RUN curl -fsSL https://get.opentofu.org/opentofu.gpg | gpg --dearmor -o /usr/share/keyrings/opentofu-archive-keyring.gpg \
+    && curl -fsSL https://packages.opentofu.org/opentofu/tofu/gpgkey | gpg --dearmor -o /usr/share/keyrings/opentofu-repo-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/opentofu-archive-keyring.gpg,/usr/share/keyrings/opentofu-repo-keyring.gpg] https://packages.opentofu.org/opentofu/tofu/any/ any main" | tee /etc/apt/sources.list.d/opentofu.list \
+    && apt-get update \
+    && apt-get install -y tofu \
+    && tofu --version \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN wget -O /tmp/sops.deb "https://github.com/mozilla/sops/releases/download/v3.8.1/sops_3.8.1_amd64.deb" \
     && dpkg -i /tmp/sops.deb \
     && sops --version \

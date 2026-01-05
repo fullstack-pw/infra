@@ -15,9 +15,12 @@ variable "apps" {
 }
 
 variable "databases" {
-  description = "Map of applications to register with Teleport"
-  type        = map(string)
-  default     = {}
+  description = "Map of databases to register with Teleport. Each database can have: uri (required), ca_cert (optional - PEM-encoded CA certificate for TLS verification)"
+  type = map(object({
+    uri     = string
+    ca_cert = optional(string, "")
+  }))
+  default = {}
 }
 
 variable "create_namespace" {
@@ -41,7 +44,7 @@ variable "chart_version" {
 variable "timeout" {
   description = "Timeout for Helm operations"
   type        = number
-  default     = 300
+  default     = 60
 }
 
 variable "cluster_name" {
