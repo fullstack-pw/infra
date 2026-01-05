@@ -16,8 +16,28 @@ terraform {
 }
 
 locals {
-  app_user_password     = var.create_app_user && var.app_user_generate_password ? random_password.app_user_password[0].result : ""
-  postgres_password     = var.postgres_generate_password ? random_password.postgres_password[0].result : var.postgres_password
+  app_user_password = var.create_app_user && var.app_user_generate_password ? random_password.app_user_password[0].result : ""
+  postgres_password = var.postgres_generate_password ? random_password.postgres_password[0].result : var.postgres_password
+
+  additional_databases_sql = [for db in var.additional_databases : "CREATE DATABASE ${db};"]
+
+  app_user_sql = var.create_app_user ? [
+    "CREATE USER ${var.app_username} WITH PASSWORD '${local.app_user_password}';",
+    "GRANT ALL PRIVILEGES ON DATABASE ${var.postgres_database} TO ${var.app_username};",
+    "GRANT ALL PRIVILEGES ON SCHEMA public TO ${var.app_username};",
+    "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ${var.app_username};",
+    "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ${var.app_username};",
+  ] : []
+
+  additional_users_sql = flatten([
+    for user in var.additional_users : concat(
+      ["CREATE USER ${user.username} WITH PASSWORD '${user.password}' REPLICATION;"],
+      [for db in user.databases : "GRANT ALL PRIVILEGES ON DATABASE ${db} TO ${user.username};"]
+    )
+  ])
+
+  all_init_sql  = concat(local.additional_databases_sql, local.app_user_sql, local.additional_users_sql)
+  post_init_sql = length(local.all_init_sql) > 0 ? local.all_init_sql : null
 }
 
 resource "random_password" "postgres_password" {
@@ -130,17 +150,23 @@ resource "kubernetes_manifest" "postgres_cluster" {
           shared_buffers  = "256MB"
         }
 
-        pg_hba = var.enable_ssl ? [
-          "local   all             all                                     scram-sha-256",
-          "host    all             all             127.0.0.1/32            scram-sha-256",
-          "host    all             all             ::1/128                 scram-sha-256",
-          "hostssl all             ${var.app_username}         10.42.0.0/16            scram-sha-256",
-          "hostssl all             ${var.app_username}         10.43.0.0/16            scram-sha-256",
-          "hostssl all             ${var.postgres_username}           0.0.0.0/0               cert clientcert=verify-full",
-          "hostssl all             ${var.postgres_username}           ::/0                    cert clientcert=verify-full",
-          "hostssl all             all             0.0.0.0/0               scram-sha-256",
-          "hostssl all             all             ::/0                    scram-sha-256",
-        ] : [
+        pg_hba = var.enable_ssl ? concat(
+          [
+            "local   all             all                                     scram-sha-256",
+            "host    all             all             127.0.0.1/32            scram-sha-256",
+            "host    all             all             ::1/128                 scram-sha-256",
+            "hostssl all             ${var.app_username}         10.42.0.0/16            scram-sha-256",
+            "hostssl all             ${var.app_username}         10.43.0.0/16            scram-sha-256",
+          ],
+          var.require_cert_auth_for_admin ? [
+            "hostssl all             ${var.postgres_username}           0.0.0.0/0               cert clientcert=verify-full",
+            "hostssl all             ${var.postgres_username}           ::/0                    cert clientcert=verify-full",
+          ] : [],
+          [
+            "hostssl all             all             0.0.0.0/0               scram-sha-256",
+            "hostssl all             all             ::/0                    scram-sha-256",
+          ]
+          ) : [
           "local   all             all                                     scram-sha-256",
           "host    all             all             0.0.0.0/0               scram-sha-256",
           "host    all             all             ::/0                    scram-sha-256",
@@ -154,13 +180,7 @@ resource "kubernetes_manifest" "postgres_cluster" {
           secret = {
             name = kubernetes_secret.superuser[0].metadata[0].name
           }
-          postInitSQL = var.create_app_user ? [
-            "CREATE USER ${var.app_username} WITH PASSWORD '${local.app_user_password}';",
-            "GRANT ALL PRIVILEGES ON DATABASE ${var.postgres_database} TO ${var.app_username};",
-            "GRANT ALL PRIVILEGES ON SCHEMA public TO ${var.app_username};",
-            "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ${var.app_username};",
-            "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ${var.app_username};",
-          ] : []
+          postInitSQL = local.post_init_sql
         }
       }
 
@@ -185,6 +205,28 @@ resource "kubernetes_manifest" "postgres_cluster" {
       certificates = var.use_custom_server_certs ? {
         serverTLSSecret = kubernetes_secret.ssl_certs[0].metadata[0].name
         serverCASecret  = kubernetes_secret.ssl_certs[0].metadata[0].name
+      } : null
+
+      # Managed services for external access via LoadBalancer
+      managed = var.ingress_enabled && !var.use_istio ? {
+        services = {
+          additional = [
+            {
+              selectorType = "rw"
+              serviceTemplate = {
+                metadata = {
+                  name = "${var.cluster_name}-lb"
+                  annotations = {
+                    "external-dns.alpha.kubernetes.io/hostname" = var.ingress_host
+                  }
+                }
+                spec = {
+                  type = "LoadBalancer"
+                }
+              }
+            }
+          ]
+        }
       } : null
     }
   }
@@ -240,16 +282,11 @@ resource "terraform_data" "append_client_ca" {
       EXISTING_CA=$(kubectl get secret ${var.cluster_name}-ca -n ${var.namespace} -o jsonpath='{.data.ca\.crt}' | base64 -d)
       EXISTING_KEY=$(kubectl get secret ${var.cluster_name}-ca -n ${var.namespace} -o jsonpath='{.data.ca\.key}' | base64 -d)
 
-      # Count existing certs
-      CERT_COUNT=$(echo "$EXISTING_CA" | grep -c "BEGIN CERTIFICATE" || true)
+      # Extract only the first certificate (CNPG's own CA)
+      CNPG_CA=$(echo "$EXISTING_CA" | awk '/-----BEGIN CERTIFICATE-----/{i++}i==1')
 
-      if [ "$CERT_COUNT" -gt 1 ]; then
-        echo "CA bundle already contains multiple certificates, skipping"
-        exit 0
-      fi
-
-      # Create combined CA bundle
-      COMBINED_CA="$EXISTING_CA
+      # Create combined CA bundle: CNPG CA + additional client CAs
+      COMBINED_CA="$CNPG_CA
 ${join("\n", var.additional_client_ca_certs)}"
 
       # Update secret with combined CA
@@ -262,9 +299,98 @@ ${join("\n", var.additional_client_ca_certs)}"
       # Add reload label so CNPG picks up the change
       kubectl label secret ${var.cluster_name}-ca cnpg.io/reload=true -n ${var.namespace} --overwrite
 
-      echo "Additional CA certificates appended to ${var.cluster_name}-ca"
+      echo "Client CA certificates updated in ${var.cluster_name}-ca"
     EOT
   }
 
   depends_on = [kubernetes_manifest.postgres_cluster]
+}
+
+module "ingress" {
+  source = "../../base/ingress"
+
+  enabled            = var.ingress_enabled && !var.use_istio
+  name               = "${var.cluster_name}-ingress"
+  namespace          = var.namespace
+  host               = var.ingress_host
+  service_name       = "${var.cluster_name}-rw"
+  service_port       = var.service_port
+  tls_enabled        = var.ingress_tls_enabled
+  tls_secret_name    = var.ingress_tls_secret_name
+  ingress_class_name = var.ingress_class_name
+  cluster_issuer     = var.cert_manager_cluster_issuer
+  annotations = merge({
+    "nginx.ingress.kubernetes.io/proxy-body-size"       = "50m"
+    "nginx.ingress.kubernetes.io/proxy-connect-timeout" = "60"
+    "nginx.ingress.kubernetes.io/proxy-read-timeout"    = "60"
+    "nginx.ingress.kubernetes.io/proxy-send-timeout"    = "60"
+    "nginx.ingress.kubernetes.io/backend-protocol"      = "HTTPS"
+    "nginx.ingress.kubernetes.io/ssl-passthrough"       = "true"
+  }, var.ingress_annotations)
+
+  depends_on = [kubernetes_namespace.this, kubernetes_manifest.postgres_cluster]
+}
+
+module "istio_gateway" {
+  source = "../../base/istio-gateway"
+
+  enabled   = var.ingress_enabled && var.istio_CRDs
+  name      = "${var.cluster_name}-gateway"
+  namespace = var.istio_gateway_namespace
+  hosts     = [var.ingress_host]
+
+  http_enabled  = false
+  https_enabled = false
+
+  additional_servers = [
+    {
+      port = {
+        number   = 5432
+        name     = "tcp-postgres"
+        protocol = "TLS"
+      }
+      hosts = [var.ingress_host]
+      tls = {
+        mode = "PASSTHROUGH"
+      }
+    }
+  ]
+
+  depends_on = [kubernetes_namespace.this]
+}
+
+module "istio_virtualservice" {
+  source = "../../base/istio-virtualservice"
+
+  enabled      = var.ingress_enabled && var.istio_CRDs
+  name         = "${var.cluster_name}-vs"
+  namespace    = var.namespace
+  hosts        = [var.ingress_host]
+  gateways     = ["${var.istio_gateway_namespace}/${var.cluster_name}-gateway"]
+  routing_mode = "tls"
+
+  tls_routes = [
+    {
+      match = [
+        {
+          port     = 5432
+          sniHosts = [var.ingress_host]
+        }
+      ]
+      route = [
+        {
+          destination = {
+            host = "${var.cluster_name}-rw.${var.namespace}.svc.cluster.local"
+            port = {
+              number = var.service_port
+            }
+          }
+        }
+      ]
+    }
+  ]
+
+  cluster_issuer = var.cert_manager_cluster_issuer
+
+  depends_on = [module.istio_gateway, kubernetes_namespace.this]
 }

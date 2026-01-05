@@ -109,6 +109,12 @@ variable "enable_ssl" {
   default     = false
 }
 
+variable "require_cert_auth_for_admin" {
+  description = "Require client certificate authentication for admin user. Set to false to allow password auth from external networks."
+  type        = bool
+  default     = true
+}
+
 variable "use_custom_server_certs" {
   description = "Use custom server certificates instead of CNPG-managed ones. Only set to true if you have valid CA/cert/key that form a proper chain."
   type        = bool
@@ -172,6 +178,22 @@ variable "app_user_generate_password" {
   default     = true
 }
 
+variable "additional_databases" {
+  description = "Additional databases to create"
+  type        = list(string)
+  default     = []
+}
+
+variable "additional_users" {
+  description = "Additional database users to create with password auth and REPLICATION privilege"
+  type = list(object({
+    username  = string
+    password  = string
+    databases = list(string)
+  }))
+  default = []
+}
+
 variable "needs_secrets" {
   description = "Whether to store secrets in Vault"
   type        = bool
@@ -200,4 +222,70 @@ variable "additional_client_ca_certs" {
   description = "Additional CA certificates to trust for client authentication (e.g., Teleport DB CA). List of PEM-encoded certificates."
   type        = list(string)
   default     = []
+}
+
+variable "ingress_enabled" {
+  description = "Enable ingress for external access"
+  type        = bool
+  default     = false
+}
+
+variable "ingress_host" {
+  description = "Hostname for ingress (e.g., tools.postgres.fullstack.pw)"
+  type        = string
+  default     = ""
+}
+
+variable "ingress_class_name" {
+  description = "Ingress class name (e.g., traefik, nginx)"
+  type        = string
+  default     = "traefik"
+}
+
+variable "ingress_tls_enabled" {
+  description = "Enable TLS for ingress"
+  type        = bool
+  default     = true
+}
+
+variable "ingress_tls_secret_name" {
+  description = "TLS secret name for ingress"
+  type        = string
+  default     = ""
+}
+
+variable "cert_manager_cluster_issuer" {
+  description = "cert-manager cluster issuer name"
+  type        = string
+  default     = "letsencrypt-prod"
+}
+
+variable "ingress_annotations" {
+  description = "Additional annotations for ingress"
+  type        = map(string)
+  default     = {}
+}
+
+variable "use_istio" {
+  description = "Use Istio Gateway/VirtualService instead of standard Ingress"
+  type        = bool
+  default     = false
+}
+
+variable "istio_CRDs" {
+  description = "Whether Istio CRDs are available (set to true after Istio is installed)"
+  type        = bool
+  default     = false
+}
+
+variable "istio_gateway_namespace" {
+  description = "Namespace where Istio ingress gateway is deployed"
+  type        = string
+  default     = "istio-system"
+}
+
+variable "service_port" {
+  description = "PostgreSQL service port"
+  type        = number
+  default     = 5432
 }

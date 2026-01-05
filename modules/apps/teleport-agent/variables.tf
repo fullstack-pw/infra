@@ -44,7 +44,7 @@ variable "chart_version" {
 variable "timeout" {
   description = "Timeout for Helm operations"
   type        = number
-  default     = 300
+  default     = 60
 }
 
 variable "cluster_name" {

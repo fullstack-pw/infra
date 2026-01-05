@@ -1,3 +1,9 @@
+## [1.5.2](https://github.com/fullstack-pw/infra/compare/v1.5.1...v1.5.2) (2026-01-05)
+
+### Tasks
+
+* **opentofu:** migrate ([#131](https://github.com/fullstack-pw/infra/issues/131)) ([eb73c53](https://github.com/fullstack-pw/infra/commit/eb73c53e9cec199f59addc077f228324bd0c719d))
+
 ## [1.5.1](https://github.com/fullstack-pw/infra/compare/v1.5.0...v1.5.1) (2025-12-28)
 
 ### Bug Fixes
