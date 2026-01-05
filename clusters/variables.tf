@@ -113,6 +113,23 @@ variable "config" {
         max_open_trades = 5
         freqai          = true
       }
+      oracle_backup = {
+        enable_s3_backup       = false
+        enable_postgres_backup = true
+        postgres_backups = {
+          "dev-postgres" = {
+            host        = "dev-postgres-rw.dev-postgres.svc.cluster.local"
+            port        = 5432
+            database    = "postgres"
+            username    = "backup"
+            secret_path = "kv/cluster-secret-store/secrets/DEV_POSTGRES"
+            secret_key  = "POSTGRES_BACKUP_PASSWORD"
+            ssl_enabled = false
+            schedule    = "0 4 * * *"
+            backup_path = "postgres-backup/dev"
+          }
+        }
+      }
     }
     stg = {
       kubernetes_context = "stg"
@@ -273,6 +290,23 @@ variable "config" {
       prometheus_namespaces     = []
       prometheus_memory_limit   = "2048Mi"
       prometheus_memory_request = "512Mi"
+      oracle_backup = {
+        enable_s3_backup       = true
+        enable_postgres_backup = true
+        postgres_backups = {
+          "tools-postgres" = {
+            host        = "tools-postgres-rw.tools-postgres.svc.cluster.local"
+            port        = 5432
+            database    = "postgres"
+            username    = "backup"
+            secret_path = "kv/cluster-secret-store/secrets/POSTGRES"
+            secret_key  = "POSTGRES_PASSWORD"
+            ssl_enabled = false
+            schedule    = "0 3 * * *"
+            backup_path = "postgres-backup/tools"
+          }
+        }
+      }
     }
     observability = {
       kubernetes_context = "k8s-observability"

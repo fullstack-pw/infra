@@ -22,3 +22,14 @@ output "service_r" {
   description = "Read service name (any instance)"
   value       = "${var.cluster_name}-r.${var.namespace}.svc.cluster.local"
 }
+
+output "backup_username" {
+  description = "Backup user username"
+  value       = var.create_backup_user ? var.backup_username : null
+}
+
+output "backup_password" {
+  description = "Backup user password"
+  value       = var.create_backup_user ? local.backup_password : null
+  sensitive   = true
+}

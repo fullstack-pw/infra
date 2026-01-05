@@ -18,6 +18,7 @@ terraform {
 locals {
   app_user_password = var.create_app_user && var.app_user_generate_password ? random_password.app_user_password[0].result : ""
   postgres_password = var.postgres_generate_password ? random_password.postgres_password[0].result : var.postgres_password
+  backup_password   = var.create_backup_user ? (var.backup_generate_password ? random_password.backup_password[0].result : var.backup_password) : ""
 
   additional_databases_sql = [for db in var.additional_databases : "CREATE DATABASE ${db};"]
 
@@ -29,6 +30,15 @@ locals {
     "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ${var.app_username};",
   ] : []
 
+  backup_user_sql = var.create_backup_user ? [
+    "CREATE USER ${var.backup_username} WITH PASSWORD '${local.backup_password}';",
+    "GRANT CONNECT ON DATABASE ${var.postgres_database} TO ${var.backup_username};",
+    "GRANT SELECT ON ALL TABLES IN SCHEMA public TO ${var.backup_username};",
+    "GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO ${var.backup_username};",
+    "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO ${var.backup_username};",
+    "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON SEQUENCES TO ${var.backup_username};",
+  ] : []
+
   additional_users_sql = flatten([
     for user in var.additional_users : concat(
       ["CREATE USER ${user.username} WITH PASSWORD '${user.password}' REPLICATION;"],
@@ -36,8 +46,8 @@ locals {
     )
   ])
 
-  all_init_sql  = concat(local.additional_databases_sql, local.app_user_sql, local.additional_users_sql)
-  post_init_sql = length(local.all_init_sql) > 0 ? local.all_init_sql : null
+  all_init_sql  = concat(local.additional_databases_sql, local.app_user_sql, local.backup_user_sql, local.additional_users_sql)
+  post_init_sql = length(local.all_init_sql) > 0 ? sensitive(local.all_init_sql) : null
 }
 
 resource "random_password" "postgres_password" {
@@ -50,6 +60,12 @@ resource "random_password" "app_user_password" {
   count   = var.create_app_user && var.app_user_generate_password ? 1 : 0
   length  = 32
   special = true
+}
+
+resource "random_password" "backup_password" {
+  count   = var.create_backup_user && var.backup_generate_password ? 1 : 0
+  length  = 32
+  special = false
 }
 
 resource "kubernetes_namespace" "this" {
@@ -231,6 +247,12 @@ resource "kubernetes_manifest" "postgres_cluster" {
     }
   }
 
+  lifecycle {
+    ignore_changes = [
+      manifest.spec.bootstrap,
+    ]
+  }
+
   depends_on = [kubernetes_secret.superuser, kubernetes_secret.ssl_certs]
 }
 
@@ -251,6 +273,10 @@ resource "vault_kv_secret_v2" "postgres_credentials" {
     var.create_app_user ? {
       POSTGRES_APP_USER     = var.app_username
       POSTGRES_APP_PASSWORD = local.app_user_password
+    } : {},
+    var.create_backup_user ? {
+      POSTGRES_BACKUP_USER     = var.backup_username
+      POSTGRES_BACKUP_PASSWORD = local.backup_password
     } : {}
   ))
 }

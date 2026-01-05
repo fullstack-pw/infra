@@ -214,6 +214,60 @@ module "terraform_state_backup" {
   depends_on = [module.minio]
 }
 
+module "oracle_backup" {
+  count  = contains(keys(var.config[terraform.workspace]), "oracle_backup") ? 1 : 0
+  source = "../modules/apps/oracle-backup"
+
+  namespace        = "oracle-backup"
+  create_namespace = true
+
+  enable_s3_backup       = try(var.config[terraform.workspace].oracle_backup.enable_s3_backup, false)
+  enable_postgres_backup = try(var.config[terraform.workspace].oracle_backup.enable_postgres_backup, false)
+
+  s3_backup_name    = "terraform-state-backup"
+  s3_schedule       = "0 2 * * *"
+  minio_endpoint    = "https://s3.fullstack.pw"
+  minio_access_key  = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootUser"]
+  minio_secret_key  = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootPassword"]
+  minio_region      = "main"
+  minio_bucket_path = "terraform"
+  s3_backup_path    = "terraform-state-backup"
+
+  oracle_user_ocid    = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["userOcid"]
+  oracle_tenancy_ocid = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["tenancyOcid"]
+  oracle_fingerprint  = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["fingerprint"]
+  oracle_private_key  = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["privateKey"]
+  oracle_region       = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["region"]
+  oracle_namespace    = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["namespace"]
+  oracle_bucket       = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["bucket"]
+
+  postgres_backups = {
+    for key, config in try(var.config[terraform.workspace].oracle_backup.postgres_backups, {}) : key => {
+      host           = config.host
+      port           = config.port
+      database       = config.database
+      username       = config.username
+      password       = try(local.secrets_json[config.secret_path][config.secret_key], "")
+      ssl_enabled    = config.ssl_enabled
+      ssl_ca_cert    = try(config.ssl_ca_cert, "")
+      schedule       = config.schedule
+      backup_path    = config.backup_path
+      databases      = try(config.databases, [])
+      memory_request = try(config.memory_request, "256Mi")
+      memory_limit   = try(config.memory_limit, "1Gi")
+      cpu_request    = try(config.cpu_request, "200m")
+      cpu_limit      = try(config.cpu_limit, "1000m")
+    } if try(local.secrets_json[config.secret_path][config.secret_key], "") != ""
+  }
+
+  memory_request = "256Mi"
+  memory_limit   = "1Gi"
+  cpu_request    = "200m"
+  cpu_limit      = "1000m"
+
+  depends_on = [module.minio]
+}
+
 module "registry" {
   count  = contains(local.workload, "registry") ? 1 : 0
   source = "../modules/apps/registry"
@@ -437,6 +491,10 @@ module "dev_postgres_cnpg" {
   app_username               = "appuser"
   app_user_generate_password = true
 
+  # Backup user for pg_dump
+  create_backup_user       = true
+  backup_generate_password = true
+
   # Vault
   needs_secrets     = true
   vault_secret_path = "cluster-secret-store/secrets/DEV_POSTGRES"
@@ -500,6 +558,11 @@ module "tools_postgres_cnpg" {
 
   # No app user needed for tools cluster
   create_app_user = false
+
+  # Backup user for pg_dump (uses same password as admin for simplicity)
+  create_backup_user       = true
+  backup_generate_password = false
+  backup_password          = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
 
   # Additional databases for Harbor and Teleport
   additional_databases = ["registry", "teleport_backend", "teleport_audit"]

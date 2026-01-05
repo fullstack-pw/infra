@@ -289,3 +289,28 @@ variable "service_port" {
   type        = number
   default     = 5432
 }
+
+variable "create_backup_user" {
+  description = "Create a dedicated backup user with read-only access for pg_dump"
+  type        = bool
+  default     = false
+}
+
+variable "backup_username" {
+  description = "Backup user username"
+  type        = string
+  default     = "backup"
+}
+
+variable "backup_password" {
+  description = "Backup user password (if empty and create_backup_user=true, will be generated)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "backup_generate_password" {
+  description = "Generate random password for backup user"
+  type        = bool
+  default     = true
+}
