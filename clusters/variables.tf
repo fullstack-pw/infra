@@ -95,7 +95,7 @@ variable "config" {
         roles = "kube,app,db"
         databases = {
           "dev-postgres" = {
-            uri     = "dev-postgres-rw.dev-postgres.svc.cluster.local:5432"
+            uri     = "postgres-rw.default.svc.cluster.local:5432"
             ca_cert = "DEV_POSTGRES_CA"
           }
         }
@@ -116,19 +116,25 @@ variable "config" {
       oracle_backup = {
         enable_s3_backup       = false
         enable_postgres_backup = true
+        postgres_password_key  = "POSTGRES_BACKUP_PASSWORD"
         postgres_backups = {
           "dev-postgres" = {
-            host        = "dev-postgres-rw.dev-postgres.svc.cluster.local"
+            host        = "dev.postgresfullstack.pw"
             port        = 5432
             database    = "postgres"
             username    = "backup"
-            secret_path = "kv/cluster-secret-store/secrets/DEV_POSTGRES"
-            secret_key  = "POSTGRES_BACKUP_PASSWORD"
             ssl_enabled = false
             schedule    = "0 4 * * *"
             backup_path = "postgres-backup/dev"
           }
         }
+      }
+      dev_postgres_cnpg = {
+        enable_superuser_access = true
+        managed_roles = [
+          { name = "root", login = true, replication = true }
+        ]
+        databases = []
       }
     }
     stg = {
@@ -179,8 +185,13 @@ variable "config" {
           "vault"  = "http://vault.vault.svc.cluster.local:8200"
           "minio"  = "http://minio-console.default.svc.cluster.local:9001"
         }
-        databases = {}
-        roles     = "kube,app"
+        databases = {
+          "tools-postgres" = {
+            uri     = "postgres-rw.default.svc.cluster.local:5432"
+            ca_cert = "TOOLS_POSTGRES_CA"
+          }
+        }
+        roles = "kube,app,db"
       }
       proxmox-talos-cluster = [
         {
@@ -290,17 +301,29 @@ variable "config" {
       prometheus_namespaces     = []
       prometheus_memory_limit   = "2048Mi"
       prometheus_memory_request = "512Mi"
+      tools_postgres_cnpg = {
+        enable_superuser_access = true
+        managed_roles = [
+          { name = "teleport", login = true, replication = true },
+          { name = "root", login = true, replication = true }
+
+        ]
+        databases = [
+          { name = "registry", owner = "app" },
+          { name = "teleport-backend", owner = "app", locale_collate = "C", locale_ctype = "C" },
+          { name = "teleport-audit", owner = "app", locale_collate = "C", locale_ctype = "C" },
+        ]
+      }
+
       oracle_backup = {
         enable_s3_backup       = true
         enable_postgres_backup = true
         postgres_backups = {
           "tools-postgres" = {
-            host        = "tools-postgres-rw.tools-postgres.svc.cluster.local"
+            host        = "tools-postgres-rw.default.svc.cluster.local"
             port        = 5432
             database    = "postgres"
-            username    = "backup"
-            secret_path = "kv/cluster-secret-store/secrets/POSTGRES"
-            secret_key  = "POSTGRES_PASSWORD"
+            username    = "postgres"
             ssl_enabled = false
             schedule    = "0 3 * * *"
             backup_path = "postgres-backup/tools"

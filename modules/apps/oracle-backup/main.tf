@@ -5,6 +5,8 @@
  * Supports:
  * - S3/MinIO bucket backups
  * - PostgreSQL database backups
+ *
+ * Credentials are pulled from the cluster-secrets secret (synced from Vault via External Secrets).
  */
 
 terraform {
@@ -13,15 +15,22 @@ terraform {
       source  = "gavinbunney/kubectl"
       version = "1.19.0"
     }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = ">= 2.0"
+    }
   }
 }
 
-# Create namespace if requested
+# Create namespace with cluster-secrets label
 module "namespace" {
   source = "../../base/namespace"
 
   create = var.create_namespace
   name   = var.namespace
+  labels = {
+    "cluster-secrets" = "true"
+  }
 }
 
 # S3/MinIO Backup CronJob (conditional)
@@ -36,17 +45,7 @@ resource "kubectl_manifest" "s3_backup_cronjob" {
     failed_jobs_history_limit     = var.failed_jobs_history_limit
     backoff_limit                 = var.backoff_limit
     minio_endpoint                = var.minio_endpoint
-    minio_access_key              = var.minio_access_key
-    minio_secret_key              = var.minio_secret_key
-    minio_region                  = var.minio_region
     minio_bucket_path             = var.minio_bucket_path
-    oracle_user_ocid              = var.oracle_user_ocid
-    oracle_tenancy_ocid           = var.oracle_tenancy_ocid
-    oracle_fingerprint            = var.oracle_fingerprint
-    oracle_private_key            = var.oracle_private_key
-    oracle_region                 = var.oracle_region
-    oracle_namespace              = var.oracle_namespace
-    oracle_bucket                 = var.oracle_bucket
     backup_path                   = var.s3_backup_path
     memory_request                = var.memory_request
     memory_limit                  = var.memory_limit
@@ -75,23 +74,15 @@ resource "kubectl_manifest" "postgres_backup_cronjob" {
     pg_port                       = each.value.port
     pg_database                   = each.value.database
     pg_username                   = each.value.username
-    pg_password                   = each.value.password
     pg_ssl_enabled                = each.value.ssl_enabled
-    pg_ssl_ca_cert                = each.value.ssl_ca_cert
     pg_databases                  = each.value.databases
-    oracle_user_ocid              = var.oracle_user_ocid
-    oracle_tenancy_ocid           = var.oracle_tenancy_ocid
-    oracle_fingerprint            = var.oracle_fingerprint
-    oracle_private_key            = var.oracle_private_key
-    oracle_region                 = var.oracle_region
-    oracle_namespace              = var.oracle_namespace
-    oracle_bucket                 = var.oracle_bucket
     backup_path                   = each.value.backup_path
     cluster_name                  = each.key
     memory_request                = each.value.memory_request
     memory_limit                  = each.value.memory_limit
     cpu_request                   = each.value.cpu_request
     cpu_limit                     = each.value.cpu_limit
+    postgres_password_key         = var.postgres_password_key
   })
 
   wait              = true

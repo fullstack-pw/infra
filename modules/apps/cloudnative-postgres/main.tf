@@ -16,56 +16,13 @@ terraform {
 }
 
 locals {
-  app_user_password = var.create_app_user && var.app_user_generate_password ? random_password.app_user_password[0].result : ""
   postgres_password = var.postgres_generate_password ? random_password.postgres_password[0].result : var.postgres_password
-  backup_password   = var.create_backup_user ? (var.backup_generate_password ? random_password.backup_password[0].result : var.backup_password) : ""
-
-  additional_databases_sql = [for db in var.additional_databases : "CREATE DATABASE ${db};"]
-
-  app_user_sql = var.create_app_user ? [
-    "CREATE USER ${var.app_username} WITH PASSWORD '${local.app_user_password}';",
-    "GRANT ALL PRIVILEGES ON DATABASE ${var.postgres_database} TO ${var.app_username};",
-    "GRANT ALL PRIVILEGES ON SCHEMA public TO ${var.app_username};",
-    "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ${var.app_username};",
-    "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ${var.app_username};",
-  ] : []
-
-  backup_user_sql = var.create_backup_user ? [
-    "CREATE USER ${var.backup_username} WITH PASSWORD '${local.backup_password}';",
-    "GRANT CONNECT ON DATABASE ${var.postgres_database} TO ${var.backup_username};",
-    "GRANT SELECT ON ALL TABLES IN SCHEMA public TO ${var.backup_username};",
-    "GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO ${var.backup_username};",
-    "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO ${var.backup_username};",
-    "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON SEQUENCES TO ${var.backup_username};",
-  ] : []
-
-  additional_users_sql = flatten([
-    for user in var.additional_users : concat(
-      ["CREATE USER ${user.username} WITH PASSWORD '${user.password}' REPLICATION;"],
-      [for db in user.databases : "GRANT ALL PRIVILEGES ON DATABASE ${db} TO ${user.username};"]
-    )
-  ])
-
-  all_init_sql  = concat(local.additional_databases_sql, local.app_user_sql, local.backup_user_sql, local.additional_users_sql)
-  post_init_sql = length(local.all_init_sql) > 0 ? sensitive(local.all_init_sql) : null
 }
 
 resource "random_password" "postgres_password" {
   count   = var.postgres_generate_password ? 1 : 0
   length  = 32
   special = true
-}
-
-resource "random_password" "app_user_password" {
-  count   = var.create_app_user && var.app_user_generate_password ? 1 : 0
-  length  = 32
-  special = true
-}
-
-resource "random_password" "backup_password" {
-  count   = var.create_backup_user && var.backup_generate_password ? 1 : 0
-  length  = 32
-  special = false
 }
 
 resource "kubernetes_namespace" "this" {
@@ -79,7 +36,6 @@ resource "kubernetes_namespace" "this" {
   }
 }
 
-# Read SSL certificates from cluster-secrets (managed by External Secrets Operator) if not provided directly
 data "kubernetes_secret" "cluster_secrets" {
   count = var.use_custom_server_certs && var.create_cluster && var.ssl_server_cert == "" ? 1 : 0
 
@@ -91,24 +47,6 @@ data "kubernetes_secret" "cluster_secrets" {
   depends_on = [kubernetes_namespace.this]
 }
 
-# Superuser credentials secret
-resource "kubernetes_secret" "superuser" {
-  count = var.create_cluster ? 1 : 0
-
-  metadata {
-    name      = "${var.cluster_name}-superuser"
-    namespace = var.namespace
-  }
-
-  data = {
-    username = var.postgres_username
-    password = local.postgres_password
-  }
-
-  depends_on = [kubernetes_namespace.this]
-}
-
-# Export credentials to another namespace for app access (uses appuser if available, otherwise admin)
 resource "kubernetes_secret" "exported_credentials" {
   count = var.create_cluster && var.export_credentials_to_namespace != "" ? 1 : 0
 
@@ -118,8 +56,7 @@ resource "kubernetes_secret" "exported_credentials" {
   }
 
   data = {
-    username = var.create_app_user ? var.app_username : var.postgres_username
-    password = var.create_app_user ? local.app_user_password : local.postgres_password
+    username = var.app_username
   }
 }
 
@@ -144,6 +81,9 @@ resource "kubernetes_secret" "ssl_certs" {
 # PostgreSQL Cluster CRD
 resource "kubernetes_manifest" "postgres_cluster" {
   count = var.create_cluster ? 1 : 0
+  # field_manager {
+  #   force_conflicts = true
+  # }
 
   # Ignore fields that are dynamically added by the CloudNativePG operator
   computed_fields = ["spec.postgresql.parameters"]
@@ -160,6 +100,8 @@ resource "kubernetes_manifest" "postgres_cluster" {
 
       imageName = "${var.registry}/${var.repository}:${var.pg_version}"
 
+      enableSuperuserAccess = var.enable_superuser_access
+
       postgresql = {
         parameters = {
           max_connections = "200"
@@ -175,9 +117,11 @@ resource "kubernetes_manifest" "postgres_cluster" {
             "hostssl all             ${var.app_username}         10.43.0.0/16            scram-sha-256",
           ],
           var.require_cert_auth_for_admin ? [
-            "hostssl all             ${var.postgres_username}           0.0.0.0/0               cert clientcert=verify-full",
-            "hostssl all             ${var.postgres_username}           ::/0                    cert clientcert=verify-full",
+            "hostssl all             root           0.0.0.0/0               cert clientcert=verify-full",
+            "hostssl all             root           ::/0                    cert clientcert=verify-full",
           ] : [],
+          [for user in var.cert_auth_users : "hostssl all             ${user}           0.0.0.0/0               cert clientcert=verify-full"],
+          [for user in var.cert_auth_users : "hostssl all             ${user}           ::/0                    cert clientcert=verify-full"],
           [
             "hostssl all             all             0.0.0.0/0               scram-sha-256",
             "hostssl all             all             ::/0                    scram-sha-256",
@@ -191,12 +135,7 @@ resource "kubernetes_manifest" "postgres_cluster" {
 
       bootstrap = {
         initdb = {
-          database = var.postgres_database
-          owner    = var.postgres_username
-          secret = {
-            name = kubernetes_secret.superuser[0].metadata[0].name
-          }
-          postInitSQL = local.post_init_sql
+          postInitSQL = null
         }
       }
 
@@ -223,62 +162,57 @@ resource "kubernetes_manifest" "postgres_cluster" {
         serverCASecret  = kubernetes_secret.ssl_certs[0].metadata[0].name
       } : null
 
-      # Managed services for external access via LoadBalancer
-      managed = var.ingress_enabled && !var.use_istio ? {
-        services = {
-          additional = [
-            {
-              selectorType = "rw"
-              serviceTemplate = {
-                metadata = {
-                  name = "${var.cluster_name}-lb"
-                  annotations = {
-                    "external-dns.alpha.kubernetes.io/hostname" = var.ingress_host
+      # Managed section: services for external access and declarative roles
+      managed = (var.ingress_enabled && !var.use_istio) || length(var.managed_roles) > 0 ? merge(
+        # Services for LoadBalancer access
+        var.ingress_enabled && !var.use_istio ? {
+          services = {
+            additional = [
+              {
+                selectorType = "rw"
+                serviceTemplate = {
+                  metadata = {
+                    name = "${var.cluster_name}-lb"
+                    annotations = {
+                      "external-dns.alpha.kubernetes.io/hostname" = var.ingress_host
+                    }
+                  }
+                  spec = {
+                    type = "LoadBalancer"
                   }
                 }
-                spec = {
-                  type = "LoadBalancer"
-                }
               }
-            }
+            ]
+          }
+        } : {},
+        # Declarative role management
+        length(var.managed_roles) > 0 ? {
+          roles = [
+            for role in var.managed_roles : merge(
+              {
+                name    = role.name
+                ensure  = role.ensure
+                login   = role.login
+                inherit = role.inherit
+              },
+              role.superuser ? { superuser = true } : {},
+              role.createdb ? { createdb = true } : {},
+              role.createrole ? { createrole = true } : {},
+              role.replication ? { replication = true } : {},
+              role.bypassrls ? { bypassrls = true } : {},
+              role.connection_limit != -1 ? { connectionLimit = role.connection_limit } : {},
+              role.valid_until != null ? { validUntil = role.valid_until } : {},
+              length(role.in_roles) > 0 ? { inRoles = role.in_roles } : {},
+              role.password_secret_name != null ? { passwordSecret = { name = role.password_secret_name } } : {},
+              role.disable_password ? { disablePassword = true } : {}
+            )
           ]
-        }
-      } : null
+        } : {}
+      ) : null
     }
   }
 
-  lifecycle {
-    ignore_changes = [
-      manifest.spec.bootstrap,
-    ]
-  }
-
-  depends_on = [kubernetes_secret.superuser, kubernetes_secret.ssl_certs]
-}
-
-# Store credentials in Vault
-resource "vault_kv_secret_v2" "postgres_credentials" {
-  count = var.needs_secrets && var.create_cluster ? 1 : 0
-  mount = "kv"
-  name  = var.vault_secret_path
-
-  data_json = jsonencode(merge(
-    {
-      POSTGRES_USER     = var.postgres_username
-      POSTGRES_PASSWORD = local.postgres_password
-      POSTGRES_DB       = var.postgres_database
-      POSTGRES_HOST     = "${var.cluster_name}-rw.${var.namespace}.svc.cluster.local"
-      POSTGRES_PORT     = "5432"
-    },
-    var.create_app_user ? {
-      POSTGRES_APP_USER     = var.app_username
-      POSTGRES_APP_PASSWORD = local.app_user_password
-    } : {},
-    var.create_backup_user ? {
-      POSTGRES_BACKUP_USER     = var.backup_username
-      POSTGRES_BACKUP_PASSWORD = local.backup_password
-    } : {}
-  ))
+  depends_on = [kubernetes_secret.ssl_certs]
 }
 
 resource "terraform_data" "append_client_ca" {
@@ -332,91 +266,25 @@ ${join("\n", var.additional_client_ca_certs)}"
   depends_on = [kubernetes_manifest.postgres_cluster]
 }
 
-module "ingress" {
-  source = "../../base/ingress"
+data "kubernetes_secret" "postgres_ca" {
+  count = var.export_ca_to_vault && var.create_cluster && length(var.additional_client_ca_certs) > 0 ? 1 : 0
 
-  enabled            = var.ingress_enabled && !var.use_istio
-  name               = "${var.cluster_name}-ingress"
-  namespace          = var.namespace
-  host               = var.ingress_host
-  service_name       = "${var.cluster_name}-rw"
-  service_port       = var.service_port
-  tls_enabled        = var.ingress_tls_enabled
-  tls_secret_name    = var.ingress_tls_secret_name
-  ingress_class_name = var.ingress_class_name
-  cluster_issuer     = var.cert_manager_cluster_issuer
-  annotations = merge({
-    "nginx.ingress.kubernetes.io/proxy-body-size"       = "50m"
-    "nginx.ingress.kubernetes.io/proxy-connect-timeout" = "60"
-    "nginx.ingress.kubernetes.io/proxy-read-timeout"    = "60"
-    "nginx.ingress.kubernetes.io/proxy-send-timeout"    = "60"
-    "nginx.ingress.kubernetes.io/backend-protocol"      = "HTTPS"
-    "nginx.ingress.kubernetes.io/ssl-passthrough"       = "true"
-  }, var.ingress_annotations)
+  metadata {
+    name      = "${var.cluster_name}-ca"
+    namespace = var.namespace
+  }
 
-  depends_on = [kubernetes_namespace.this, kubernetes_manifest.postgres_cluster]
+  depends_on = [terraform_data.append_client_ca]
 }
 
-module "istio_gateway" {
-  source = "../../base/istio-gateway"
+resource "vault_kv_secret_v2" "postgres_ca" {
+  count = var.export_ca_to_vault && var.create_cluster && length(var.additional_client_ca_certs) > 0 ? 1 : 0
+  mount = "kv"
+  name  = var.vault_ca_secret_path
 
-  enabled   = var.ingress_enabled && var.istio_CRDs
-  name      = "${var.cluster_name}-gateway"
-  namespace = var.istio_gateway_namespace
-  hosts     = [var.ingress_host]
+  data_json = jsonencode({
+    "${var.vault_ca_secret_key}" = data.kubernetes_secret.postgres_ca[0].data["ca.crt"]
+  })
 
-  http_enabled  = false
-  https_enabled = false
-
-  additional_servers = [
-    {
-      port = {
-        number   = 5432
-        name     = "tcp-postgres"
-        protocol = "TLS"
-      }
-      hosts = [var.ingress_host]
-      tls = {
-        mode = "PASSTHROUGH"
-      }
-    }
-  ]
-
-  depends_on = [kubernetes_namespace.this]
-}
-
-module "istio_virtualservice" {
-  source = "../../base/istio-virtualservice"
-
-  enabled      = var.ingress_enabled && var.istio_CRDs
-  name         = "${var.cluster_name}-vs"
-  namespace    = var.namespace
-  hosts        = [var.ingress_host]
-  gateways     = ["${var.istio_gateway_namespace}/${var.cluster_name}-gateway"]
-  routing_mode = "tls"
-
-  tls_routes = [
-    {
-      match = [
-        {
-          port     = 5432
-          sniHosts = [var.ingress_host]
-        }
-      ]
-      route = [
-        {
-          destination = {
-            host = "${var.cluster_name}-rw.${var.namespace}.svc.cluster.local"
-            port = {
-              number = var.service_port
-            }
-          }
-        }
-      ]
-    }
-  ]
-
-  cluster_issuer = var.cert_manager_cluster_issuer
-
-  depends_on = [module.istio_gateway, kubernetes_namespace.this]
+  depends_on = [data.kubernetes_secret.postgres_ca]
 }

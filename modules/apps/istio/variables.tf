@@ -7,7 +7,7 @@ variable "namespace" {
 variable "istio_version" {
   description = "Istio version to install"
   type        = string
-  default     = "1.24.2"
+  default     = "1.28.2"
 }
 
 variable "pilot_replicas" {

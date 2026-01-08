@@ -10,6 +10,7 @@ locals {
   use_multiple_routes = length(var.routes) > 0
   include_http        = var.routing_mode == "http" || var.routing_mode == "both"
   include_tls         = var.routing_mode == "tls" || var.routing_mode == "both"
+  include_tcp         = var.routing_mode == "tcp"
 
   http_routes = local.use_multiple_routes ? [
     for route in var.routes : {
@@ -88,7 +89,8 @@ resource "kubernetes_manifest" "virtualservice" {
         gateways = var.gateways
       },
       local.include_http ? { http = local.http_routes } : {},
-      local.include_tls ? { tls = var.tls_routes } : {}
+      local.include_tls ? { tls = var.tls_routes } : {},
+      local.include_tcp ? { tcp = var.tcp_routes } : {}
     )
   }
 }

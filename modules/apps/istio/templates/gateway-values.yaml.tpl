@@ -25,6 +25,14 @@ service:
     port: 443
     protocol: TCP
     targetPort: 8443
+  - name: postgresql
+    port: 5432
+    protocol: TCP
+    targetPort: 5432
+  - name: postgresql-tcp
+    port: 5433
+    protocol: TCP
+    targetPort: 5433
 
 # Resource requests and limits
 resources:

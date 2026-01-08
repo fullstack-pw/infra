@@ -28,8 +28,19 @@ output "backup_username" {
   value       = var.create_backup_user ? var.backup_username : null
 }
 
-output "backup_password" {
-  description = "Backup user password"
-  value       = var.create_backup_user ? local.backup_password : null
-  sensitive   = true
+output "superuser_secret_name" {
+  description = "Name of the CNPG-managed superuser secret (when enable_superuser_access is true)"
+  value       = var.enable_superuser_access ? "${var.cluster_name}-superuser" : null
+}
+
+output "app_secret_name" {
+  description = "Name of the auto-generated app user secret (initdb owner)"
+  value       = "${var.cluster_name}-app"
+}
+
+output "managed_role_secret_names" {
+  description = "Map of managed role names to their expected secret names"
+  value = {
+    for role in var.managed_roles : role.name => role.password_secret_name != null ? role.password_secret_name : null
+  }
 }

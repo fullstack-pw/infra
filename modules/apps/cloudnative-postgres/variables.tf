@@ -42,18 +42,6 @@ variable "pg_version" {
   type        = string
 }
 
-variable "postgres_database" {
-  description = "Default database name"
-  type        = string
-  default     = "postgres"
-}
-
-variable "postgres_username" {
-  description = "Superuser username"
-  type        = string
-  default     = "admin"
-}
-
 variable "postgres_password" {
   description = "Superuser password (only used if postgres_generate_password is false)"
   type        = string
@@ -313,4 +301,55 @@ variable "backup_generate_password" {
   description = "Generate random password for backup user"
   type        = bool
   default     = true
+}
+
+variable "enable_superuser_access" {
+  description = "Enable superuser access via CNPG. Creates a <cluster>-superuser secret with postgres credentials."
+  type        = bool
+  default     = true
+}
+
+variable "cert_auth_users" {
+  description = "List of usernames that require SSL certificate authentication"
+  type        = list(string)
+  default     = []
+}
+
+variable "managed_roles" {
+  description = "List of roles to be managed declaratively by CNPG operator"
+  type = list(object({
+    name                 = string
+    ensure               = optional(string, "present")
+    login                = optional(bool, true)
+    superuser            = optional(bool, false)
+    createdb             = optional(bool, false)
+    createrole           = optional(bool, false)
+    inherit              = optional(bool, true)
+    replication          = optional(bool, false)
+    bypassrls            = optional(bool, false)
+    connection_limit     = optional(number, -1)
+    valid_until          = optional(string)
+    in_roles             = optional(list(string), [])
+    password_secret_name = optional(string)
+    disable_password     = optional(bool, false)
+  }))
+  default = []
+}
+
+variable "export_ca_to_vault" {
+  description = "Export the PostgreSQL CA certificate to Vault (useful for Teleport integration)"
+  type        = bool
+  default     = false
+}
+
+variable "vault_ca_secret_path" {
+  description = "Vault path for storing the CA certificate (when export_ca_to_vault is true)"
+  type        = string
+  default     = ""
+}
+
+variable "vault_ca_secret_key" {
+  description = "Vault secret key name for the CA certificate"
+  type        = string
+  default     = "CA"
 }

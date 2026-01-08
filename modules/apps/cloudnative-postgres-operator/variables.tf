@@ -13,5 +13,5 @@ variable "create_namespace" {
 variable "chart_version" {
   description = "CloudNativePG Helm chart version"
   type        = string
-  default     = "0.22.1"  # Latest stable version
+  default     = "0.22.1"
 }

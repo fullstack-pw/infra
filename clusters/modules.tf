@@ -227,19 +227,10 @@ module "oracle_backup" {
   s3_backup_name    = "terraform-state-backup"
   s3_schedule       = "0 2 * * *"
   minio_endpoint    = "https://s3.fullstack.pw"
-  minio_access_key  = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootUser"]
-  minio_secret_key  = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootPassword"]
-  minio_region      = "main"
   minio_bucket_path = "terraform"
   s3_backup_path    = "terraform-state-backup"
 
-  oracle_user_ocid    = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["userOcid"]
-  oracle_tenancy_ocid = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["tenancyOcid"]
-  oracle_fingerprint  = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["fingerprint"]
-  oracle_private_key  = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["privateKey"]
-  oracle_region       = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["region"]
-  oracle_namespace    = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["namespace"]
-  oracle_bucket       = local.secrets_json["kv/cluster-secret-store/secrets/ORACLE_CLOUD"]["bucket"]
+  postgres_password_key = try(var.config[terraform.workspace].oracle_backup.postgres_password_key, "POSTGRES_PASSWORD")
 
   postgres_backups = {
     for key, config in try(var.config[terraform.workspace].oracle_backup.postgres_backups, {}) : key => {
@@ -247,9 +238,7 @@ module "oracle_backup" {
       port           = config.port
       database       = config.database
       username       = config.username
-      password       = try(local.secrets_json[config.secret_path][config.secret_key], "")
       ssl_enabled    = config.ssl_enabled
-      ssl_ca_cert    = try(config.ssl_ca_cert, "")
       schedule       = config.schedule
       backup_path    = config.backup_path
       databases      = try(config.databases, [])
@@ -257,7 +246,7 @@ module "oracle_backup" {
       memory_limit   = try(config.memory_limit, "1Gi")
       cpu_request    = try(config.cpu_request, "200m")
       cpu_limit      = try(config.cpu_limit, "1000m")
-    } if try(local.secrets_json[config.secret_path][config.secret_key], "") != ""
+    }
   }
 
   memory_request = "256Mi"
@@ -265,7 +254,7 @@ module "oracle_backup" {
   cpu_request    = "200m"
   cpu_limit      = "1000m"
 
-  depends_on = [module.minio]
+  depends_on = [module.minio, module.external_secrets]
 }
 
 module "registry" {
@@ -298,12 +287,6 @@ module "observability-box" {
   prometheus_storage_size   = try(var.config[terraform.workspace].prometheus_storage_size, "")
 }
 
-module "postgres" {
-  count      = contains(local.workload, "postgres") ? 1 : 0
-  source     = "../modules/apps/postgres"
-  istio_CRDs = false
-}
-
 module "redis" {
   count  = contains(local.workload, "redis") ? 1 : 0
   source = "../modules/apps/redis"
@@ -321,7 +304,7 @@ module "harbor" {
   count  = contains(local.workload, "harbor") ? 1 : 0
   source = "../modules/apps/harbor"
 
-  external_database_host     = "tools-postgres-rw.tools-postgres.svc.cluster.local"
+  external_database_host     = "postgres-rw.default.svc.cluster.local"
   external_database_password = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
   external_redis_password    = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
   #ingress_annotations        = var.config[terraform.workspace].harbor.ingress
@@ -427,19 +410,37 @@ module "proxmox_kubeadm_clusters" {
   ]
 }
 
+locals {
+  # Map of postgres CA secret names to read from Vault (dynamically managed by cloudnative-postgres module)
+  postgres_ca_secrets = toset([
+    for name, db in try(var.config[terraform.workspace].teleport.databases, {}) :
+    db.ca_cert if db.ca_cert != "" && can(regex("_POSTGRES_CA$", db.ca_cert))
+  ])
+}
+
+data "vault_kv_secret_v2" "postgres_ca" {
+  for_each = local.postgres_ca_secrets
+  mount    = "kv"
+  name     = "cluster-secret-store/secrets/${each.key}"
+}
+
 module "teleport-agent" {
   count  = contains(local.workload, "teleport-agent") ? 1 : 0
   source = "../modules/apps/teleport-agent"
 
   kubernetes_cluster_name = terraform.workspace
   join_token              = "2875dbe2e37eac947af86de3b0631e45"
-  ca_pin                  = "sha256:7f9b9e8c1ec072c967ac3f6693f88f3e464a1e6e34e76a6e4d7e97502eb0a93c"
+  ca_pin                  = "sha256:7f9b9e8c1ec072c967ac3f6693f88f3e464a1e6e4d7e97502eb0a93c"
   roles                   = var.config[terraform.workspace].teleport.roles
   apps                    = var.config[terraform.workspace].teleport.apps
   databases = {
     for name, db in var.config[terraform.workspace].teleport.databases : name => {
-      uri     = db.uri
-      ca_cert = db.ca_cert != "" ? local.secrets_json["kv/cluster-secret-store/secrets/${db.ca_cert}"][db.ca_cert] : ""
+      uri = db.uri
+      ca_cert = db.ca_cert != "" ? (
+        contains(keys(data.vault_kv_secret_v2.postgres_ca), db.ca_cert) ?
+        data.vault_kv_secret_v2.postgres_ca[db.ca_cert].data[db.ca_cert] :
+        try(local.secrets_json["kv/cluster-secret-store/secrets/${db.ca_cert}"][db.ca_cert], "")
+      ) : ""
     }
   }
 }
@@ -450,148 +451,145 @@ module "cloudnative_pg_operator" {
 
   namespace        = "cnpg-system"
   create_namespace = true
-  chart_version    = "0.22.1"
+  chart_version    = "0.27.0"
 }
 
 module "dev_postgres_cnpg" {
   count  = contains(local.workload, "dev-postgres-cnpg") ? 1 : 0
   source = "../modules/apps/cloudnative-postgres"
 
-  cluster_name     = "dev-postgres"
-  namespace        = "dev-postgres"
-  create_namespace = true
-  create_cluster   = true # Set to true after operator CRDs are installed
+  cluster_name     = "postgres"
+  namespace        = "default"
+  create_namespace = false
+  create_cluster   = true
 
-  # Image configuration
-  registry   = "ghcr.io"
-  repository = "cloudnative-pg/postgresql" # Use CloudNativePG's PostgreSQL image
-  pg_version = "15"
+  registry   = "registry.fullstack.pw"
+  repository = "library/postgresql"
+  pg_version = "15-wal2json"
 
-  # Database configuration
-  postgres_database          = "postgres"
-  postgres_username          = "admin"
   postgres_generate_password = true
+  postgres_password          = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
 
-  # Storage
   persistence_size = "1Gi"
-  storage_class    = "" # Use default
+  storage_class    = ""
 
-  # Resources
   memory_request = "512Mi"
   cpu_request    = "250m"
   memory_limit   = "1Gi"
   cpu_limit      = "500m"
 
-  # SSL - Enable hostssl in pg_hba.conf but let CNPG manage its own server certificates
-  # use_custom_server_certs=false (default) means CNPG generates and manages server certs
-  enable_ssl = true
+  enable_ssl                  = true
+  require_cert_auth_for_admin = true
 
-  # Application user
   create_app_user            = true
   app_username               = "appuser"
   app_user_generate_password = true
 
-  # Backup user for pg_dump
-  create_backup_user       = true
-  backup_generate_password = true
-
-  # Vault
-  needs_secrets     = true
-  vault_secret_path = "cluster-secret-store/secrets/DEV_POSTGRES"
-
-  # Export credentials to default namespace for writer app
   export_credentials_to_namespace = "default"
   export_credentials_secret_name  = "dev-postgres-credentials"
 
-  # Additional client CA for Teleport database access
   additional_client_ca_certs = [local.secrets_json["kv/cluster-secret-store/secrets/TELEPORT_DB_CA"]["TELEPORT_DB_CA"]]
 
-  # External access via Istio
+  export_ca_to_vault   = true
+  vault_ca_secret_path = "cluster-secret-store/secrets/DEV_POSTGRES_CA"
+  vault_ca_secret_key  = "DEV_POSTGRES_CA"
+
   ingress_enabled = true
   ingress_host    = "dev.postgres.fullstack.pw"
   use_istio       = true
   istio_CRDs      = true
 
-  # Additional client CA for Teleport database access
-  additional_client_ca_certs = [local.secrets_json["kv/cluster-secret-store/secrets/TELEPORT_DB_CA"]["TELEPORT_DB_CA"]]
+  enable_superuser_access = try(var.config[terraform.workspace].dev_postgres_cnpg.enable_superuser_access, true)
+  managed_roles           = try(var.config[terraform.workspace].dev_postgres_cnpg.managed_roles, [])
 
   depends_on = [module.cloudnative_pg_operator]
+}
+
+# Declarative Database CRDs for dev-postgres cluster
+module "dev_postgres_databases" {
+  source   = "../modules/base/cnpg-database"
+  for_each = { for db in try(var.config[terraform.workspace].dev_postgres_cnpg.databases, []) : db.name => db }
+
+  create        = contains(local.workload, "dev-postgres-cnpg")
+  name          = each.value.name
+  namespace     = "default"
+  database_name = each.value.name
+  owner         = each.value.owner
+  cluster_name  = "postgres"
+
+  locale_collate = try(each.value.locale_collate, null)
+  locale_ctype   = try(each.value.locale_ctype, null)
+
+  depends_on = [module.dev_postgres_cnpg]
 }
 
 module "tools_postgres_cnpg" {
   count  = contains(local.workload, "tools-postgres-cnpg") ? 1 : 0
   source = "../modules/apps/cloudnative-postgres"
 
-  cluster_name     = "tools-postgres"
-  namespace        = "tools-postgres"
-  create_namespace = true
+  cluster_name     = "postgres"
+  namespace        = "default"
+  create_namespace = false
   create_cluster   = true
 
-  # Image configuration
   registry   = "registry.fullstack.pw"
   repository = "library/postgresql"
   pg_version = "15-wal2json"
-  # registry   = "ghcr.io"
-  # repository = "cloudnative-pg/postgresql"
-  # pg_version = "15"
-  # Database configuration
-  postgres_database          = "postgres"
-  postgres_username          = "admin"
-  postgres_generate_password = false
+
+  postgres_generate_password = true
   postgres_password          = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
 
-  # Storage
   persistence_size = "10Gi"
   storage_class    = ""
 
-  # Resources
   memory_request = "512Mi"
   cpu_request    = "250m"
   memory_limit   = "1Gi"
   cpu_limit      = "500m"
 
-  # SSL - Enable hostssl in pg_hba.conf but let CNPG manage its own server certificates
-  enable_ssl = true
-
-  # Allow password auth for admin user from external networks (Teleport server uses password auth)
+  enable_ssl                  = true
   require_cert_auth_for_admin = true
 
-  # No app user needed for tools cluster
-  create_app_user = false
+  create_app_user            = true
+  app_username               = "appuser"
+  app_user_generate_password = true
 
-  # Backup user for pg_dump (uses same password as admin for simplicity)
-  create_backup_user       = true
-  backup_generate_password = false
-  backup_password          = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
+  export_credentials_to_namespace = "default"
+  export_credentials_secret_name  = "tools-postgres-credentials"
 
-  # Additional databases for Harbor and Teleport
-  additional_databases = ["registry", "teleport_backend", "teleport_audit"]
-
-  # Teleport user with password auth for Teleport server backend
-  additional_users = [
-    {
-      username  = "teleport"
-      password  = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
-      databases = ["teleport_backend", "teleport_audit"]
-    }
-  ]
-
-  # Vault - don't write to vault, use existing POSTGRES secret
-  needs_secrets = false
-
-  # No credential export needed for tools cluster
-  export_credentials_to_namespace = ""
-
-  # Additional client CA for Teleport database access
   additional_client_ca_certs = [local.secrets_json["kv/cluster-secret-store/secrets/TELEPORT_DB_CA"]["TELEPORT_DB_CA"]]
 
-  # Ingress via Traefik (tools cluster uses traefik, not istio)
+  export_ca_to_vault   = true
+  vault_ca_secret_path = "cluster-secret-store/secrets/TOOLS_POSTGRES_CA"
+  vault_ca_secret_key  = "TOOLS_POSTGRES_CA"
+
   ingress_enabled    = true
   ingress_host       = "tools.postgres.fullstack.pw"
   ingress_class_name = "traefik"
   use_istio          = false
 
+  enable_superuser_access = try(var.config[terraform.workspace].tools_postgres_cnpg.enable_superuser_access, true)
+  managed_roles           = try(var.config[terraform.workspace].tools_postgres_cnpg.managed_roles, [])
+
   depends_on = [module.cloudnative_pg_operator]
+}
+
+# Declarative Database CRDs for tools-postgres cluster
+module "tools_postgres_databases" {
+  source   = "../modules/base/cnpg-database"
+  for_each = { for db in try(var.config[terraform.workspace].tools_postgres_cnpg.databases, []) : db.name => db }
+
+  create        = contains(local.workload, "tools-postgres-cnpg")
+  name          = each.value.name
+  namespace     = "default"
+  database_name = each.value.name
+  owner         = each.value.owner
+  cluster_name  = "postgres"
+
+  locale_collate = try(each.value.locale_collate, null)
+  locale_ctype   = try(each.value.locale_ctype, null)
+
+  depends_on = [module.tools_postgres_cnpg]
 }
 
 # module "freqtrade" {

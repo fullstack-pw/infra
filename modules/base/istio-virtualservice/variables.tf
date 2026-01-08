@@ -188,12 +188,12 @@ variable "cluster_issuer" {
 }
 
 variable "routing_mode" {
-  description = "Routing mode: 'http' for HTTP routes only, 'tls' for TLS/TCP routes only, 'both' for both"
+  description = "Routing mode: 'http' for HTTP routes only, 'tls' for TLS/TCP routes only, 'tcp' for pure TCP routes, 'both' for http+tls"
   type        = string
   default     = "http"
   validation {
-    condition     = contains(["http", "tls", "both"], var.routing_mode)
-    error_message = "routing_mode must be 'http', 'tls', or 'both'"
+    condition     = contains(["http", "tls", "tcp", "both"], var.routing_mode)
+    error_message = "routing_mode must be 'http', 'tls', 'tcp', or 'both'"
   }
 }
 
@@ -202,7 +202,26 @@ variable "tls_routes" {
   type = list(object({
     match = list(object({
       port     = number
-      sniHosts = list(string)
+      sniHosts = optional(list(string))
+    }))
+    route = list(object({
+      destination = object({
+        host = string
+        port = object({
+          number = number
+        })
+      })
+      weight = optional(number)
+    }))
+  }))
+  default = []
+}
+
+variable "tcp_routes" {
+  description = "TCP routes for pure TCP passthrough (no TLS inspection)"
+  type = list(object({
+    match = list(object({
+      port = number
     }))
     route = list(object({
       destination = object({

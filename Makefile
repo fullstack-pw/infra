@@ -163,8 +163,8 @@ fmt:
 validate:
 	@echo -e "${CYAN}Validating OpenTofu files...${NC}"
 	@cd $(TOFU_DIR) && tofu validate
-	@echo -e "${CYAN}Validating Proxmox files...${NC}"
-	@cd $(PROXMOX_DIR) && tofu validate
+# 	@echo -e "${CYAN}Validating Proxmox files...${NC}"
+# 	@cd $(PROXMOX_DIR) && tofu validate
 
 
 .PHONY: clean
@@ -205,17 +205,6 @@ k8s-init:
 setup-pxe:
 	@echo -e "${CYAN}Setting up PXE boot server...${NC}"
 	@cd $(PROXMOX_DIR) && ansible-playbook -i inventory.ini boot-server.yml
-
-
-.PHONY: module-test
-module-test:
-	@if [ -z "$(MODULE)" ]; then \
-		echo -e "${RED}ERROR: MODULE is required. Example: make module-test MODULE=externaldns${NC}"; \
-		exit 1; \
-	fi
-	@echo -e "${CYAN}Testing module $(MODULE)...${NC}"
-	@cd $(MODULES_DIR)/$(MODULE) && tofu init && tofu validate
-
 
 .PHONY: docs
 docs:

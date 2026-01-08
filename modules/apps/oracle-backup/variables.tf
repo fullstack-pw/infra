@@ -3,6 +3,7 @@
  *
  * This module creates CronJobs to backup data to Oracle Cloud Object Storage.
  * Supports S3/MinIO backups and PostgreSQL database backups.
+ * Credentials are pulled from the cluster-secrets secret (synced from Vault via External Secrets).
  */
 
 variable "namespace" {
@@ -67,31 +68,11 @@ variable "backoff_limit" {
   default     = 3
 }
 
-# MinIO Configuration (required when enable_s3_backup = true)
+# MinIO Configuration
 variable "minio_endpoint" {
   description = "MinIO S3 endpoint (e.g., https://s3.fullstack.pw)"
   type        = string
   default     = ""
-}
-
-variable "minio_access_key" {
-  description = "MinIO access key"
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
-variable "minio_secret_key" {
-  description = "MinIO secret key"
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
-variable "minio_region" {
-  description = "MinIO region"
-  type        = string
-  default     = "main"
 }
 
 variable "minio_bucket_path" {
@@ -100,47 +81,13 @@ variable "minio_bucket_path" {
   default     = "terraform"
 }
 
-# Oracle Cloud Configuration (OCI CLI Authentication)
-variable "oracle_user_ocid" {
-  description = "Oracle Cloud user OCID for API authentication"
-  type        = string
-  sensitive   = true
-}
-
-variable "oracle_tenancy_ocid" {
-  description = "Oracle Cloud tenancy OCID"
-  type        = string
-  sensitive   = true
-}
-
-variable "oracle_fingerprint" {
-  description = "Fingerprint of the API signing key"
-  type        = string
-  sensitive   = true
-}
-
-variable "oracle_private_key" {
-  description = "Private API signing key in PEM format"
-  type        = string
-  sensitive   = true
-}
-
-variable "oracle_region" {
-  description = "Oracle Cloud region (e.g., eu-madrid-1)"
-  type        = string
-}
-
-variable "oracle_namespace" {
-  description = "Oracle Cloud Object Storage namespace"
-  type        = string
-}
-
-variable "oracle_bucket" {
-  description = "Oracle Cloud Object Storage bucket name"
-  type        = string
-}
-
 # PostgreSQL Backup Configuration
+variable "postgres_password_key" {
+  description = "Key name for PostgreSQL password in cluster-secrets (e.g., POSTGRES_PASSWORD)"
+  type        = string
+  default     = "POSTGRES_PASSWORD"
+}
+
 variable "postgres_backups" {
   description = "Map of PostgreSQL clusters to backup"
   type = map(object({
@@ -148,9 +95,7 @@ variable "postgres_backups" {
     port           = number
     database       = string
     username       = string
-    password       = string
     ssl_enabled    = bool
-    ssl_ca_cert    = optional(string, "")
     schedule       = string
     backup_path    = string
     databases      = optional(list(string), [])

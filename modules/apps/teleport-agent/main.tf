@@ -22,7 +22,8 @@ data "external" "join_token" {
 }
 
 locals {
-  databases_with_ca = { for name, db in var.databases : name => db if db.ca_cert != "" }
+  databases_with_ca     = { for name, db in var.databases : name => db if db.ca_cert != "" }
+  databases_for_foreach = { for k, v in local.databases_with_ca : k => v }
 }
 
 module "values" {
@@ -53,7 +54,7 @@ module "values" {
 }
 
 resource "kubernetes_secret" "db_ca" {
-  for_each = local.databases_with_ca
+  for_each = nonsensitive(toset(keys(local.databases_with_ca)))
 
   metadata {
     name      = "${each.key}-ca"
@@ -61,7 +62,7 @@ resource "kubernetes_secret" "db_ca" {
   }
 
   data = {
-    "ca.pem" = each.value.ca_cert
+    "ca.pem" = local.databases_with_ca[each.key].ca_cert
   }
 }
 
