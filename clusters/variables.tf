@@ -19,7 +19,7 @@ variable "workload" {
       "argocd",
       "teleport-agent",
       "cloudnative-pg-operator",
-      "dev-postgres-cnpg",
+      "postgres-cnpg",
       "observability-box",
       #"freqtrade"
     ]
@@ -61,7 +61,7 @@ variable "workload" {
       "teleport-agent",
       "clusterapi-operator",
       "cloudnative-pg-operator",
-      "tools-postgres-cnpg",
+      "postgres-cnpg",
     ]
     observability = [
       "externaldns",
@@ -129,12 +129,19 @@ variable "config" {
           }
         }
       }
-      dev_postgres_cnpg = {
+      postgres_cnpg = {
         enable_superuser_access = true
         managed_roles = [
           { name = "root", login = true, replication = true }
         ]
         databases = []
+
+        persistence_size               = "1Gi"
+        ingress_host                   = "dev.postgres.fullstack.pw"
+        use_istio                      = true
+        export_credentials_secret_name = "dev-postgres-credentials"
+        vault_ca_secret_path           = "cluster-secret-store/secrets/DEV_POSTGRES_CA"
+        vault_ca_secret_key            = "DEV_POSTGRES_CA"
       }
     }
     stg = {
@@ -301,7 +308,7 @@ variable "config" {
       prometheus_namespaces     = []
       prometheus_memory_limit   = "2048Mi"
       prometheus_memory_request = "512Mi"
-      tools_postgres_cnpg = {
+      postgres_cnpg = {
         enable_superuser_access = true
         managed_roles = [
           { name = "teleport", login = true, replication = true },
@@ -313,6 +320,14 @@ variable "config" {
           { name = "teleport-backend", owner = "app", locale_collate = "C", locale_ctype = "C" },
           { name = "teleport-audit", owner = "app", locale_collate = "C", locale_ctype = "C" },
         ]
+
+        persistence_size               = "10Gi"
+        ingress_host                   = "tools.postgres.fullstack.pw"
+        ingress_class_name             = "traefik"
+        use_istio                      = false
+        export_credentials_secret_name = "tools-postgres-credentials"
+        vault_ca_secret_path           = "cluster-secret-store/secrets/TOOLS_POSTGRES_CA"
+        vault_ca_secret_key            = "TOOLS_POSTGRES_CA"
       }
 
       oracle_backup = {

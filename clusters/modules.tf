@@ -454,8 +454,8 @@ module "cloudnative_pg_operator" {
   chart_version    = "0.27.0"
 }
 
-module "dev_postgres_cnpg" {
-  count  = contains(local.workload, "dev-postgres-cnpg") ? 1 : 0
+module "postgres_cnpg" {
+  count  = contains(local.workload, "postgres-cnpg") ? 1 : 0
   source = "../modules/apps/cloudnative-postgres"
 
   cluster_name     = "postgres"
@@ -470,7 +470,7 @@ module "dev_postgres_cnpg" {
   postgres_generate_password = true
   postgres_password          = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
 
-  persistence_size = "1Gi"
+  persistence_size = try(var.config[terraform.workspace].postgres_cnpg.persistence_size, "10Gi")
   storage_class    = ""
 
   memory_request = "512Mi"
@@ -486,100 +486,31 @@ module "dev_postgres_cnpg" {
   app_user_generate_password = true
 
   export_credentials_to_namespace = "default"
-  export_credentials_secret_name  = "dev-postgres-credentials"
+  export_credentials_secret_name  = try(var.config[terraform.workspace].postgres_cnpg.export_credentials_secret_name, "postgres-credentials")
 
   additional_client_ca_certs = [local.secrets_json["kv/cluster-secret-store/secrets/TELEPORT_DB_CA"]["TELEPORT_DB_CA"]]
 
   export_ca_to_vault   = true
-  vault_ca_secret_path = "cluster-secret-store/secrets/DEV_POSTGRES_CA"
-  vault_ca_secret_key  = "DEV_POSTGRES_CA"
-
-  ingress_enabled = true
-  ingress_host    = "dev.postgres.fullstack.pw"
-  use_istio       = true
-  istio_CRDs      = true
-
-  enable_superuser_access = try(var.config[terraform.workspace].dev_postgres_cnpg.enable_superuser_access, true)
-  managed_roles           = try(var.config[terraform.workspace].dev_postgres_cnpg.managed_roles, [])
-
-  depends_on = [module.cloudnative_pg_operator]
-}
-
-# Declarative Database CRDs for dev-postgres cluster
-module "dev_postgres_databases" {
-  source   = "../modules/base/cnpg-database"
-  for_each = { for db in try(var.config[terraform.workspace].dev_postgres_cnpg.databases, []) : db.name => db }
-
-  create        = contains(local.workload, "dev-postgres-cnpg")
-  name          = each.value.name
-  namespace     = "default"
-  database_name = each.value.name
-  owner         = each.value.owner
-  cluster_name  = "postgres"
-
-  locale_collate = try(each.value.locale_collate, null)
-  locale_ctype   = try(each.value.locale_ctype, null)
-
-  depends_on = [module.dev_postgres_cnpg]
-}
-
-module "tools_postgres_cnpg" {
-  count  = contains(local.workload, "tools-postgres-cnpg") ? 1 : 0
-  source = "../modules/apps/cloudnative-postgres"
-
-  cluster_name     = "postgres"
-  namespace        = "default"
-  create_namespace = false
-  create_cluster   = true
-
-  registry   = "registry.fullstack.pw"
-  repository = "library/postgresql"
-  pg_version = "15-wal2json"
-
-  postgres_generate_password = true
-  postgres_password          = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
-
-  persistence_size = "10Gi"
-  storage_class    = ""
-
-  memory_request = "512Mi"
-  cpu_request    = "250m"
-  memory_limit   = "1Gi"
-  cpu_limit      = "500m"
-
-  enable_ssl                  = true
-  require_cert_auth_for_admin = true
-
-  create_app_user            = true
-  app_username               = "appuser"
-  app_user_generate_password = true
-
-  export_credentials_to_namespace = "default"
-  export_credentials_secret_name  = "tools-postgres-credentials"
-
-  additional_client_ca_certs = [local.secrets_json["kv/cluster-secret-store/secrets/TELEPORT_DB_CA"]["TELEPORT_DB_CA"]]
-
-  export_ca_to_vault   = true
-  vault_ca_secret_path = "cluster-secret-store/secrets/TOOLS_POSTGRES_CA"
-  vault_ca_secret_key  = "TOOLS_POSTGRES_CA"
+  vault_ca_secret_path = try(var.config[terraform.workspace].postgres_cnpg.vault_ca_secret_path, "cluster-secret-store/secrets/POSTGRES_CA")
+  vault_ca_secret_key  = try(var.config[terraform.workspace].postgres_cnpg.vault_ca_secret_key, "POSTGRES_CA")
 
   ingress_enabled    = true
-  ingress_host       = "tools.postgres.fullstack.pw"
-  ingress_class_name = "traefik"
-  use_istio          = false
+  ingress_host       = try(var.config[terraform.workspace].postgres_cnpg.ingress_host, "")
+  ingress_class_name = try(var.config[terraform.workspace].postgres_cnpg.ingress_class_name, "traefik")
+  use_istio          = try(var.config[terraform.workspace].postgres_cnpg.use_istio, false)
+  istio_CRDs         = try(var.config[terraform.workspace].postgres_cnpg.use_istio, false)
 
-  enable_superuser_access = try(var.config[terraform.workspace].tools_postgres_cnpg.enable_superuser_access, true)
-  managed_roles           = try(var.config[terraform.workspace].tools_postgres_cnpg.managed_roles, [])
+  enable_superuser_access = try(var.config[terraform.workspace].postgres_cnpg.enable_superuser_access, true)
+  managed_roles           = try(var.config[terraform.workspace].postgres_cnpg.managed_roles, [])
 
   depends_on = [module.cloudnative_pg_operator]
 }
 
-# Declarative Database CRDs for tools-postgres cluster
-module "tools_postgres_databases" {
+module "postgres_databases" {
   source   = "../modules/base/cnpg-database"
-  for_each = { for db in try(var.config[terraform.workspace].tools_postgres_cnpg.databases, []) : db.name => db }
+  for_each = { for db in try(var.config[terraform.workspace].postgres_cnpg.databases, []) : db.name => db }
 
-  create        = contains(local.workload, "tools-postgres-cnpg")
+  create        = contains(local.workload, "postgres-cnpg")
   name          = each.value.name
   namespace     = "default"
   database_name = each.value.name
@@ -589,7 +520,7 @@ module "tools_postgres_databases" {
   locale_collate = try(each.value.locale_collate, null)
   locale_ctype   = try(each.value.locale_ctype, null)
 
-  depends_on = [module.tools_postgres_cnpg]
+  depends_on = [module.postgres_cnpg]
 }
 
 # module "freqtrade" {
