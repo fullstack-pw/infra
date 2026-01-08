@@ -86,7 +86,11 @@ resource "kubernetes_manifest" "postgres_cluster" {
   # }
 
   # Ignore fields that are dynamically added by the CloudNativePG operator
-  computed_fields = ["spec.postgresql.parameters"]
+  computed_fields = [
+    "spec.postgresql.parameters",
+    "spec.bootstrap.initdb.postInitSQL",
+    "spec.storage.storageClass"
+  ]
 
   manifest = {
     apiVersion = "postgresql.cnpg.io/v1"
@@ -134,15 +138,15 @@ resource "kubernetes_manifest" "postgres_cluster" {
       }
 
       bootstrap = {
-        initdb = {
-          postInitSQL = null
-        }
+        initdb = {}
       }
 
-      storage = {
-        size         = var.persistence_size
-        storageClass = var.storage_class != "" ? var.storage_class : null
-      }
+      storage = merge(
+        {
+          size = var.persistence_size
+        },
+        var.storage_class != "" ? { storageClass = var.storage_class } : {}
+      )
 
       resources = {
         requests = {
