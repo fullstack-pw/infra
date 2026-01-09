@@ -143,6 +143,9 @@ module "cluster_templates" {
         worker_template_name     = "${each.value.name}-worker-template"
         wk_replicas              = each.value.wk_replicas
         kubernetes_version       = each.value.kubernetes_version
+        autoscaler_enabled       = each.value.autoscaler_enabled
+        autoscaler_min           = each.value.autoscaler_min
+        autoscaler_max           = each.value.autoscaler_max
       }
     }
   ]

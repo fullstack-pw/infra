@@ -229,6 +229,10 @@ variable "config" {
           wk_disk_size = 30
           wk_memory    = 8192
           wk_cores     = 8
+
+          autoscaler_enabled = true
+          autoscaler_min     = 2
+          autoscaler_max     = 4
         },
         #   {
         #   name                      = "stg"

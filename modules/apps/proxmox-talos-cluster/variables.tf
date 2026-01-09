@@ -10,6 +10,11 @@ variable "clusters" {
 
     wk_replicas = optional(number, 3)
 
+    # Cluster autoscaler configuration
+    autoscaler_enabled = optional(bool, false)
+    autoscaler_min     = optional(number, 1)
+    autoscaler_max     = optional(number, 10)
+
     ip_range_start = string
     ip_range_end   = string
     gateway        = string

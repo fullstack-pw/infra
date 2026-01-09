@@ -3,9 +3,11 @@ kind: MachineDeployment
 metadata:
   name: ${worker_deployment_name}
   namespace: ${namespace}
+%{ if autoscaler_enabled ~}
   annotations:
-    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size=2
-    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size=4
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: "${autoscaler_min}"
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: "${autoscaler_max}"
+%{ endif ~}
 spec:
   clusterName: ${cluster_name}
   replicas: ${wk_replicas}
