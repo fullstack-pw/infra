@@ -1,3 +1,9 @@
+## [1.5.4](https://github.com/fullstack-pw/infra/compare/v1.5.3...v1.5.4) (2026-01-09)
+
+### Bug Fixes
+
+* **teleport:** rotate and hide join token ([a367aee](https://github.com/fullstack-pw/infra/commit/a367aee73a02551b8645991cfa4bd8afedc0898a))
+
 ## [1.5.3](https://github.com/fullstack-pw/infra/compare/v1.5.2...v1.5.3) (2026-01-09)
 
 ### Tasks
