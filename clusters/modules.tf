@@ -542,3 +542,17 @@ module "postgres_databases" {
 #   istio_gateway = "istio-system/default-gateway"
 # }
 
+module "cluster_autoscaler" {
+  count  = contains(local.workload, "cluster-autoscaler") ? 1 : 0
+  source = "../modules/apps/cluster-autoscaler"
+
+  managed_clusters = var.config[terraform.workspace].cluster_autoscaler_managed_clusters
+  chart_version    = lookup(var.config[terraform.workspace], "cluster_autoscaler_chart_version", "9.54.0")
+  image_tag        = lookup(var.config[terraform.workspace], "cluster_autoscaler_image_tag", "v1.34.2")
+
+  scale_down_enabled         = lookup(var.config[terraform.workspace], "cluster_autoscaler_scale_down_enabled", true)
+  scale_down_delay_after_add = lookup(var.config[terraform.workspace], "cluster_autoscaler_scale_down_delay", "10m")
+  scale_down_unneeded_time   = lookup(var.config[terraform.workspace], "cluster_autoscaler_unneeded_time", "10m")
+
+  replicas = lookup(var.config[terraform.workspace], "cluster_autoscaler_replicas", 1)
+}

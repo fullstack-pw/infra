@@ -64,6 +64,7 @@ variable "workload" {
       "cloudnative-pg-operator",
       "postgres-cnpg",
       "oracle_backup",
+      "cluster-autoscaler",
     ]
     observability = [
       "externaldns",
@@ -349,6 +350,19 @@ variable "config" {
           }
         }
       }
+
+      cluster_autoscaler_managed_clusters = [
+        {
+          name      = "dev"
+          namespace = "dev"
+        }
+      ]
+      cluster_autoscaler_chart_version      = "9.54.0"
+      cluster_autoscaler_image_tag          = "v1.34.2"
+      cluster_autoscaler_scale_down_enabled = true
+      cluster_autoscaler_scale_down_delay   = "10m"
+      cluster_autoscaler_unneeded_time      = "10m"
+      cluster_autoscaler_replicas           = 1
     }
     observability = {
       kubernetes_context = "k8s-observability"
