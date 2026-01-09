@@ -80,7 +80,7 @@ module "helm" {
   chart_version    = var.chart_version
   create_namespace = false
   values_files     = module.values.rendered_values
-  set_values = var.additional_set_values
+  set_values       = var.additional_set_values
 
   depends_on = [
     kubectl_manifest.clusterrolebinding

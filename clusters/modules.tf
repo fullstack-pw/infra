@@ -7,6 +7,14 @@ module "local_path_provisioner" {
   set_default_storage_class = true
 }
 
+module "metrics_server" {
+  count  = contains(local.workload, "metrics-server") ? 1 : 0
+  source = "../modules/apps/metrics-server"
+
+  namespace              = "kube-system"
+  enable_service_monitor = contains(local.workload, "observability-box")
+}
+
 module "metallb" {
   count  = contains(local.workload, "metallb") ? 1 : 0
   source = "../modules/apps/metallb"

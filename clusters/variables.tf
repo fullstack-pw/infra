@@ -11,6 +11,7 @@ variable "workload" {
     ]
     dev = [
       "local-path-provisioner",
+      "metrics-server",
       "metallb",
       "externaldns",
       "cert_manager",
