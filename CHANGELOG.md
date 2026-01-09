@@ -1,3 +1,16 @@
+## [1.5.3](https://github.com/fullstack-pw/infra/compare/v1.5.2...v1.5.3) (2026-01-09)
+
+### Tasks
+
+* **backup:** add db backup ([6380495](https://github.com/fullstack-pw/infra/commit/6380495274ea5adb488c3a9ead9a559e74e0f85e))
+* **postgres:** consolidate module ([0cea7d5](https://github.com/fullstack-pw/infra/commit/0cea7d5c27740a84b2bb3ba16d23971ab6efc1a3))
+
+### Bug Fixes
+
+* **oracle-backup:** make it work ([56026ed](https://github.com/fullstack-pw/infra/commit/56026ed4050b285ea622f8391b2b8c167e8b2578))
+* **postgres:** eternal diff ([7760a52](https://github.com/fullstack-pw/infra/commit/7760a52af88e990c923c4cd0d7453c7bac5cad34))
+* **postgres:** postgres and teleport access fully working ([0077c50](https://github.com/fullstack-pw/infra/commit/0077c50910d0b2e4632f7a0ddc90b4a282f2a770))
+
 ## [1.5.2](https://github.com/fullstack-pw/infra/compare/v1.5.1...v1.5.2) (2026-01-05)
 
 ### Tasks
