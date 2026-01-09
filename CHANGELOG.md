@@ -1,3 +1,14 @@
+## [1.5.5](https://github.com/fullstack-pw/infra/compare/v1.5.4...v1.5.5) (2026-01-09)
+
+### Tasks
+
+* **auto-scaling:** cluster-autoscaler ([8cb906c](https://github.com/fullstack-pw/infra/commit/8cb906c8e5738890b1fffe12afc8f7dd9d807d9a))
+* **metrics:** metrics-server module to talos clusters ([8cf9542](https://github.com/fullstack-pw/infra/commit/8cf9542fa7017e2ea03b0d36986a3dbe0d737ba4))
+
+### Bug Fixes
+
+* **autoscaler:** add annotation to worker manifest ([bb6f337](https://github.com/fullstack-pw/infra/commit/bb6f337af6d834e7316ab1bb1eb18ea995ffd812))
+
 ## [1.5.4](https://github.com/fullstack-pw/infra/compare/v1.5.3...v1.5.4) (2026-01-09)
 
 ### Bug Fixes
