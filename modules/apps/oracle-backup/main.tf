@@ -6,7 +6,9 @@
  * - S3/MinIO bucket backups
  * - PostgreSQL database backups
  *
- * Credentials are pulled from the cluster-secrets secret (synced from Vault via External Secrets).
+ * Credentials:
+ * - Oracle/MinIO: cluster-secrets (synced from Vault via External Secrets)
+ * - PostgreSQL: <cluster-name>-superuser secret (created by CloudNativePG)
  */
 
 terraform {
@@ -22,11 +24,11 @@ terraform {
   }
 }
 
-# Create namespace with cluster-secrets label
+# Create namespace for S3 backups if requested
 module "namespace" {
   source = "../../base/namespace"
 
-  create = var.create_namespace
+  create = var.create_namespace && var.enable_s3_backup
   name   = var.namespace
   labels = {
     "cluster-secrets" = "true"
@@ -59,13 +61,13 @@ resource "kubectl_manifest" "s3_backup_cronjob" {
   depends_on = [module.namespace]
 }
 
-# PostgreSQL Backup CronJobs (one per cluster)
+# PostgreSQL Backup CronJobs (one per cluster, deployed in cluster's namespace)
 resource "kubectl_manifest" "postgres_backup_cronjob" {
   for_each = var.enable_postgres_backup ? var.postgres_backups : {}
 
   yaml_body = templatefile("${path.module}/templates/postgres-backup-cronjob.yaml.tpl", {
     name                          = "postgres-backup-${each.key}"
-    namespace                     = var.namespace
+    namespace                     = each.value.namespace
     schedule                      = each.value.schedule
     successful_jobs_history_limit = var.successful_jobs_history_limit
     failed_jobs_history_limit     = var.failed_jobs_history_limit
@@ -82,11 +84,9 @@ resource "kubectl_manifest" "postgres_backup_cronjob" {
     memory_limit                  = each.value.memory_limit
     cpu_request                   = each.value.cpu_request
     cpu_limit                     = each.value.cpu_limit
-    postgres_password_key         = var.postgres_password_key
+    postgres_secret_name          = "${each.key}-superuser"
   })
 
   wait              = true
   server_side_apply = true
-
-  depends_on = [module.namespace]
 }

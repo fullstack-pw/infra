@@ -230,10 +230,9 @@ module "oracle_backup" {
   minio_bucket_path = "terraform"
   s3_backup_path    = "terraform-state-backup"
 
-  postgres_password_key = try(var.config[terraform.workspace].oracle_backup.postgres_password_key, "POSTGRES_PASSWORD")
-
   postgres_backups = {
     for key, config in try(var.config[terraform.workspace].oracle_backup.postgres_backups, {}) : key => {
+      namespace      = config.namespace
       host           = config.host
       port           = config.port
       database       = config.database
@@ -408,14 +407,6 @@ module "proxmox_kubeadm_clusters" {
   ssh_authorized_keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP+mJj63c+7o+Bu40wNnXwTpXkPTpGJA9OIprmNoljKI pedro@pedro-Legion-5-16IRX9"
   ]
-}
-
-locals {
-  # Map of postgres CA secret names to read from Vault (dynamically managed by cloudnative-postgres module)
-  postgres_ca_secrets = toset([
-    for name, db in try(var.config[terraform.workspace].teleport.databases, {}) :
-    db.ca_cert if db.ca_cert != "" && can(regex("_POSTGRES_CA$", db.ca_cert))
-  ])
 }
 
 data "vault_kv_secret_v2" "postgres_ca" {

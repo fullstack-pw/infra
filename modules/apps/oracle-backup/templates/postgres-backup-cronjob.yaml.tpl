@@ -156,8 +156,8 @@ spec:
             - name: PG_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: cluster-secrets
-                  key: ${postgres_password_key}
+                  name: ${postgres_secret_name}
+                  key: password
 %{ if pg_ssl_enabled }
             - name: PG_SSL_CA
               valueFrom:

@@ -21,6 +21,7 @@ variable "workload" {
       "cloudnative-pg-operator",
       "postgres-cnpg",
       "observability-box",
+      "oracle_backup",
       #"freqtrade"
     ]
     stg = [
@@ -56,12 +57,13 @@ variable "workload" {
       "github_runner",
       "harbor",
       "minio",
-      "terraform_state_backup",
+      #"terraform_state_backup",
       "vault",
       "teleport-agent",
       "clusterapi-operator",
       "cloudnative-pg-operator",
       "postgres-cnpg",
+      "oracle_backup",
     ]
     observability = [
       "externaldns",
@@ -116,13 +118,14 @@ variable "config" {
       oracle_backup = {
         enable_s3_backup       = false
         enable_postgres_backup = true
-        postgres_password_key  = "POSTGRES_BACKUP_PASSWORD"
+
         postgres_backups = {
-          "dev-postgres" = {
-            host        = "dev.postgresfullstack.pw"
+          "postgres" = {
+            namespace   = "default"
+            host        = "postgres-rw.default.svc.cluster.local"
             port        = 5432
             database    = "postgres"
-            username    = "backup"
+            username    = "postgres"
             ssl_enabled = false
             schedule    = "0 4 * * *"
             backup_path = "postgres-backup/dev"
@@ -334,8 +337,9 @@ variable "config" {
         enable_s3_backup       = true
         enable_postgres_backup = true
         postgres_backups = {
-          "tools-postgres" = {
-            host        = "tools-postgres-rw.default.svc.cluster.local"
+          "postgres" = {
+            namespace   = "default"
+            host        = "postgres-rw.default.svc.cluster.local"
             port        = 5432
             database    = "postgres"
             username    = "postgres"

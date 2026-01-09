@@ -15,4 +15,8 @@ locals {
       if startswith(path, "kv/cluster-secret-store/secrets/")
     ]
   ])
+  postgres_ca_secrets = toset([
+    for name, db in try(var.config[terraform.workspace].teleport.databases, {}) :
+    db.ca_cert if db.ca_cert != "" && can(regex("_POSTGRES_CA$", db.ca_cert))
+  ])
 }

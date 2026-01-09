@@ -82,15 +82,10 @@ variable "minio_bucket_path" {
 }
 
 # PostgreSQL Backup Configuration
-variable "postgres_password_key" {
-  description = "Key name for PostgreSQL password in cluster-secrets (e.g., POSTGRES_PASSWORD)"
-  type        = string
-  default     = "POSTGRES_PASSWORD"
-}
-
 variable "postgres_backups" {
   description = "Map of PostgreSQL clusters to backup"
   type = map(object({
+    namespace      = string
     host           = string
     port           = number
     database       = string
