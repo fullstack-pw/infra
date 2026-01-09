@@ -420,8 +420,8 @@ module "teleport-agent" {
   source = "../modules/apps/teleport-agent"
 
   kubernetes_cluster_name = terraform.workspace
-  join_token              = "2875dbe2e37eac947af86de3b0631e45"
-  ca_pin                  = "sha256:7f9b9e8c1ec072c967ac3f6693f88f3e464a1e6e4d7e97502eb0a93c"
+  join_token              = local.secrets_json["kv/cluster-secret-store/secrets/TELEPORT"]["JOIN_TOKEN"]
+  ca_pin                  = local.secrets_json["kv/cluster-secret-store/secrets/TELEPORT"]["CA_PIN"]
   roles                   = var.config[terraform.workspace].teleport.roles
   apps                    = var.config[terraform.workspace].teleport.apps
   databases = {
