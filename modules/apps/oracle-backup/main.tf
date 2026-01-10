@@ -49,6 +49,7 @@ resource "kubectl_manifest" "s3_backup_cronjob" {
     minio_endpoint                = var.minio_endpoint
     minio_bucket_path             = var.minio_bucket_path
     backup_path                   = var.s3_backup_path
+    oracle_storage_tier           = var.oracle_storage_tier
     memory_request                = var.memory_request
     memory_limit                  = var.memory_limit
     cpu_request                   = var.cpu_request
@@ -80,6 +81,7 @@ resource "kubectl_manifest" "postgres_backup_cronjob" {
     pg_databases                  = each.value.databases
     backup_path                   = each.value.backup_path
     cluster_name                  = each.key
+    oracle_storage_tier           = var.oracle_storage_tier
     memory_request                = each.value.memory_request
     memory_limit                  = each.value.memory_limit
     cpu_request                   = each.value.cpu_request

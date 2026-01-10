@@ -134,6 +134,7 @@ spec:
                 --bucket-name "$ORACLE_BUCKET" \
                 --src-dir /tmp/backup \
                 --prefix ${backup_path}/ \
+                --storage-tier ${oracle_storage_tier} \
                 --overwrite
 
               echo ""

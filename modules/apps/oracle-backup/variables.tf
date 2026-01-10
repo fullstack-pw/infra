@@ -126,3 +126,9 @@ variable "cpu_limit" {
   type        = string
   default     = "500m"
 }
+
+variable "oracle_storage_tier" {
+  description = "Oracle Cloud Object Storage tier (Standard, InfrequentAccess, Archive)"
+  type        = string
+  default     = "Standard"
+}
