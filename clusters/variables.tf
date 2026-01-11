@@ -25,12 +25,6 @@ variable "workload" {
       "oracle_backup",
       #"freqtrade"
     ]
-    stg = [
-      "externaldns",
-      "cert_manager",
-      "external_secrets",
-      #"observability-box"
-    ]
     prod = [
       "externaldns",
       "cert_manager",
@@ -147,11 +141,6 @@ variable "config" {
         vault_ca_secret_key            = "DEV_POSTGRES_CA"
       }
     }
-    stg = {
-      kubernetes_context = "stg"
-      install_crd        = true
-      cert_manager_crd   = true
-    }
     prod = {
       kubernetes_context = "prod"
       install_crd        = true
@@ -234,7 +223,7 @@ variable "config" {
         },
         {
           cluster_type              = "kubeadm"
-          name                      = "stg"
+          name                      = "prod"
           kubernetes_version        = "v1.31.4"
           control_plane_endpoint_ip = "192.168.1.70"
           ip_range_start            = "192.168.1.71"
@@ -263,63 +252,7 @@ variable "config" {
           cni_manifest_url = "https://raw.githubusercontent.com/projectcalico/calico/v3.29.1/manifests/calico.yaml"
 
         },
-        #   {
-        #   name                      = "prd"
-        #   kubernetes_version        = "v1.33.0"
-        #   control_plane_endpoint_ip = "192.168.1.58"
-        #   ip_range_start            = "192.168.1.59"
-        #   ip_range_end              = "192.168.1.61"
-        #   gateway                   = "192.168.1.1"
-        #   prefix                    = 24
-        #   dns_servers               = ["192.168.1.3", "8.8.4.4"]
-
-        #   source_node   = "node03"
-        #   template_id   = 103
-        #   allowed_nodes = ["node03"]
-
-        #   cp_replicas = 1
-        #   wk_replicas = 2
-
-        #   cp_disk_size = 20
-        #   cp_memory    = 2048
-        #   cp_cores     = 2
-        #   wk_disk_size = 30
-        #   wk_memory    = 4096
-        #   wk_cores     = 2
-        # },
       ]
-      #
-      # proxmox-kubeadm-cluster = [
-      #   {
-      #     name                      = "stg"
-      #     kubernetes_version        = "v1.31.4"
-      #     control_plane_endpoint_ip = "192.168.1.60"
-      #     ip_range_start            = "192.168.1.61"
-      #     ip_range_end              = "192.168.1.69"
-      #     gateway                   = "192.168.1.1"
-      #     prefix                    = 24
-      #     dns_servers               = ["192.168.1.3", "8.8.4.4"]
-      #     pod_cidr                  = "10.244.0.0/16"
-      #     service_cidr              = "10.96.0.0/12"
-
-      #     cni_type         = "calico"
-      #     cni_manifest_url = "https://raw.githubusercontent.com/projectcalico/calico/v3.29.1/manifests/calico.yaml"
-
-      #     source_node   = "node03"
-      #     template_id   = 9004
-      #     allowed_nodes = ["node03"]
-
-      #     cp_replicas  = 1
-      #     cp_disk_size = 30
-      #     cp_memory    = 4096
-      #     cp_cores     = 4
-
-      #     wk_replicas  = 2
-      #     wk_disk_size = 30
-      #     wk_memory    = 8192
-      #     wk_cores     = 8
-      #   },
-      # ]
       prometheus_namespaces     = []
       prometheus_memory_limit   = "2048Mi"
       prometheus_memory_request = "512Mi"
