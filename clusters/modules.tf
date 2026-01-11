@@ -120,7 +120,7 @@ module "github_runner" {
   source = "../modules/apps/github-runner"
 
   github_token = local.secrets_json["kv/cluster-secret-store/secrets/github_token"]["github_token"]
-  install_crd  = var.config[terraform.workspace].install_crd
+  install_crd  = var.config[terraform.workspace].crds_installed
 }
 
 module "gitlab_runner" {
@@ -247,7 +247,7 @@ module "observability" {
   source = "../modules/apps/observability"
 
   minio_rootPassword = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootPassword"]
-  install_crd        = var.config[terraform.workspace].install_crd
+  install_crd        = var.config[terraform.workspace].crds_installed
 }
 
 module "observability-box" {

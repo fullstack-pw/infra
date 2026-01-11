@@ -141,7 +141,7 @@ variable "config" {
     }
     prod = {
       kubernetes_context = "prod"
-      crds_installed     = false
+      crds_installed     = true
     }
     sandboxy = {
       kubernetes_context = "sandboxy"
