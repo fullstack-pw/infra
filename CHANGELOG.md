@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/fullstack-pw/infra/compare/v1.6.0...v1.6.1) (2026-01-11)
+
+### Tasks
+
+* **bootstrap:** install prod base workload ([#132](https://github.com/fullstack-pw/infra/issues/132)) ([611ded8](https://github.com/fullstack-pw/infra/commit/611ded83e6ce81c398e3f9bb0a060c9acbf44895))
+* Update KUBECONFIG with Cluster API clusters ([70988ba](https://github.com/fullstack-pw/infra/commit/70988ba8a4d764d236435271e8e3f9dd63b01232))
+
 ## [1.6.0](https://github.com/fullstack-pw/infra/compare/v1.5.5...v1.6.0) (2026-01-11)
 
 ### Features
