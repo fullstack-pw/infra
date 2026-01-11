@@ -9,6 +9,13 @@ variable "create_namespace" {
   default = true
 
 }
+
+variable "crds_installed" {
+  type    = bool
+  default = false
+
+}
+
 variable "replicas" {
   description = "Number of ExternalDNS replicas"
   type        = number

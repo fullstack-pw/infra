@@ -73,13 +73,11 @@ variable "config" {
   default = {
     home = {
       kubernetes_context = "home"
-      install_crd        = true
-      cert_manager_crd   = true
+      crds_installed     = true
     }
     dev = {
       kubernetes_context   = "dev"
-      install_crd          = true
-      cert_manager_crd     = true
+      crds_installed       = true
       istio_CRDs           = true
       argocd_ingress_class = "istio"
       argocd_domain        = "dev.argocd.fullstack.pw"
@@ -143,13 +141,11 @@ variable "config" {
     }
     prod = {
       kubernetes_context = "prod"
-      install_crd        = true
-      cert_manager_crd   = true
+      crds_installed     = false
     }
     sandboxy = {
       kubernetes_context = "sandboxy"
-      install_crd        = true
-      cert_manager_crd   = true
+      crds_installed     = true
       teleport = {
         apps = {
           "longhorn" = "http://longhorn-frontend.longhorn-system.svc.cluster.local"
@@ -176,8 +172,7 @@ variable "config" {
     }
     tools = {
       kubernetes_context = "tools"
-      install_crd        = true
-      cert_manager_crd   = true
+      crds_installed     = true
       teleport = {
         apps = {
           "harbor" = "http://harbor-portal.harbor.svc.cluster.local"
@@ -310,8 +305,7 @@ variable "config" {
     }
     observability = {
       kubernetes_context = "k8s-observability"
-      install_crd        = true
-      cert_manager_crd   = true
+      crds_installed     = true
     }
   }
 }

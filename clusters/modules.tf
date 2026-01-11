@@ -40,6 +40,7 @@ module "externaldns" {
   create_pihole_secret = terraform.workspace == "sandbox" ? true : false
   pihole_password      = terraform.workspace == "sandbox" ? local.secrets_json["kv/cluster-secret-store/secrets/EXTERNAL_DNS_PIHOLE_PASSWORD"]["PIHOLE_PASSWORD"] : ""
 
+  crds_installed = var.config[terraform.workspace].crds_installed
   container_args = contains(local.workload, "istio") ? [
     "--pihole-tls-skip-verify",
     "--source=ingress",
@@ -63,6 +64,7 @@ module "externaldns_cloudflare" {
   count  = contains(local.workload, "externaldns") ? 1 : 0
   source = "../modules/apps/externaldns"
 
+  crds_installed           = var.config[terraform.workspace].crds_installed
   deployment_name          = "external-dns-cloudflare"
   dns_provider             = "cloudflare"
   create_cloudflare_secret = true
@@ -93,7 +95,7 @@ module "cert_manager" {
   count  = contains(local.workload, "cert_manager") ? 1 : 0
   source = "../modules/apps/certmanager"
 
-  install_crd       = var.config[terraform.workspace].cert_manager_crd
+  install_crd       = var.config[terraform.workspace].crds_installed
   cloudflare_secret = local.secrets_json["kv/cloudflare"]["api-token"]
 }
 
@@ -101,7 +103,7 @@ module "external_secrets" {
   count  = contains(local.workload, "external_secrets") ? 1 : 0
   source = "../modules/apps/external-secrets"
 
-  install_crd = var.config[terraform.workspace].install_crd
+  install_crd = var.config[terraform.workspace].crds_installed
   secret_data = local.secret_data
   vault_token = local.secrets_json["kv/cluster-secret-store/secrets/VAULT_TOKEN"]["VAULT_TOKEN"]
 

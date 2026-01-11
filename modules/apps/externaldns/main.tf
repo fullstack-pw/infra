@@ -81,6 +81,7 @@ resource "kubernetes_cluster_role_binding" "externaldns" {
 }
 
 resource "kubernetes_deployment" "externaldns" {
+  count = var.crds_installed ? 1 : 0
   metadata {
     name      = var.deployment_name
     namespace = var.namespace
