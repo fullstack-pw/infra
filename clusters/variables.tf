@@ -26,10 +26,19 @@ variable "workload" {
       #"freqtrade"
     ]
     prod = [
+      "local-path-provisioner",
+      "metrics-server",
+      "metallb",
       "externaldns",
       "cert_manager",
       "external_secrets",
-      #"observability-box"
+      "istio",
+      "argocd",
+      "teleport-agent",
+      "cloudnative-pg-operator",
+      "postgres-cnpg",
+      "observability-box",
+      "oracle_backup"
     ]
     sandboxy = [
       "externaldns",
@@ -140,8 +149,61 @@ variable "config" {
       }
     }
     prod = {
-      kubernetes_context = "prod"
-      crds_installed     = true
+      kubernetes_context   = "prod"
+      crds_installed       = true
+      istio_CRDs           = true
+      argocd_ingress_class = "istio"
+      argocd_domain        = "argocd.fullstack.pw"
+      teleport = {
+        apps = {
+          "ascii" = "http://ascii-frontend.default.svc.cluster.local"
+          "cks"   = "http://cks-frontend.default.svc.cluster.local:3000"
+        }
+        roles = "kube,app,db"
+        databases = {
+          "postgres" = {
+            uri     = "postgres-rw.default.svc.cluster.local:5432"
+            ca_cert = "POSTGRES_CA"
+          }
+        }
+      }
+      prometheus_namespaces     = []
+      prometheus_memory_limit   = "1024Mi"
+      prometheus_memory_request = "256Mi"
+      prometheus_storage_size   = "2Gi"
+      metallb_create_ip_pool    = true
+      metallb_ip_pool_addresses = ["192.168.1.81-192.168.1.90"]
+      oracle_backup = {
+        enable_s3_backup       = false
+        enable_postgres_backup = true
+
+        postgres_backups = {
+          "postgres" = {
+            namespace   = "default"
+            host        = "postgres-rw.default.svc.cluster.local"
+            port        = 5432
+            database    = "postgres"
+            username    = "postgres"
+            ssl_enabled = false
+            schedule    = "0 4 * * *"
+            backup_path = "postgres-backup/prod"
+          }
+        }
+      }
+      postgres_cnpg = {
+        enable_superuser_access = true
+        managed_roles = [
+          { name = "root", login = true, replication = true }
+        ]
+        databases = []
+
+        persistence_size               = "1Gi"
+        ingress_host                   = "postgres.fullstack.pw"
+        use_istio                      = true
+        export_credentials_secret_name = "postgres-credentials"
+        vault_ca_secret_path           = "cluster-secret-store/secrets/POSTGRES_CA"
+        vault_ca_secret_key            = "POSTGRES_CA"
+      }
     }
     sandboxy = {
       kubernetes_context = "sandboxy"
