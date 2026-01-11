@@ -1,3 +1,9 @@
+## [1.6.7](https://github.com/fullstack-pw/infra/compare/v1.6.6...v1.6.7) (2026-01-11)
+
+### Tasks
+
+* **bootstrap:** install prod workload ([03a30d7](https://github.com/fullstack-pw/infra/commit/03a30d7ea6bf980cb2fc683f30f202fad37115d2))
+
 ## [1.6.6](https://github.com/fullstack-pw/infra/compare/v1.6.5...v1.6.6) (2026-01-11)
 
 ### Bug Fixes
