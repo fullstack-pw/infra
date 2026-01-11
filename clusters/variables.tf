@@ -57,7 +57,6 @@ variable "workload" {
       "github_runner",
       "harbor",
       "minio",
-      #"terraform_state_backup",
       "vault",
       "teleport-agent",
       "clusterapi-operator",
