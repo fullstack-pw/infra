@@ -1,3 +1,9 @@
+## [1.6.6](https://github.com/fullstack-pw/infra/compare/v1.6.5...v1.6.6) (2026-01-11)
+
+### Bug Fixes
+
+* **bootstrap:** crds flag ([d330922](https://github.com/fullstack-pw/infra/commit/d330922bbc5d2bab02380099521b7e0802de867e))
+
 ## [1.6.5](https://github.com/fullstack-pw/infra/compare/v1.6.4...v1.6.5) (2026-01-11)
 
 ### Tasks
