@@ -143,8 +143,8 @@ variable "config" {
     }
     prod = {
       kubernetes_context = "prod"
-      install_crd        = true
-      cert_manager_crd   = true
+      install_crd        = false
+      cert_manager_crd   = false
     }
     sandboxy = {
       kubernetes_context = "sandboxy"
