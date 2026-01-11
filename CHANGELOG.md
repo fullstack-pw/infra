@@ -1,3 +1,18 @@
+## [1.6.0](https://github.com/fullstack-pw/infra/compare/v1.5.5...v1.6.0) (2026-01-11)
+
+### Features
+
+* **proxmox-cluster:** consolidate module ([9bfc59b](https://github.com/fullstack-pw/infra/commit/9bfc59be888254d30d0287865938e5f555b60e9c))
+
+### Tasks
+
+* **bootstrap:** prod VMs and cluster ([95abffb](https://github.com/fullstack-pw/infra/commit/95abffbab77fbe67ae4cf631fe2e088c42eb89b1))
+* **clean:** remove legacy ([d572dda](https://github.com/fullstack-pw/infra/commit/d572dda26ebf329628af98ab70ba73b6ab0e8356))
+
+### Bug Fixes
+
+* **oracle:** bucket storage tier ([6747305](https://github.com/fullstack-pw/infra/commit/6747305a61df5b21dabb3f7c31af098f4b553e8a))
+
 ## [1.5.5](https://github.com/fullstack-pw/infra/compare/v1.5.4...v1.5.5) (2026-01-09)
 
 ### Tasks
