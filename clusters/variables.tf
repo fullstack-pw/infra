@@ -151,7 +151,7 @@ variable "config" {
     prod = {
       kubernetes_context   = "prod"
       crds_installed       = true
-      istio_CRDs           = true
+      istio_CRDs           = false
       argocd_ingress_class = "istio"
       argocd_domain        = "argocd.fullstack.pw"
       teleport = {
@@ -191,6 +191,7 @@ variable "config" {
         }
       }
       postgres_cnpg = {
+        crds_installed          = false
         enable_superuser_access = true
         managed_roles = [
           { name = "root", login = true, replication = true }

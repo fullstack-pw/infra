@@ -149,7 +149,7 @@ module "istio" {
   enable_tracing   = false # Can be enabled later to integrate with Jaeger
   access_log_file  = "/dev/stdout"
 
-  istio_CRDs         = true
+  istio_CRDs         = try(var.config[terraform.workspace].istio_CRDs, false)
   default_tls_secret = "default-gateway-tls"
 
   cert_issuer_name = "letsencrypt-prod"
@@ -178,7 +178,7 @@ module "argocd" {
   application_namespaces = "*"
   enable_notifications   = true
   enable_dex             = false
-  istio_CRDs             = true
+  istio_CRDs             = var.config[terraform.workspace].istio_CRDs
 }
 
 module "minio" {
@@ -411,7 +411,7 @@ module "postgres_cnpg" {
   cluster_name     = "postgres"
   namespace        = "default"
   create_namespace = false
-  create_cluster   = true
+  create_cluster   = try(var.config[terraform.workspace].postgres_cnpg.crds_installed, false)
 
   registry   = "registry.fullstack.pw"
   repository = "library/postgresql"
@@ -448,7 +448,7 @@ module "postgres_cnpg" {
   ingress_host       = try(var.config[terraform.workspace].postgres_cnpg.ingress_host, "")
   ingress_class_name = try(var.config[terraform.workspace].postgres_cnpg.ingress_class_name, "traefik")
   use_istio          = try(var.config[terraform.workspace].postgres_cnpg.use_istio, false)
-  istio_CRDs         = try(var.config[terraform.workspace].postgres_cnpg.use_istio, false)
+  istio_CRDs         = try(var.config[terraform.workspace].istio_CRDs, false)
 
   enable_superuser_access = try(var.config[terraform.workspace].postgres_cnpg.enable_superuser_access, true)
   managed_roles           = try(var.config[terraform.workspace].postgres_cnpg.managed_roles, [])
