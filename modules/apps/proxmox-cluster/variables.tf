@@ -1,6 +1,7 @@
 variable "clusters" {
-  description = "List of Talos clusters to create"
+  description = "List of Talos or Kubeadm clusters to create"
   type = list(object({
+    cluster_type       = optional(string, "talos")
     name               = string
     kubernetes_version = optional(string, "v1.33.0")
 
@@ -45,6 +46,12 @@ variable "clusters" {
     skip_cloud_init_status = optional(bool, true)
     skip_qemu_guest_agent  = optional(bool, true)
     provider_id_injection  = optional(bool, true)
+
+    # Kubeadm-specific fields
+    cni_type         = optional(string, "cilium")
+    cni_manifest_url = optional(string, "https://raw.githubusercontent.com/projectcalico/calico/v3.29.1/manifests/calico.yaml")
+    pod_cidr         = optional(string, "10.244.0.0/16")
+    service_cidr     = optional(string, "10.96.0.0/12")
   }))
 
   validation {
@@ -118,4 +125,10 @@ variable "proxmox_token" {
   type        = string
   default     = ""
   sensitive   = true
+}
+
+variable "ssh_authorized_keys" {
+  description = "List of SSH authorized keys for accessing cluster nodes (kubeadm only)"
+  type        = list(string)
+  default     = []
 }

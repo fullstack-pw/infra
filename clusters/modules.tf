@@ -385,11 +385,11 @@ module "clusterapi_operator" {
   depends_on = [module.vault]
 }
 
-module "proxmox_talos_clusters" {
-  count  = contains(keys(var.config[terraform.workspace]), "proxmox-talos-cluster") ? 1 : 0
-  source = "../modules/apps/proxmox-talos-cluster"
+module "proxmox_clusters" {
+  count  = contains(keys(var.config[terraform.workspace]), "proxmox-cluster") ? 1 : 0
+  source = "../modules/apps/proxmox-cluster"
 
-  clusters = var.config[terraform.workspace].proxmox-talos-cluster
+  clusters = var.config[terraform.workspace].proxmox-cluster
 
   cluster_api_dependencies = []
 
@@ -397,21 +397,6 @@ module "proxmox_talos_clusters" {
   proxmox_url           = element(split("/api2", local.secrets_json["kv/cluster-secret-store/secrets/PROXMOX_URL"]["PROXMOX_URL"]), 0)
   proxmox_secret        = local.secrets_json["kv/cluster-secret-store/secrets/PROXMOX_SECRET"]["PROXMOX_SECRET"]
   proxmox_token         = local.secrets_json["kv/cluster-secret-store/secrets/PROXMOX_TOKEN_ID"]["PROXMOX_TOKEN_ID"]
-}
-
-module "proxmox_kubeadm_clusters" {
-  count  = contains(keys(var.config[terraform.workspace]), "proxmox-kubeadm-cluster") ? 1 : 0
-  source = "../modules/apps/proxmox-kubeadm-cluster"
-
-  clusters = var.config[terraform.workspace].proxmox-kubeadm-cluster
-
-  cluster_api_dependencies = contains(local.workload, "clusterapi-operator") ? [module.clusterapi_operator[0]] : []
-
-  create_proxmox_secret = true
-  proxmox_url           = element(split("/api2", local.secrets_json["kv/cluster-secret-store/secrets/PROXMOX_URL"]["PROXMOX_URL"]), 0)
-  proxmox_secret        = local.secrets_json["kv/cluster-secret-store/secrets/PROXMOX_SECRET"]["PROXMOX_SECRET"]
-  proxmox_token         = local.secrets_json["kv/cluster-secret-store/secrets/PROXMOX_TOKEN_ID"]["PROXMOX_TOKEN_ID"]
-
   ssh_authorized_keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP+mJj63c+7o+Bu40wNnXwTpXkPTpGJA9OIprmNoljKI pedro@pedro-Legion-5-16IRX9"
   ]

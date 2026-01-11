@@ -44,8 +44,7 @@ variable "workload" {
       "kubevirt",
       "longhorn",
       "observability-box",
-      "teleport-agent",
-      "proxmox-talos-cluster"
+      "teleport-agent"
     ]
     tools = [
       "externaldns",
@@ -205,7 +204,7 @@ variable "config" {
         }
         roles = "kube,app,db"
       }
-      proxmox-talos-cluster = [
+      proxmox-cluster = [
         {
           name                      = "dev"
           kubernetes_version        = "v1.33.0"
@@ -234,30 +233,38 @@ variable "config" {
           autoscaler_min     = 2
           autoscaler_max     = 4
         },
+        {
+          cluster_type              = "kubeadm"
+          name                      = "stg"
+          kubernetes_version        = "v1.31.4"
+          control_plane_endpoint_ip = "192.168.1.70"
+          ip_range_start            = "192.168.1.71"
+          ip_range_end              = "192.168.1.79"
+          gateway                   = "192.168.1.1"
+          prefix                    = 24
+          dns_servers               = ["192.168.1.3", "8.8.4.4"]
+
+          source_node   = "node03"
+          template_id   = 9004
+          allowed_nodes = ["node03"]
+
+          cp_replicas = 1
+          wk_replicas = 2
+
+          cp_disk_size           = 20
+          cp_memory              = 4096
+          cp_cores               = 4
+          wk_disk_size           = 30
+          wk_memory              = 8192
+          wk_cores               = 8
+          skip_cloud_init_status = false
+          skip_qemu_guest_agent  = false
+          provider_id_injection  = false
+
+          cni_manifest_url = "https://raw.githubusercontent.com/projectcalico/calico/v3.29.1/manifests/calico.yaml"
+
+        },
         #   {
-        #   name                      = "stg"
-        #   kubernetes_version        = "v1.33.0"
-        #   control_plane_endpoint_ip = "192.168.1.54"
-        #   ip_range_start            = "192.168.1.55"
-        #   ip_range_end              = "192.168.1.57"
-        #   gateway                   = "192.168.1.1"
-        #   prefix                    = 24
-        #   dns_servers               = ["192.168.1.3", "8.8.4.4"]
-
-        #   source_node   = "node03"
-        #   template_id   = 103
-        #   allowed_nodes = ["node03"]
-
-        #   cp_replicas = 1
-        #   wk_replicas = 2
-
-        #   cp_disk_size = 20
-        #   cp_memory    = 2048
-        #   cp_cores     = 2
-        #   wk_disk_size = 30
-        #   wk_memory    = 4096
-        #   wk_cores     = 2
-        #   }, {
         #   name                      = "prd"
         #   kubernetes_version        = "v1.33.0"
         #   control_plane_endpoint_ip = "192.168.1.58"
@@ -285,11 +292,11 @@ variable "config" {
       #
       # proxmox-kubeadm-cluster = [
       #   {
-      #     name                      = "dev"
+      #     name                      = "stg"
       #     kubernetes_version        = "v1.31.4"
-      #     control_plane_endpoint_ip = "192.168.1.70"
-      #     ip_range_start            = "192.168.1.71"
-      #     ip_range_end              = "192.168.1.79"
+      #     control_plane_endpoint_ip = "192.168.1.60"
+      #     ip_range_start            = "192.168.1.61"
+      #     ip_range_end              = "192.168.1.69"
       #     gateway                   = "192.168.1.1"
       #     prefix                    = 24
       #     dns_servers               = ["192.168.1.3", "8.8.4.4"]
@@ -303,15 +310,15 @@ variable "config" {
       #     template_id   = 9004
       #     allowed_nodes = ["node03"]
 
-      #     cp_replicas  = 3
+      #     cp_replicas  = 1
       #     cp_disk_size = 30
       #     cp_memory    = 4096
-      #     cp_cores     = 2
+      #     cp_cores     = 4
 
-      #     wk_replicas  = 1
+      #     wk_replicas  = 2
       #     wk_disk_size = 30
       #     wk_memory    = 8192
-      #     wk_cores     = 4
+      #     wk_cores     = 8
       #   },
       # ]
       prometheus_namespaces     = []

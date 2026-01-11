@@ -271,7 +271,7 @@ update-kubeconfigs: build-kubeconfig-tool
 		echo -e "${CYAN}Processing all environments with Talos clusters...${NC}"; \
 		for env in $(ENVIRONMENTS); do \
 			cd $(TOFU_DIR) && tofu workspace select $${env}; \
-			CLUSTERS=$$(tofu output -json proxmox_talos_cluster_names 2>/dev/null | jq -r '.[]' || echo ""); \
+			CLUSTERS=$$(tofu output -json proxmox_cluster_names 2>/dev/null | jq -r '.[]' || echo ""); \
 			if [ -n "$$CLUSTERS" ]; then \
 				echo -e "${GREEN}Found Talos clusters in $${env}: $$CLUSTERS${NC}"; \
 				for cluster in $$CLUSTERS; do \
@@ -288,7 +288,7 @@ update-kubeconfigs: build-kubeconfig-tool
 	else \
 		echo -e "${CYAN}Updating kubeconfigs for $(ENV) environment...${NC}"; \
 		cd $(TOFU_DIR) && tofu workspace select $(ENV); \
-		CLUSTERS=$$(tofu output -json proxmox_talos_cluster_names | jq -r '.[]'); \
+		CLUSTERS=$$(tofu output -json proxmox_cluster_names | jq -r '.[]'); \
 		for cluster in $$CLUSTERS; do \
 			KUBECONFIG=$$KUBECONFIG ../cicd-update-kubeconfig \
 				--cluster-name $$cluster \

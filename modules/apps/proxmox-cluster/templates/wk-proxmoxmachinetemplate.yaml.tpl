@@ -24,8 +24,12 @@ spec:
       numSockets: ${wk_sockets}
       sourceNode: ${source_node}
       templateID: ${template_id}
+%{ if skip_cloud_init_status || skip_qemu_guest_agent ~}
       checks:
         skipCloudInitStatus: ${skip_cloud_init_status}
         skipQemuGuestAgent: ${skip_qemu_guest_agent}
+%{ endif ~}
+%{ if provider_id_injection ~}
       metadataSettings:
         providerIDInjection: ${provider_id_injection}
+%{ endif ~}

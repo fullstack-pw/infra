@@ -126,8 +126,8 @@ jobs:
           for workspace in sandboxy tools observability; do
             tofu workspace select $workspace
 
-            if tofu output -json proxmox_talos_cluster_names 2>/dev/null | jq -e '. | length > 0' > /dev/null 2>&1; then
-              tofu output -json proxmox_talos_cluster_names > /tmp/tofu-outputs/${workspace}_clusters_before.json
+            if tofu output -json proxmox_cluster_names 2>/dev/null | jq -e '. | length > 0' > /dev/null 2>&1; then
+              tofu output -json proxmox_cluster_names > /tmp/tofu-outputs/${workspace}_clusters_before.json
               echo "Captured outputs for workspace: $workspace"
             else
               echo "[]" > /tmp/tofu-outputs/${workspace}_clusters_before.json
@@ -149,8 +149,8 @@ jobs:
           for workspace in sandboxy tools observability; do
             tofu workspace select $workspace
 
-            if tofu output -json proxmox_talos_cluster_names 2>/dev/null | jq -e '. | length > 0' > /dev/null 2>&1; then
-              tofu output -json proxmox_talos_cluster_names > /tmp/tofu-outputs/${workspace}_clusters_after.json
+            if tofu output -json proxmox_cluster_names 2>/dev/null | jq -e '. | length > 0' > /dev/null 2>&1; then
+              tofu output -json proxmox_cluster_names > /tmp/tofu-outputs/${workspace}_clusters_after.json
             else
               echo "[]" > /tmp/tofu-outputs/${workspace}_clusters_after.json
             fi
