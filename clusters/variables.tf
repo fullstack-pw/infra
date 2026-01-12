@@ -108,7 +108,7 @@ variable "config" {
       prometheus_memory_request = "256Mi"
       prometheus_storage_size   = "2Gi"
       metallb_create_ip_pool    = true
-      metallb_ip_pool_addresses = ["192.168.1.70-192.168.1.80"]
+      metallb_ip_pool_addresses = ["192.168.1.60-192.168.1.69"]
       freqtrade = {
         domain          = "freqtrade.dev.fullstack.pw"
         dry_run         = true
@@ -135,6 +135,7 @@ variable "config" {
       }
       postgres_cnpg = {
         enable_superuser_access = true
+        crds_installed          = true
         managed_roles = [
           { name = "root", login = true, replication = true }
         ]
@@ -316,6 +317,7 @@ variable "config" {
       prometheus_memory_request = "512Mi"
       postgres_cnpg = {
         enable_superuser_access = true
+        crds_installed          = true
         managed_roles = [
           { name = "teleport", login = true, replication = true },
           { name = "root", login = true, replication = true }
