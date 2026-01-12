@@ -149,14 +149,89 @@ spec:
         kubeletExtraArgs:
           - name: provider-id
             value: "proxmox://'{{ ds.meta_data.instance_id }}'"
+          - name: rotate-server-certificates
+            value: "true"
+          - name: rotate-certificates
+            value: "true"            
     joinConfiguration:
       nodeRegistration:
         criSocket: unix:///var/run/containerd/containerd.sock
         kubeletExtraArgs:
           - name: provider-id
             value: "proxmox://'{{ ds.meta_data.instance_id }}'"
+          - name: rotate-server-certificates
+            value: "true"
+          - name: rotate-certificates
+            value: "true"            
     postKubeadmCommands:
       - kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f ${cni_manifest_url}
+      - |
+        kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f - <<EOF
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: kubelet-csr-approver
+        ---
+        apiVersion: v1
+        kind: ServiceAccount
+        metadata:
+          name: kubelet-csr-approver
+          namespace: kubelet-csr-approver
+        ---
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: ClusterRole
+        metadata:
+          name: kubelet-csr-approver
+        rules:
+        - apiGroups: ["certificates.k8s.io"]
+          resources: ["certificatesigningrequests"]
+          verbs: ["get", "list", "watch"]
+        - apiGroups: ["certificates.k8s.io"]
+          resources: ["certificatesigningrequests/approval"]
+          verbs: ["update"]
+        - apiGroups: ["certificates.k8s.io"]
+          resources: ["signers"]
+          resourceNames: ["kubernetes.io/kubelet-serving"]
+          verbs: ["approve"]
+        ---
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: ClusterRoleBinding
+        metadata:
+          name: kubelet-csr-approver
+        roleRef:
+          apiGroup: rbac.authorization.k8s.io
+          kind: ClusterRole
+          name: kubelet-csr-approver
+        subjects:
+        - kind: ServiceAccount
+          name: kubelet-csr-approver
+          namespace: kubelet-csr-approver
+        ---
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: kubelet-csr-approver
+          namespace: kubelet-csr-approver
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: kubelet-csr-approver
+          template:
+            metadata:
+              labels:
+                app: kubelet-csr-approver
+            spec:
+              serviceAccountName: kubelet-csr-approver
+              containers:
+              - name: kubelet-csr-approver
+                image: postfinance/kubelet-csr-approver:v1.2.12
+                args:
+                - -provider-regex=^.*$
+                - -provider-ip-prefixes=192.168.1.0/24
+                - -max-expiration-sec=31536000
+                - -bypass-dns-resolution=true
+        EOF
   machineTemplate:
     spec:
       infrastructureRef:

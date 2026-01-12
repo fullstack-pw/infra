@@ -289,7 +289,7 @@ variable "config" {
           ip_range_end              = "192.168.1.79"
           gateway                   = "192.168.1.1"
           prefix                    = 24
-          dns_servers               = ["192.168.1.3", "8.8.4.4"]
+          dns_servers               = ["192.168.1.3"]
 
           source_node   = "node03"
           template_id   = 9004
@@ -309,6 +309,10 @@ variable "config" {
           provider_id_injection  = false
 
           cni_manifest_url = "https://raw.githubusercontent.com/projectcalico/calico/v3.29.1/manifests/calico.yaml"
+
+          autoscaler_enabled = true
+          autoscaler_min     = 2
+          autoscaler_max     = 4
 
         },
       ]

@@ -19,3 +19,7 @@ spec:
           kubeletExtraArgs:
             - name: provider-id
               value: "proxmox://'{{ ds.meta_data.instance_id }}'"
+            - name: rotate-server-certificates
+              value: "true"
+            - name: rotate-certificates
+              value: "true"
