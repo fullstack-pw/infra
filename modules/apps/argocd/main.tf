@@ -6,6 +6,7 @@ module "namespace" {
 }
 
 module "argocd_values" {
+  count  = var.install_argocd ? 1 : 0
   source = "../../base/values-template"
 
   template_files = [{
@@ -36,6 +37,7 @@ module "argocd_values" {
 }
 
 module "helm" {
+  count  = var.install_argocd ? 1 : 0
   source = "../../base/helm"
 
   release_name     = "argocd"
@@ -45,13 +47,51 @@ module "helm" {
   chart_version    = var.argocd_version
   timeout          = 600
   create_namespace = false
-  values_files     = module.argocd_values.rendered_values
+  values_files     = module.argocd_values[0].rendered_values
+
+  depends_on = [module.namespace]
+}
+
+module "argo_rollouts_helm" {
+  source = "../../base/helm"
+
+  release_name     = "argo-rollouts"
+  namespace        = module.namespace.name
+  chart            = "argo-rollouts"
+  repository       = "https://argoproj.github.io/argo-helm"
+  chart_version    = var.argo_rollouts_version
+  timeout          = 300
+  create_namespace = false
+  values_files = [yamlencode({
+    controller = {
+      replicas = var.argo_rollouts_controller_replicas
+      resources = {
+        requests = {
+          cpu    = "100m"
+          memory = "128Mi"
+        }
+        limits = {
+          cpu    = "500m"
+          memory = "512Mi"
+        }
+      }
+    }
+    dashboard = {
+      enabled = var.argo_rollouts_dashboard_enabled
+      service = {
+        type = "ClusterIP"
+      }
+    }
+    serviceMonitor = {
+      enabled = false
+    }
+  })]
 
   depends_on = [module.namespace]
 }
 
 resource "kubernetes_manifest" "argocd_virtualservice" {
-  count = var.istio_CRDs && var.ingress_enabled ? 1 : 0
+  count = var.install_argocd && var.istio_CRDs && var.ingress_enabled ? 1 : 0
 
   manifest = {
     apiVersion = "networking.istio.io/v1beta1"

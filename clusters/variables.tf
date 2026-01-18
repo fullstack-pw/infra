@@ -61,6 +61,7 @@ variable "workload" {
       "harbor",
       "minio",
       "vault",
+      "argocd",
       "teleport-agent",
       "clusterapi-operator",
       "cloudnative-pg-operator",
@@ -90,6 +91,15 @@ variable "config" {
       istio_CRDs           = true
       argocd_ingress_class = "istio"
       argocd_domain        = "dev.argocd.fullstack.pw"
+      gateway_dns_names = [
+        "dev.ascii.fullstack.pw",
+        "dev.enqueuer.fullstack.pw",
+        "dev.memorizer.fullstack.pw",
+        "dev.writer.fullstack.pw",
+        "dev.api.cks.fullstack.pw",
+        "dev.cks.fullstack.pw",
+        "dev.argocd.fullstack.pw",
+      ]
       teleport = {
         apps = {
           "dev-ascii" = "http://ascii-frontend.default.svc.cluster.local"
@@ -155,6 +165,15 @@ variable "config" {
       istio_CRDs           = true
       argocd_ingress_class = "istio"
       argocd_domain        = "argocd.fullstack.pw"
+      gateway_dns_names = [
+        "ascii.fullstack.pw",
+        "enqueuer.fullstack.pw",
+        "memorizer.fullstack.pw",
+        "writer.fullstack.pw",
+        "api.cks.fullstack.pw",
+        "cks.fullstack.pw",
+        "argocd.fullstack.pw",
+      ]
       teleport = {
         apps = {
           "ascii" = "http://ascii-frontend.default.svc.cluster.local"
@@ -235,8 +254,11 @@ variable "config" {
       ]
     }
     tools = {
-      kubernetes_context = "tools"
-      crds_installed     = true
+      kubernetes_context   = "tools"
+      crds_installed       = true
+      istio_CRDs           = false
+      argocd_ingress_class = "traefik"
+      argocd_domain        = "tools.argocd.fullstack.pw"
       teleport = {
         apps = {
           "harbor" = "http://harbor-portal.harbor.svc.cluster.local"

@@ -4,6 +4,12 @@ variable "namespace" {
   default     = "argocd"
 }
 
+variable "install_argocd" {
+  description = "Install ArgoCD (for management cluster only)"
+  type        = bool
+  default     = false
+}
+
 variable "argocd_version" {
   description = "Argo CD Helm chart version"
   type        = string
@@ -141,3 +147,20 @@ variable "istio_CRDs" {
   default     = true
 }
 
+variable "argo_rollouts_version" {
+  description = "Argo Rollouts Helm chart version"
+  type        = string
+  default     = "2.38.0"
+}
+
+variable "argo_rollouts_controller_replicas" {
+  description = "Number of Argo Rollouts controller replicas"
+  type        = number
+  default     = 1
+}
+
+variable "argo_rollouts_dashboard_enabled" {
+  description = "Enable Argo Rollouts dashboard"
+  type        = bool
+  default     = true
+}

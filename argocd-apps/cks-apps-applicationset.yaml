@@ -1,0 +1,59 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: cks-apps
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - matrix:
+        generators:
+          # List of CKS applications
+          - list:
+              elements:
+                - app: cks-backend
+                  namespace: default
+                  repoURL: https://github.com/fullstack-pw/cks-backend
+                  domain: api.cks.fullstack.pw
+                - app: cks-frontend
+                  namespace: default
+                  repoURL: https://github.com/fullstack-pw/cks-frontend
+                  domain: cks.fullstack.pw
+          # List of environments
+          - list:
+              elements:
+                - env: dev
+                  server: https://192.168.1.50:6443
+                  domainPrefix: dev.
+                - env: prod
+                  server: https://192.168.1.70:6443
+                  domainPrefix: ""
+  template:
+    metadata:
+      name: "{{.app}}-{{.env}}"
+      labels:
+        app: "{{.app}}"
+        env: "{{.env}}"
+        project: cks
+    spec:
+      project: default
+      source:
+        repoURL: "{{.repoURL}}"
+        targetRevision: HEAD
+        path: "kustomize/overlays/{{.env}}"
+      destination:
+        server: "{{.server}}"
+        namespace: "{{.namespace}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=false
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m

@@ -1,0 +1,58 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: demo-apps
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - matrix:
+        generators:
+          # List of applications
+          - list:
+              elements:
+                - app: writer
+                  namespace: default
+                - app: enqueuer
+                  namespace: default
+                - app: memorizer
+                  namespace: default
+                - app: ascii-frontend
+                  namespace: default
+          # List of environments
+          - list:
+              elements:
+                - env: dev
+                  server: https://192.168.1.50:6443
+                  domain: dev.{{.app}}.fullstack.pw
+                - env: prod
+                  server: https://192.168.1.70:6443
+                  domain: "{{.app}}.fullstack.pw"
+  template:
+    metadata:
+      name: "{{.app}}-{{.env}}"
+      labels:
+        app: "{{.app}}"
+        env: "{{.env}}"
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/fullstack-pw/demo-apps
+        targetRevision: HEAD
+        path: "apps/{{.app}}/kustomize/overlays/{{.env}}"
+      destination:
+        server: "{{.server}}"
+        namespace: "{{.namespace}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=false
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m

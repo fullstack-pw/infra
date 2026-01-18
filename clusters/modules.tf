@@ -154,13 +154,7 @@ module "istio" {
 
   cert_issuer_name = "letsencrypt-prod"
   cert_issuer_kind = "ClusterIssuer"
-  gateway_dns_names = [
-    "*.ascii.fullstack.pw",
-    "*.enqueuer.fullstack.pw",
-    "*.api.cks.fullstack.pw",
-    "*.cks.fullstack.pw",
-    "*.argocd.fullstack.pw",
-  ]
+  gateway_dns_names = try(var.config[terraform.workspace].gateway_dns_names, [])
 }
 
 module "argocd" {
@@ -168,6 +162,7 @@ module "argocd" {
   source = "../modules/apps/argocd"
 
   namespace              = "argocd"
+  install_argocd         = terraform.workspace == "tools"
   argocd_version         = "7.7.12"
   argocd_domain          = var.config[terraform.workspace].argocd_domain
   ingress_enabled        = true

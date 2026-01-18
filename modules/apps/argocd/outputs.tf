@@ -10,10 +10,10 @@ output "argocd_url" {
 
 output "helm_release_name" {
   description = "Helm release name for Argo CD"
-  value       = module.helm.name
+  value       = var.install_argocd ? module.helm[0].name : "not-installed"
 }
 
 output "helm_release_status" {
   description = "Helm release status"
-  value       = module.helm.status
+  value       = var.install_argocd ? module.helm[0].status : "not-installed"
 }

@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cluster-registrar
+  namespace: argocd
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cluster-registrar
+  namespace: argocd
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cluster-registrar
+  namespace: argocd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cluster-registrar
+subjects:
+  - kind: ServiceAccount
+    name: cluster-registrar
+    namespace: argocd
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: register-clusters
+  namespace: argocd
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      serviceAccountName: cluster-registrar
+      restartPolicy: OnFailure
+      containers:
+        - name: register-clusters
+          image: bitnami/kubectl:latest
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+
+              # Wait for kubeconfig secret
+              echo "Waiting for cluster-secrets secret..."
+              while ! kubectl get secret cluster-secrets -n argocd &>/dev/null; do
+                sleep 5
+              done
+
+              # Extract kubeconfig
+              echo "Extracting kubeconfig from cluster-secrets..."
+              kubectl get secret cluster-secrets -n argocd -o jsonpath='{.data.KUBECONFIG}' | base64 -d > /tmp/kubeconfig
+
+              # Extract dev cluster credentials
+              echo "Extracting dev cluster credentials..."
+              export DEV_CA=$(cat /tmp/kubeconfig | grep -A 1 "name: dev" -m 1 | grep certificate-authority-data | awk '{print $2}')
+              export DEV_CERT=$(cat /tmp/kubeconfig | grep -A 2 "name: dev" | grep client-certificate-data | awk '{print $2}')
+              export DEV_KEY=$(cat /tmp/kubeconfig | grep -A 3 "name: dev" | grep client-key-data | awk '{print $2}')
+
+              # Create dev cluster secret
+              echo "Creating dev cluster secret..."
+              cat <<EOF | kubectl apply -f -
+              apiVersion: v1
+              kind: Secret
+              metadata:
+                name: dev-cluster
+                namespace: argocd
+                labels:
+                  argocd.argoproj.io/secret-type: cluster
+              type: Opaque
+              stringData:
+                name: dev
+                server: https://192.168.1.50:6443
+                config: |
+                  {
+                    "tlsClientConfig": {
+                      "insecure": true,
+                      "certData": "$DEV_CERT",
+                      "keyData": "$DEV_KEY"
+                    }
+                  }
+              EOF
+
+              # Extract prod cluster credentials
+              echo "Extracting prod cluster credentials..."
+              export PROD_CA=$(cat /tmp/kubeconfig | grep -A 1 "name: prod" -m 1 | grep certificate-authority-data | awk '{print $2}')
+              export PROD_CERT=$(cat /tmp/kubeconfig | grep -A 2 "name: prod" | grep client-certificate-data | awk '{print $2}')
+              export PROD_KEY=$(cat /tmp/kubeconfig | grep -A 3 "name: prod" | grep client-key-data | awk '{print $2}')
+
+              # Create prod cluster secret
+              echo "Creating prod cluster secret..."
+              cat <<EOF | kubectl apply -f -
+              apiVersion: v1
+              kind: Secret
+              metadata:
+                name: prod-cluster
+                namespace: argocd
+                labels:
+                  argocd.argoproj.io/secret-type: cluster
+              type: Opaque
+              stringData:
+                name: prod
+                server: https://192.168.1.70:6443
+                config: |
+                  {
+                    "tlsClientConfig": {
+                      "insecure": true,
+                      "certData": "$PROD_CERT",
+                      "keyData": "$PROD_KEY"
+                    }
+                  }
+              EOF
+
+              echo "Cluster registration complete"
+
+              # List registered clusters
+              kubectl get secrets -n argocd -l argocd.argoproj.io/secret-type=cluster

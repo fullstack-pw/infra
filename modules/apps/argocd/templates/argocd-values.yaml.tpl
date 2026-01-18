@@ -19,7 +19,17 @@ configs:
 
 server:
   ingress:
-    enabled: false
+    enabled: ${ingress_enabled}
+    ingressClassName: ${ingress_class_name}
+    annotations:
+      cert-manager.io/cluster-issuer: ${cert_issuer}
+      external-dns.alpha.kubernetes.io/hostname: ${domain}
+    hosts:
+      - ${domain}
+    tls:
+      - secretName: argocd-server-tls
+        hosts:
+          - ${domain}
 
   resources:
     requests:
