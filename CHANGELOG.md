@@ -1,3 +1,12 @@
+## [1.6.8](https://github.com/fullstack-pw/infra/compare/v1.6.7...v1.6.8) (2026-01-18)
+
+### Bug Fixes
+
+* **clusters:** wrong prod IP pool ([ab2e9b9](https://github.com/fullstack-pw/infra/commit/ab2e9b9d2ba8f4a481e0fe20073b2860cd6ffbe3))
+* **metrics-server:** kubeadm ([50c794e](https://github.com/fullstack-pw/infra/commit/50c794e52eec5bf46f32993b31f4be0e47a322d5))
+* **prod:** argo auto promotion ([68a1132](https://github.com/fullstack-pw/infra/commit/68a11320bf30723bec3d22bfdc93adc40fec2094))
+* **prod:** update kubeconfig ([ccf1e95](https://github.com/fullstack-pw/infra/commit/ccf1e95cde134a4ae7cfbf9cef6858e8c777cc86))
+
 ## [1.6.7](https://github.com/fullstack-pw/infra/compare/v1.6.6...v1.6.7) (2026-01-11)
 
 ### Tasks
