@@ -1,0 +1,19 @@
+kind: saml
+version: v2
+metadata:
+  name: authentik
+spec:
+  display: "Login with Authentik"
+  acs: https://{{ teleport_domain }}:3080/v1/webapi/saml/acs/authentik
+  entity_descriptor_url: https://{{ authentik_domain }}/application/saml/teleport/metadata/
+  attributes_to_roles:
+    - name: "http://schemas.xmlsoap.org/claims/Group"
+      value: "teleport-admins"
+      roles:
+        - access
+        - editor
+        - auditor
+    - name: "http://schemas.xmlsoap.org/claims/Group"
+      value: "teleport-users"
+      roles:
+        - access

@@ -510,3 +510,24 @@ module "cluster_autoscaler" {
 
   replicas = lookup(var.config[terraform.workspace], "cluster_autoscaler_replicas", 1)
 }
+
+module "authentik" {
+  count  = contains(local.workload, "authentik") ? 1 : 0
+  source = "../modules/apps/authentik"
+
+  domain = var.config[terraform.workspace].authentik.domain
+
+  postgres_host        = "postgres-rw.default.svc.cluster.local"
+  postgres_name        = "authentik"
+  postgres_user        = "postgres"
+  postgres_secret_name = "postgres-superuser"
+
+  redis_host     = "redis-master.default.svc.cluster.local"
+  redis_password = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
+  redis_db       = var.config[terraform.workspace].authentik.redis_db
+
+  authentik_secret_key = local.secrets_json["kv/cluster-secret-store/secrets/AUTHENTIK"]["AUTHENTIK_SECRET_KEY"]
+  admin_password       = local.secrets_json["kv/cluster-secret-store/secrets/AUTHENTIK"]["AUTHENTIK_ADMIN_PASSWORD"]
+
+  depends_on = [module.postgres_cnpg, module.redis]
+}

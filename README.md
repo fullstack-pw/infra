@@ -6,8 +6,8 @@ Production-grade infrastructure-as-code repository demonstrating enterprise DevO
 
 ### Infrastructure as Code
 
-**Terraform-Driven Infrastructure**
-- Modular two-tier architecture: 11 base modules and 24 application modules promoting composability and reusability
+**OpenTofu-Driven Infrastructure**
+- Modular two-tier architecture: base modules and application modules promoting composability and reusability
 - S3-compatible remote state backend ([s3.fullstack.pw](https://s3.fullstack.pw)) with workspace isolation per environment
 - Automated state backup to Oracle Cloud Object Storage via CronJob for disaster recovery
 - YAML-driven VM provisioning using dynamic `for_each` loops for declarative infrastructure definitions
@@ -15,7 +15,7 @@ Production-grade infrastructure-as-code repository demonstrating enterprise DevO
 **Configuration Management**
 - Ansible playbooks for VM configuration (K3s, vanilla Kubernetes, HAProxy, Talos Linux)
 - Dynamic inventory auto-generated from Terraform outputs and automatically committed to Git
-- Integration with HashiCorp Vault for centralized kubeconfig management
+- Integration with HashiCorp Vault for centralized kubeconfig and secrets management
 - Idempotent playbook design for reliable repeated execution
 
 ### GitOps Methodology
@@ -33,15 +33,34 @@ Production-grade infrastructure-as-code repository demonstrating enterprise DevO
 
 | Workflow | Purpose | Trigger |
 |----------|---------|---------|
-| terraform-plan.yml | Parallel Terraform plans for proxmox and clusters | Pull request |
-| terraform-apply.yml | Conditional apply with path-based change detection | Merge to main |
+| opentofu.yml | OpenTofu workflow, plans on PR and apply on merge | PR/Merge to main |
 | ansible.yml | VM provisioning via `[ansible PLAYBOOK]` commit tag | Commit tag detection |
 | build.yml | Docker image builds on Dockerfile changes | File path changes |
 | sec-trivy.yml | Container and IaC vulnerability scanning | Pull request / Push |
 | sec-trufflehog.yml | Secret leak detection in commits | Pull request / Push |
 | conventional-commits.yml | Commit message validation | Pull request |
 | release.yml | Semantic versioning and changelog generation | Merge to main |
-| iac-tests.yml | Infrastructure validation tests | Pull request |
+
+
+**Progressive Delivery with Argo Rollouts**
+
+Blue-Green deployment strategy with automated E2E testing and production promotion:
+
+1. **Build Phase**: GitHub Actions builds and pushes container image to Harbor registry
+2. **Dev Deployment**: Pipeline updates dev kustomization with new image tag, ArgoCD syncs
+3. **E2E Testing**: Argo Rollouts triggers prePromotionAnalysis running Cypress tests against dev environment
+4. **Auto-Promotion**: On test success, postPromotionAnalysis job automatically promotes to prod by updating prod kustomization
+5. **Prod Deployment**: ArgoCD syncs prod overlay, Argo Rollouts performs Blue-Green switch
+
+```
+Build → Push Image → Update Dev Tag → ArgoCD Sync → Cypress Tests → Update Prod Tag → ArgoCD Sync → Live
+```
+
+Key components:
+- AnalysisTemplate with Kubernetes Job provider for Cypress test execution
+- Separate AnalysisTemplate per application for production promotion (git commit automation)
+- `autoPromotionEnabled: true` for fully automated pipeline
+- Prod overlay removes prePromotionAnalysis (tests only run in dev)
 
 **Self-Hosted Runner Infrastructure**
 - Actions Runner Controller (ARC) deployed on tools cluster
@@ -74,7 +93,11 @@ Edge collectors on all workload clusters:
 
 ## Cluster Bootstrapping
 
-### Single-Commit VM-to-Kubernetes Workflow
+### Cluster-API
+
+Bootstrap dynamic kubeadm/talos clusters directly via OpenTofu.
+
+### Single-Commit Ansible Workflow (LEGACY)
 
 The `[ansible PLAYBOOK]` pattern enables fully automated cluster provisioning:
 
@@ -169,6 +192,9 @@ Git (SOPS encrypted) → CI/CD (decrypt) → Vault (runtime) → External Secret
 - Automatic renewal before expiration
 - Istio Gateway integration for TLS termination
 - Certificate validation monitoring
+- Environment-specific gateway DNS names configured via OpenTofu variables:
+  - Dev: `dev.app.fullstack.pw` pattern
+  - Prod: `app.fullstack.pw` pattern (no prefix)
 
 ### Network Security
 
@@ -244,10 +270,9 @@ infra/
 
 | Cluster | Type | Purpose | Node(s) | Key Workloads |
 |---------|------|---------|---------|---------------|
-| dev | K3s | Development environment | k8s-dev | Development services, Istio service mesh |
-| stg | K3s | Staging environment | k8s-stg | Pre-production validation |
-| prod | K3s | Production environment | k8s-prod | Production services |
-| tools | K3s | Platform services | k8s-tools | PostgreSQL, Redis, NATS, CI/CD runners, Vault |
+| dev | Talos | Development environment | dynamic | Development services, Istio service mesh |
+| prod | kubeadm | Production environment | dynamic | Production services |
+| tools | K3s | Platform services | k8s-tools | cluster-api, PostgreSQL, Redis, NATS, CI/CD runners, Vault |
 | home | K3s | Home automation | k8s-home | Immich photo management |
 | observability | K3s | Central monitoring hub | k8s-observability | Prometheus, Grafana, Jaeger, Loki |
 | sandboxy | K3s | Experimentation | k8s-sandbox | KubeVirt, Longhorn distributed storage |
@@ -255,10 +280,10 @@ infra/
 ## Technology Stack
 
 **Infrastructure Layer**
-- Terraform 1.10.5+, Ansible, Proxmox VE
+- OpenTofu 1.11.3+, Ansible, Proxmox VE
 
 **Kubernetes**
-- K3s, vanilla Kubernetes, Talos Linux, KubeVirt
+- K3s, kubeadm, Talos Linux
 
 **Platform Services**
 - ArgoCD 7.7.12, HashiCorp Vault, cert-manager, External Secrets Operator, Istio
@@ -271,12 +296,8 @@ infra/
 
 **CI/CD**
 - GitHub Actions (ARC), GitLab CI, custom runner images with comprehensive tooling
+- Argo Rollouts for Blue-Green deployments with automated E2E testing (Cypress)
 
 **Security**
 - SOPS with age encryption, Trivy, TruffleHog, Istio, cert-manager, Teleport agent
 
-## Documentation
-
-- [Secret Rotation Procedures](docs/SECRETS_ROTATION.md)
-- [Secret Extraction from Vault](docs/SECRETS_EXTRACTION.md)
-- [Istio Migration Guide](docs/ISTIO.md)

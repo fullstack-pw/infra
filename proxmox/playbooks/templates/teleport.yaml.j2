@@ -12,9 +12,9 @@ teleport:
   diag_addr: "0.0.0.0:3000"
   storage:
     type: postgresql
-    conn_string: postgresql://{{ postgres_user }}:{{ postgres_passwd }}@{{ postgres_host }}/teleport_backend
+    conn_string: postgresql://{{ postgres_user }}:{{ postgres_passwd }}@{{ postgres_host }}/teleport-backend
     audit_events_uri:
-      - postgresql://{{ postgres_user }}:{{ postgres_passwd }}@{{ postgres_host }}/teleport_audit
+      - postgresql://{{ postgres_user }}:{{ postgres_passwd }}@{{ postgres_host }}/teleport-audit
     audit_sessions_uri: 's3://fullstack.pw/teleport_audit'
 
 proxy_service:
@@ -39,9 +39,21 @@ proxy_service:
 auth_service:
   cluster_name: "{{ teleport_cluster_name }}"
   session_recording: "node-sync"
-  
+
   # Authentication settings
+{% if teleport_saml_enabled | default(false) %}
   authentication:
+    type: saml
+    connector_name: authentik
+    second_factor: "on"
+    webauthn:
+      rp_id: {{ teleport_domain }}
+{% else %}
+  authentication:
+    second_factor: "on"
+    webauthn:
+      rp_id: {{ teleport_domain }}
+{% endif %}
 
 ssh_service:
   labels:

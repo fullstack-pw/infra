@@ -68,6 +68,7 @@ variable "workload" {
       "postgres-cnpg",
       "oracle_backup",
       "cluster-autoscaler",
+      #"authentik",
     ]
     observability = [
       "externaldns",
@@ -353,6 +354,7 @@ variable "config" {
           { name = "registry", owner = "app" },
           { name = "teleport-backend", owner = "app", locale_collate = "C", locale_ctype = "C" },
           { name = "teleport-audit", owner = "app", locale_collate = "C", locale_ctype = "C" },
+          { name = "authentik", owner = "app" },
         ]
 
         persistence_size               = "10Gi"
@@ -393,6 +395,11 @@ variable "config" {
       cluster_autoscaler_scale_down_delay   = "10m"
       cluster_autoscaler_unneeded_time      = "10m"
       cluster_autoscaler_replicas           = 1
+
+      authentik = {
+        domain   = "auth.fullstack.pw"
+        redis_db = 1
+      }
     }
     observability = {
       kubernetes_context = "k8s-observability"

@@ -1,0 +1,26 @@
+kind: oidc
+version: v3
+metadata:
+  name: authentik
+spec:
+  issuer_url: https://{{ authentik_domain }}/application/o/teleport/
+  client_id: teleport
+  client_secret: {{ teleport_oidc_client_secret }}
+  redirect_url: https://{{ teleport_domain }}:3080/v1/webapi/oidc/callback
+  display: "Login with Authentik"
+  scope:
+    - openid
+    - profile
+    - email
+    - groups
+  claims_to_roles:
+    - claim: groups
+      value: "teleport-admins"
+      roles:
+        - access
+        - editor
+        - auditor
+    - claim: groups
+      value: "teleport-users"
+      roles:
+        - access

@@ -10,6 +10,8 @@
     github_org: "fullstack-pw"
     minio_endpoint: "s3.fullstack.pw"
     minio_bucket: "teleport-recordings"
+    authentik_domain: "auth.fullstack.pw"
+    teleport_saml_enabled: false
     
   tasks:
     - name: Update system packages
@@ -236,6 +238,23 @@
         rm -f /tmp/admin-user.yaml
       register: update_user_result
       changed_when: "'Added db-access role' in update_user_result.stdout"
+
+    - name: Deploy SAML connector configuration
+      template:
+        src: saml-connector.yaml.j2
+        dest: /etc/teleport/saml-connector.yaml
+        owner: root
+        group: root
+        mode: '0600'
+      when: teleport_saml_enabled | default(false)
+      notify: restart teleport
+
+    - name: Apply SAML connector
+      shell: /usr/local/bin/tctl create -f /etc/teleport/saml-connector.yaml --force
+      when: teleport_saml_enabled | default(false)
+      register: saml_result
+      changed_when: "'created' in saml_result.stdout or 'updated' in saml_result.stdout"
+      failed_when: saml_result.rc != 0 and 'already exists' not in saml_result.stderr
 
     - name: Display connection information
       debug:
