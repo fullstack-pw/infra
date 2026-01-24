@@ -190,10 +190,10 @@ jobs:
             BEFORE=$(cat ${workspace}_clusters_before.json | jq -r '.[]' 2>/dev/null || echo "")
             AFTER=$(cat ${workspace}_clusters_after.json | jq -r '.[]' 2>/dev/null || echo "")
 
-            # Wait for new or updated clusters
+            # Only wait for NEW clusters (not in BEFORE list)
             for cluster in $AFTER; do
-              # Check if this is a new cluster or an existing one that was modified
-              if ! echo "$BEFORE" | grep -q "^${cluster}$" || [ "$workspace" == "$(echo ${{ steps.detect_changes.outputs.changed_workspaces }} | tr ' ' '\n' | grep -w $workspace)" ]; then
+              if ! echo "$BEFORE" | grep -q "^${cluster}$"; then
+                echo "Detected NEW cluster '$cluster' in workspace '$workspace'"
                 echo "Waiting for cluster '$cluster' in namespace '$cluster' to become Available..."
 
                 TIMEOUT=1800  # 30 minutes
@@ -218,11 +218,13 @@ jobs:
                   kubectl --context "$workspace" get cluster "$cluster" -n "$cluster" -o yaml 2>/dev/null || echo "Cluster not found"
                   exit 1
                 fi
+              else
+                echo "Skipping existing cluster '$cluster' in workspace '$workspace' (already exists)"
               fi
             done
           done
 
-          echo "All clusters are now Available!"
+          echo "All new clusters are now Available!"
 
       - name: Update Kubeconfigs in SOPS and Commit
         if: steps.detect_changes.outputs.changes_detected == 'true'

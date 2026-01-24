@@ -7,3 +7,5 @@
 * support k0s via cluster-api
 * format node02 with ubuntu (probably a challenge without monitor)
 * install OpenStack Sunbeam (also known as MicroStack) on node02
+* create pipeline and playbook to CRUD proxmox vm templates to cluster-api using image builder
+* removed wait condition on cluster resource which causes instant creation so we need to fix kubeconfig update automation
