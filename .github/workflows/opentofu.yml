@@ -208,6 +208,13 @@ jobs:
           for cluster in $ALL_NEW_CLUSTERS; do
             echo "Waiting for Cluster API object '$cluster' in namespace '$cluster' on tools cluster to become Available..."
 
+            # Debug: Check if cluster exists first
+            echo "DEBUG: Checking if cluster '$cluster' exists..."
+            kubectl --context tools get cluster.cluster.x-k8s.io -n "$cluster" 2>&1 || echo "Namespace or cluster not found"
+
+            echo "DEBUG: Checking if namespace '$cluster' exists..."
+            kubectl --context tools get namespace "$cluster" 2>&1 || echo "Namespace not found"
+
             TIMEOUT=1800  # 30 minutes
             ELAPSED=0
             INTERVAL=10
