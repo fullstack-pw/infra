@@ -391,7 +391,7 @@ variable "config" {
           wk_cores     = 4
 
           disable_cloud_controller = false
-          #disable_components   = ["traefik", "servicelb", "metrics-server"]
+          #disable_components  = ["traefik", "servicelb", "metrics-server"]
           disable_components = []
 
           autoscaler_enabled = false

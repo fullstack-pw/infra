@@ -208,13 +208,6 @@ jobs:
           for cluster in $ALL_NEW_CLUSTERS; do
             echo "Waiting for Cluster API object '$cluster' in namespace '$cluster' on tools cluster to become Available..."
 
-            # Debug: Check if cluster exists first
-            echo "DEBUG: Checking if cluster '$cluster' exists..."
-            kubectl --context tools get cluster.cluster.x-k8s.io -n "$cluster" 2>&1 || echo "Namespace or cluster not found"
-
-            echo "DEBUG: Checking if namespace '$cluster' exists..."
-            kubectl --context tools get namespace "$cluster" 2>&1 || echo "Namespace not found"
-
             TIMEOUT=1800  # 30 minutes
             ELAPSED=0
             INTERVAL=10
@@ -222,7 +215,7 @@ jobs:
             while [ $ELAPSED -lt $TIMEOUT ]; do
               # Always check on tools cluster where Cluster API objects live
               # Use full API group to target Cluster API objects, not postgres clusters
-              AVAILABLE_STATUS=$(kubectl --context tools get cluster.cluster.x-k8s.io "$cluster" -n "$cluster" -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' 2>/dev/null || echo "")
+              AVAILABLE_STATUS=$(kubectl --kubeconfig /home/runner/.kube/config --context tools get cluster.cluster.x-k8s.io "$cluster" -n "$cluster" -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' 2>/dev/null || echo "")
 
               if [ "$AVAILABLE_STATUS" == "True" ]; then
                 echo "Cluster '$cluster' is now Available!"
@@ -237,7 +230,7 @@ jobs:
             if [ $ELAPSED -ge $TIMEOUT ]; then
               echo "ERROR: Timeout waiting for cluster '$cluster' to become Available"
               echo "Cluster status:"
-              kubectl --context tools get cluster.cluster.x-k8s.io "$cluster" -n "$cluster" -o yaml 2>/dev/null || echo "Cluster not found"
+              kubectl --kubeconfig /home/runner/.kube/config --kubeconfig /home/runner/.kube/config --context tools get cluster.cluster.x-k8s.io "$cluster" -n "$cluster" -o yaml 2>/dev/null || echo "Cluster not found"
               exit 1
             fi
           done
@@ -340,7 +333,7 @@ jobs:
               **Manual action required:**
               \`\`\`bash
               # Extract kubeconfig from Cluster API and update SOPS file manually
-              kubectl --context <workspace> get secret <cluster>-kubeconfig -n <cluster> -o jsonpath='{.data.value}' | base64 -d > /tmp/new-kubeconfig
+              kubectl --kubeconfig /home/runner/.kube/config --context <workspace> get secret <cluster>-kubeconfig -n <cluster> -o jsonpath='{.data.value}' | base64 -d > /tmp/new-kubeconfig
               ./secret_edit.sh secrets/common/cluster-secret-store/secrets/KUBECONFIG.yaml
               # Manually merge /tmp/new-kubeconfig into the SOPS file
               git add secrets/common/cluster-secret-store/secrets/KUBECONFIG.yaml
