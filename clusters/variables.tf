@@ -377,7 +377,7 @@ variable "config" {
           dns_servers               = ["192.168.1.3", "8.8.4.4"]
 
           source_node   = "node03"
-          template_id   = 104 # Ubuntu 24 cloud-init template
+          template_id   = 104
           allowed_nodes = ["node03"]
 
           cp_replicas = 1
