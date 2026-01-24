@@ -47,6 +47,12 @@ variable "enable_kubeadm_provider" {
   default     = false
 }
 
+variable "enable_k0smotron_provider" {
+  description = "Enable K0smotron bootstrap and control-plane providers"
+  type        = bool
+  default     = false
+}
+
 variable "enable_ipam_provider" {
   description = "Enable in-cluster IPAM provider"
   type        = bool
@@ -100,6 +106,18 @@ variable "kubeadm_controlplane_version" {
   description = "Kubeadm control-plane provider version (core CAPI)"
   type        = string
   default     = "v1.12.0-rc.0"
+}
+
+variable "k0smotron_bootstrap_version" {
+  description = "K0smotron bootstrap provider version"
+  type        = string
+  default     = "v1.10.2"
+}
+
+variable "k0smotron_controlplane_version" {
+  description = "K0smotron control-plane provider version"
+  type        = string
+  default     = "v1.10.2"
 }
 
 variable "ipam_version" {

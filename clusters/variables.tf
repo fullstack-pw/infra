@@ -338,6 +338,33 @@ variable "config" {
           autoscaler_max     = 4
 
         },
+        {
+          cluster_type                = "k0s"
+          name                        = "k0s-test"
+          kubernetes_version          = "v1.32.6+k0s.0"
+          control_plane_endpoint_host = "k0s-test-api.fullstack.pw" # DNS hostname for ingress
+          control_plane_endpoint_ip   = "192.168.1.1"               # Not used for k0s, but required field
+          ip_range_start              = "192.168.1.86"
+          ip_range_end                = "192.168.1.89"
+          gateway                     = "192.168.1.1"
+          prefix                      = 24
+          dns_servers                 = ["192.168.1.3", "8.8.4.4"]
+
+          source_node   = "node03"
+          template_id   = 9002 # Ubuntu 24 template
+          allowed_nodes = ["node03"]
+
+          cp_replicas = 1 # Control plane pods (not VMs)
+          wk_replicas = 1 # Worker VMs
+
+          wk_disk_size = 30
+          wk_memory    = 8192
+          wk_cores     = 8
+
+          cni_type     = "calico"
+          pod_cidr     = "10.244.0.0/16"
+          service_cidr = "10.96.0.0/12"
+        }
       ]
       prometheus_namespaces     = []
       prometheus_memory_limit   = "2048Mi"

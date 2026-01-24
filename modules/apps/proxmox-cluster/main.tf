@@ -150,6 +150,104 @@ module "cluster_templates" {
         autoscaler_max             = each.value.autoscaler_max
       }
     }
+    ] : each.value.cluster_type == "k0s" ? [
+    # K0s cluster templates
+    {
+      path = "${path.module}/templates/k0s-cluster.yaml.tpl"
+      vars = {
+        cluster_name                 = each.value.name
+        namespace                    = each.value.name
+        k0smotron_control_plane_name = "${each.value.name}-k0s-cp"
+        proxmox_cluster_name         = each.value.name
+        pod_cidr                     = each.value.pod_cidr
+        service_cidr                 = each.value.service_cidr
+      }
+    },
+    {
+      path = "${path.module}/templates/k0s-ingress.yaml.tpl"
+      vars = {
+        cluster_name                 = each.value.name
+        namespace                    = each.value.name
+        control_plane_endpoint_host  = each.value.control_plane_endpoint_host
+        k0smotron_control_plane_name = "${each.value.name}-k0s-cp"
+      }
+    },
+    {
+      path = "${path.module}/templates/cp-proxmoxcluster.yaml.tpl"
+      vars = {
+        cluster_name                = each.value.name
+        namespace                   = each.value.name
+        proxmox_cluster_name        = each.value.name
+        control_plane_endpoint_ip   = each.value.control_plane_endpoint_ip
+        control_plane_endpoint_port = each.value.control_plane_endpoint_port
+        dns_servers                 = jsonencode(each.value.dns_servers)
+        ip_range_start              = each.value.ip_range_start
+        ip_range_end                = each.value.ip_range_end
+        gateway                     = each.value.gateway
+        prefix                      = each.value.prefix
+        allowed_nodes               = jsonencode(each.value.allowed_nodes)
+        credentials_ref_name        = var.credentials_ref_name
+        memory_adjustment           = each.value.memory_adjustment
+      }
+    },
+    {
+      path = "${path.module}/templates/k0s-control-plane.yaml.tpl"
+      vars = {
+        cluster_name                 = each.value.name
+        namespace                    = each.value.name
+        k0smotron_control_plane_name = "${each.value.name}-k0s-cp"
+        kubernetes_version           = each.value.kubernetes_version
+        cp_replicas                  = each.value.cp_replicas
+        control_plane_endpoint_host  = each.value.control_plane_endpoint_host
+        cni_type                     = each.value.cni_type
+        pod_cidr                     = each.value.pod_cidr
+        service_cidr                 = each.value.service_cidr
+      }
+    },
+    {
+      path = "${path.module}/templates/wk-proxmoxmachinetemplate.yaml.tpl"
+      vars = {
+        cluster_name           = each.value.name
+        namespace              = each.value.name
+        worker_template_name   = "${each.value.name}-worker-template"
+        wk_disk_size           = each.value.wk_disk_size
+        wk_memory              = each.value.wk_memory
+        wk_cores               = each.value.wk_cores
+        wk_sockets             = each.value.wk_sockets
+        source_node            = each.value.source_node
+        template_id            = each.value.template_id
+        network_bridge         = each.value.network_bridge
+        network_model          = each.value.network_model
+        disk_format            = each.value.disk_format
+        skip_cloud_init_status = each.value.skip_cloud_init_status
+        skip_qemu_guest_agent  = each.value.skip_qemu_guest_agent
+        provider_id_injection  = each.value.provider_id_injection
+      }
+    },
+    {
+      path = "${path.module}/templates/k0s-worker-config-template.yaml.tpl"
+      vars = {
+        cluster_name           = each.value.name
+        namespace              = each.value.name
+        worker_k0s_config_name = "${each.value.name}-worker-k0s-config"
+        kubernetes_version     = each.value.kubernetes_version
+      }
+    },
+    {
+      path = "${path.module}/templates/k0s-machinedeployment.yaml.tpl"
+      vars = {
+        cluster_name           = each.value.name
+        namespace              = each.value.name
+        worker_deployment_name = "${each.value.name}-k0s-workers"
+        worker_k0s_config_name = "${each.value.name}-worker-k0s-config"
+        worker_template_name   = "${each.value.name}-worker-template"
+        wk_replicas            = each.value.wk_replicas
+        kubernetes_version     = each.value.kubernetes_version
+        autoscaler_enabled     = each.value.autoscaler_enabled
+        autoscaler_min         = each.value.autoscaler_min
+        autoscaler_max         = each.value.autoscaler_max
+      }
+    }
     ] : [
     # Talos cluster templates (existing)
     {
@@ -276,7 +374,7 @@ locals {
 resource "kubernetes_manifest" "proxmox_cluster" {
   for_each = local.clusters
 
-  manifest = local.cluster_manifests[each.key]["ProxmoxCluster-${each.value.cluster_type == "kubeadm" ? each.value.name : "${each.value.name}-proxmox-cluster"}"]
+  manifest = local.cluster_manifests[each.key]["ProxmoxCluster-${(each.value.cluster_type == "kubeadm" || each.value.cluster_type == "k0s") ? each.value.name : "${each.value.name}-proxmox-cluster"}"]
 
   depends_on = [
     kubernetes_secret.proxmox_credentials,
@@ -285,7 +383,10 @@ resource "kubernetes_manifest" "proxmox_cluster" {
 }
 
 resource "kubernetes_manifest" "control_plane_machine_template" {
-  for_each = local.clusters
+  for_each = {
+    for name, cluster in local.clusters : name => cluster
+    if cluster.cluster_type != "k0s"
+  }
 
   manifest = local.cluster_manifests[each.key]["ProxmoxMachineTemplate-${each.value.name}-control-plane-template"]
 
@@ -308,6 +409,8 @@ resource "kubernetes_manifest" "control_plane" {
   manifest = local.cluster_manifests[each.key][
     each.value.cluster_type == "kubeadm"
     ? "KubeadmControlPlane-${each.value.name}-control-plane"
+    : each.value.cluster_type == "k0s"
+    ? "K0smotronControlPlane-${each.value.name}-k0s-cp"
     : "TalosControlPlane-${each.value.name}-talos-cp"
   ]
 
@@ -321,6 +424,8 @@ resource "kubernetes_manifest" "worker_config_template" {
   manifest = local.cluster_manifests[each.key][
     each.value.cluster_type == "kubeadm"
     ? "KubeadmConfigTemplate-${each.value.name}-worker-config"
+    : each.value.cluster_type == "k0s"
+    ? "K0sWorkerConfigTemplate-${each.value.name}-worker-k0s-config"
     : "TalosConfigTemplate-${each.value.name}-talosconfig-workers"
   ]
 
@@ -334,6 +439,8 @@ resource "kubernetes_manifest" "machine_deployment" {
   manifest = local.cluster_manifests[each.key][
     each.value.cluster_type == "kubeadm"
     ? "MachineDeployment-${each.value.name}-workers"
+    : each.value.cluster_type == "k0s"
+    ? "MachineDeployment-${each.value.name}-k0s-workers"
     : "MachineDeployment-${each.value.name}-machinedeploy-workers"
   ]
 
@@ -371,5 +478,20 @@ resource "kubernetes_manifest" "cluster" {
     kubernetes_manifest.worker_config_template,
     kubernetes_manifest.worker_machine_template,
     kubernetes_secret.proxmox_credentials
+  ]
+}
+
+# Ingress for k0s control plane - only created for k0s clusters
+resource "kubernetes_manifest" "control_plane_ingress" {
+  for_each = {
+    for name, cluster in local.clusters : name => cluster
+    if cluster.cluster_type == "k0s"
+  }
+
+  manifest = local.cluster_manifests[each.key]["Ingress-${each.value.name}-apiserver"]
+
+  depends_on = [
+    module.namespace,
+    kubernetes_manifest.control_plane
   ]
 }

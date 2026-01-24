@@ -148,7 +148,7 @@ Terraform automatically deploys platform services to new clusters:
 ### High Availability
 
 **Multi-Cluster Architecture**
-- 7 environment-isolated Kubernetes clusters (dev, stg, prod, tools, home, sandboxy, observability)
+- 6 environment-isolated Kubernetes clusters (dev, prod, tools, home, sandboxy, observability)
 - Production workloads distributed across multiple replicas via Kustomize overlays
 - HAProxy load balancer for vanilla Kubernetes traffic distribution
 - MetalLB for LoadBalancer service type support on bare metal
@@ -301,3 +301,9 @@ infra/
 **Security**
 - SOPS with age encryption, Trivy, TruffleHog, Istio, cert-manager, Teleport agent
 
+## FAQ
+
+**How github runners access clusters?**
+- We have a 'cluster-secrets' secret available at namespace level when we have labelled namespace with 'cluster-secrets=true', this secret keys are the keys content of all ./secrets/common/cluster-secret-store/secrets, external-secrets sync vault secrets to this 'cluster-secrets'
+
+- How 'cluster-secrets' is dynamically updated accordingly ./secrets/common/cluster-secret-store/secrets contents? Make plan/apply decodes SOPS secrets and put on ./clusters/tmp, then this data is passed to external-secrets module with 'secret_data' processed here clusters/locals.tf 

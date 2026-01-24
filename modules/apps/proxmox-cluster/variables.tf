@@ -1,5 +1,5 @@
 variable "clusters" {
-  description = "List of Talos or Kubeadm clusters to create"
+  description = "List of Talos, Kubeadm, or K0s clusters to create"
   type = list(object({
     cluster_type       = optional(string, "talos")
     name               = string
@@ -7,6 +7,7 @@ variable "clusters" {
 
     cp_replicas                 = optional(number, 3)
     control_plane_endpoint_ip   = string
+    control_plane_endpoint_host = optional(string, "")
     control_plane_endpoint_port = optional(number, 6443)
 
     wk_replicas = optional(number, 3)
@@ -64,6 +65,13 @@ variable "clusters" {
       for cluster in var.clusters : can(regex("^[a-z0-9-]+$", cluster.name))
     ])
     error_message = "Cluster names must contain only lowercase letters, numbers, and hyphens."
+  }
+
+  validation {
+    condition = alltrue([
+      for cluster in var.clusters : contains(["talos", "kubeadm", "k0s"], cluster.cluster_type)
+    ])
+    error_message = "Cluster type must be one of: talos, kubeadm, k0s."
   }
 }
 

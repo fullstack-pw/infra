@@ -32,6 +32,10 @@ bootstrap:
   k3s:
     version: "${k3s_bootstrap_version}"
 %{ endif ~}
+%{ if enable_k0smotron_provider ~}
+  k0sproject-k0smotron:
+    version: "${k0smotron_bootstrap_version}"
+%{ endif ~}
 
 # ControlPlane Providers
 controlPlane:
@@ -46,6 +50,10 @@ controlPlane:
 %{ if enable_k3s_provider ~}
   k3s:
     version: "${k3s_controlplane_version}"
+%{ endif ~}
+%{ if enable_k0smotron_provider ~}
+  k0sproject-k0smotron:
+    version: "${k0smotron_controlplane_version}"
 %{ endif ~}
 
 # IPAM Providers

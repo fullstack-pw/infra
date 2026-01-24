@@ -1,0 +1,9 @@
+* fix makefile to remove plan after applying
+* make claude CRUD secrets, test effectiveness with terraform apply, annotate to CLAUDE.md
+* argo slow to update workload after commit (15min and nothing)
+* build remote images to harbor to not loose like bitnami event
+* migrate dev to ephemeral clusters using lightweight distributions
+* support k3s via cluster-api
+* support k0s via cluster-api
+* format node02 with ubuntu (probably a challenge without monitor)
+* install OpenStack Sunbeam (also known as MicroStack) on node02

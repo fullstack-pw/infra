@@ -152,8 +152,8 @@ module "istio" {
   istio_CRDs         = try(var.config[terraform.workspace].istio_CRDs, false)
   default_tls_secret = "default-gateway-tls"
 
-  cert_issuer_name = "letsencrypt-prod"
-  cert_issuer_kind = "ClusterIssuer"
+  cert_issuer_name  = "letsencrypt-prod"
+  cert_issuer_kind  = "ClusterIssuer"
   gateway_dns_names = try(var.config[terraform.workspace].gateway_dns_names, [])
 }
 
@@ -328,10 +328,17 @@ module "clusterapi_operator" {
   count  = contains(local.workload, "clusterapi-operator") ? 1 : 0
   source = "../modules/apps/clusterapi-operator"
 
-  enable_core_provider    = true
-  enable_talos_provider   = true
-  enable_k3s_provider     = false
-  enable_kubeadm_provider = true
+  enable_core_provider      = true
+  enable_talos_provider     = true
+  enable_k3s_provider       = false
+  enable_kubeadm_provider   = true
+  # Stage 1: Temporarily set to true to install k0smotron CRDs
+  # Stage 2: Revert to conditional logic after CRDs are installed
+  enable_k0smotron_provider = true
+  # enable_k0smotron_provider = contains(keys(var.config[terraform.workspace]), "proxmox-cluster") && length([
+  #   for cluster in var.config[terraform.workspace].proxmox-cluster :
+  #   cluster if try(cluster.cluster_type, "talos") == "k0s"
+  # ]) > 0
 
   # Downgrade to CAPI v1.9 for compatibility with CAPMOX v0.7.x
   # core_provider_version        = "v1.9.4"
@@ -352,7 +359,7 @@ module "proxmox_clusters" {
 
   clusters = var.config[terraform.workspace].proxmox-cluster
 
-  cluster_api_dependencies = []
+  cluster_api_dependencies = [module.clusterapi_operator]
 
   create_proxmox_secret = true
   proxmox_url           = element(split("/api2", local.secrets_json["kv/cluster-secret-store/secrets/PROXMOX_URL"]["PROXMOX_URL"]), 0)
