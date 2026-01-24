@@ -186,47 +186,59 @@ jobs:
         run: |
           cd /tmp/tofu-outputs
 
+          # Collect all new clusters from all workspaces
+          ALL_NEW_CLUSTERS=""
+
           for workspace in sandboxy tools observability; do
             BEFORE=$(cat ${workspace}_clusters_before.json | jq -r '.[]' 2>/dev/null || echo "")
             AFTER=$(cat ${workspace}_clusters_after.json | jq -r '.[]' 2>/dev/null || echo "")
 
-            # Only wait for NEW clusters (not in BEFORE list)
+            # Find new clusters in this workspace
             for cluster in $AFTER; do
               if ! echo "$BEFORE" | grep -q "^${cluster}$"; then
-                echo "Detected NEW cluster '$cluster' in workspace '$workspace'"
-                echo "Waiting for Cluster API object '$cluster' in namespace '$cluster' on tools cluster to become Available..."
-
-                TIMEOUT=1800  # 30 minutes
-                ELAPSED=0
-                INTERVAL=10
-
-                while [ $ELAPSED -lt $TIMEOUT ]; do
-                  # Check Cluster API object on tools cluster (management cluster)
-                  AVAILABLE_STATUS=$(kubectl --context tools get cluster "$cluster" -n "$cluster" -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' 2>/dev/null || echo "")
-
-                  if [ "$AVAILABLE_STATUS" == "True" ]; then
-                    echo "Cluster '$cluster' is now Available!"
-                    break
-                  fi
-
-                  echo "Cluster '$cluster' not yet available (status: ${AVAILABLE_STATUS:-NotFound}), waiting... ($ELAPSED/$TIMEOUT seconds)"
-                  sleep $INTERVAL
-                  ELAPSED=$((ELAPSED + INTERVAL))
-                done
-
-                if [ $ELAPSED -ge $TIMEOUT ]; then
-                  echo "ERROR: Timeout waiting for cluster '$cluster' to become Available"
-                  echo "Cluster status:"
-                  kubectl --context tools get cluster "$cluster" -n "$cluster" -o yaml 2>/dev/null || echo "Cluster not found"
-                  exit 1
-                fi
+                echo "Detected NEW cluster '$cluster' from OpenTofu workspace '$workspace'"
+                ALL_NEW_CLUSTERS="$ALL_NEW_CLUSTERS $cluster"
               else
-                echo "Skipping existing cluster '$cluster' in workspace '$workspace' (already exists)"
+                echo "Skipping existing cluster '$cluster' in OpenTofu workspace '$workspace' (already exists)"
               fi
             done
           done
 
-          echo "All new clusters are now Available!"
+          # Wait for all new clusters on tools cluster (Cluster API management cluster)
+          for cluster in $ALL_NEW_CLUSTERS; do
+            echo "Waiting for Cluster API object '$cluster' in namespace '$cluster' on tools cluster to become Available..."
+
+            TIMEOUT=1800  # 30 minutes
+            ELAPSED=0
+            INTERVAL=10
+
+            while [ $ELAPSED -lt $TIMEOUT ]; do
+              # Always check on tools cluster where Cluster API objects live
+              AVAILABLE_STATUS=$(kubectl --context tools get cluster "$cluster" -n "$cluster" -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' 2>/dev/null || echo "")
+
+              if [ "$AVAILABLE_STATUS" == "True" ]; then
+                echo "Cluster '$cluster' is now Available!"
+                break
+              fi
+
+              echo "Cluster '$cluster' not yet available (status: ${AVAILABLE_STATUS:-NotFound}), waiting... ($ELAPSED/$TIMEOUT seconds)"
+              sleep $INTERVAL
+              ELAPSED=$((ELAPSED + INTERVAL))
+            done
+
+            if [ $ELAPSED -ge $TIMEOUT ]; then
+              echo "ERROR: Timeout waiting for cluster '$cluster' to become Available"
+              echo "Cluster status:"
+              kubectl --context tools get cluster "$cluster" -n "$cluster" -o yaml 2>/dev/null || echo "Cluster not found"
+              exit 1
+            fi
+          done
+
+          if [ -n "$ALL_NEW_CLUSTERS" ]; then
+            echo "All new clusters are now Available!"
+          else
+            echo "No new clusters to wait for"
+          fi
 
       - name: Update Kubeconfigs in SOPS and Commit
         if: steps.detect_changes.outputs.changes_detected == 'true'
