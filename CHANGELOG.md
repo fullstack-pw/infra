@@ -1,3 +1,11 @@
+## [1.7.0](https://github.com/fullstack-pw/infra/compare/v1.6.8...v1.7.0) (2026-01-24)
+
+### Features
+
+* **authentik:** create tofu module and adapt teleport playbook ([cceef45](https://github.com/fullstack-pw/infra/commit/cceef456f60a860d758d657dd3eab90668cadbb2))
+* **cluster-api:** add k0smotron ([eaab301](https://github.com/fullstack-pw/infra/commit/eaab3014fd8b89f4787d91255ee3897cd09e9329))
+* **cluster-api:** add k3s ([d8bb8fa](https://github.com/fullstack-pw/infra/commit/d8bb8fa3b6e6a8df8a3d122c7af448d415bd5e6b))
+
 ## [1.6.8](https://github.com/fullstack-pw/infra/compare/v1.6.7...v1.6.8) (2026-01-18)
 
 ### Bug Fixes
