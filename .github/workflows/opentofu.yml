@@ -180,6 +180,50 @@ jobs:
           echo "changes_detected=$CHANGES_DETECTED" >> $GITHUB_OUTPUT
           echo "changed_workspaces=$CHANGED_WORKSPACES" >> $GITHUB_OUTPUT
 
+      - name: Wait for Clusters to Become Available
+        if: steps.detect_changes.outputs.changes_detected == 'true'
+        timeout-minutes: 30
+        run: |
+          cd /tmp/tofu-outputs
+
+          for workspace in sandboxy tools observability; do
+            BEFORE=$(cat ${workspace}_clusters_before.json | jq -r '.[]' 2>/dev/null || echo "")
+            AFTER=$(cat ${workspace}_clusters_after.json | jq -r '.[]' 2>/dev/null || echo "")
+
+            # Wait for new or updated clusters
+            for cluster in $AFTER; do
+              # Check if this is a new cluster or an existing one that was modified
+              if ! echo "$BEFORE" | grep -q "^${cluster}$" || [ "$workspace" == "$(echo ${{ steps.detect_changes.outputs.changed_workspaces }} | tr ' ' '\n' | grep -w $workspace)" ]; then
+                echo "Waiting for cluster '$cluster' in namespace '$cluster' to become Available..."
+
+                TIMEOUT=1800  # 30 minutes
+                ELAPSED=0
+                INTERVAL=10
+
+                while [ $ELAPSED -lt $TIMEOUT ]; do
+                  # Check if cluster exists and is Available
+                  if kubectl --context "$workspace" get cluster "$cluster" -n "$cluster" -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' 2>/dev/null | grep -q "True"; then
+                    echo "Cluster '$cluster' is now Available!"
+                    break
+                  fi
+
+                  echo "Cluster '$cluster' not yet available, waiting... ($ELAPSED/$TIMEOUT seconds)"
+                  sleep $INTERVAL
+                  ELAPSED=$((ELAPSED + INTERVAL))
+                done
+
+                if [ $ELAPSED -ge $TIMEOUT ]; then
+                  echo "ERROR: Timeout waiting for cluster '$cluster' to become Available"
+                  echo "Cluster status:"
+                  kubectl --context "$workspace" get cluster "$cluster" -n "$cluster" -o yaml 2>/dev/null || echo "Cluster not found"
+                  exit 1
+                fi
+              fi
+            done
+          done
+
+          echo "All clusters are now Available!"
+
       - name: Update Kubeconfigs in SOPS and Commit
         if: steps.detect_changes.outputs.changes_detected == 'true'
         continue-on-error: true

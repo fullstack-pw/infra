@@ -38,7 +38,7 @@ variable "enable_talos_provider" {
 variable "enable_k3s_provider" {
   description = "Enable K3s bootstrap and control-plane providers"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "enable_kubeadm_provider" {

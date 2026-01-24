@@ -330,15 +330,9 @@ module "clusterapi_operator" {
 
   enable_core_provider      = true
   enable_talos_provider     = true
-  enable_k3s_provider       = false
+  enable_k3s_provider       = true
   enable_kubeadm_provider   = true
-  # Stage 1: Temporarily set to true to install k0smotron CRDs
-  # Stage 2: Revert to conditional logic after CRDs are installed
   enable_k0smotron_provider = true
-  # enable_k0smotron_provider = contains(keys(var.config[terraform.workspace]), "proxmox-cluster") && length([
-  #   for cluster in var.config[terraform.workspace].proxmox-cluster :
-  #   cluster if try(cluster.cluster_type, "talos") == "k0s"
-  # ]) > 0
 
   # Downgrade to CAPI v1.9 for compatibility with CAPMOX v0.7.x
   # core_provider_version        = "v1.9.4"

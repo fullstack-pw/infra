@@ -30,7 +30,10 @@ bootstrap:
 %{ endif ~}
 %{ if enable_k3s_provider ~}
   k3s:
+    enabled: yes
     version: "${k3s_bootstrap_version}"
+    fetchConfig:
+      url: "https://github.com/k3s-io/cluster-api-k3s/releases/download/${k3s_bootstrap_version}/bootstrap-components.yaml"
 %{ endif ~}
 %{ if enable_k0smotron_provider ~}
   k0sproject-k0smotron:
@@ -49,7 +52,10 @@ controlPlane:
 %{ endif ~}
 %{ if enable_k3s_provider ~}
   k3s:
+    enabled: yes
     version: "${k3s_controlplane_version}"
+    fetchConfig:
+      url: "https://github.com/k3s-io/cluster-api-k3s/releases/download/${k3s_controlplane_version}/control-plane-components.yaml"
 %{ endif ~}
 %{ if enable_k0smotron_provider ~}
   k0sproject-k0smotron:

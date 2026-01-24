@@ -1,5 +1,5 @@
 variable "clusters" {
-  description = "List of Talos, Kubeadm, or K0s clusters to create"
+  description = "List of Talos, Kubeadm, K3s, or K0s clusters to create"
   type = list(object({
     cluster_type       = optional(string, "talos")
     name               = string
@@ -53,6 +53,13 @@ variable "clusters" {
     cni_manifest_url = optional(string, "https://raw.githubusercontent.com/projectcalico/calico/v3.29.1/manifests/calico.yaml")
     pod_cidr         = optional(string, "10.244.0.0/16")
     service_cidr     = optional(string, "10.96.0.0/12")
+
+    # K3s-specific fields
+    k3s_version              = optional(string, "v1.30.6+k3s1")
+    disable_cloud_controller = optional(bool, false)
+    disable_components       = optional(list(string), ["traefik", "servicelb"])
+    node_labels              = optional(map(string), {})
+    node_taints              = optional(list(string), [])
   }))
 
   validation {
@@ -69,9 +76,9 @@ variable "clusters" {
 
   validation {
     condition = alltrue([
-      for cluster in var.clusters : contains(["talos", "kubeadm", "k0s"], cluster.cluster_type)
+      for cluster in var.clusters : contains(["talos", "kubeadm", "k3s", "k0s"], cluster.cluster_type)
     ])
-    error_message = "Cluster type must be one of: talos, kubeadm, k0s."
+    error_message = "Cluster type must be one of: talos, kubeadm, k3s, k0s."
   }
 }
 
@@ -136,7 +143,7 @@ variable "proxmox_token" {
 }
 
 variable "ssh_authorized_keys" {
-  description = "List of SSH authorized keys for accessing cluster nodes (kubeadm only)"
+  description = "List of SSH authorized keys for accessing cluster nodes (kubeadm and k3s)"
   type        = list(string)
   default     = []
 }
