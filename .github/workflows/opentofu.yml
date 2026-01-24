@@ -312,8 +312,8 @@ jobs:
       - name: Sync KUBECONFIG to Vault
         if: steps.kubeconfig_update.outputs.kubeconfig_updated == 'true'
         run: |
-          echo "Running OpenTofu apply to sync KUBECONFIG changes to Vault"
-          make apply
+          echo "Running OpenTofu apply to sync KUBECONFIG changes to Vault (tools workspace, Vault resources only)"
+          make apply ENV=tools TARGET='module.vault[0]'
           echo "KUBECONFIG successfully synced to Vault"
 
       - name: Report Kubeconfig Update Failure

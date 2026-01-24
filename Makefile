@@ -116,7 +116,12 @@ apply:
 	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TOFU_DIR) && \
 		if [ -f "../python-venv/bin/activate" ]; then source ../python-venv/bin/activate; fi && \
 		python3 load_secrets.py && cd ..
-	@if [ -z "$(ENV)" ]; then \
+	@TARGET_FLAG=""; \
+	if [ -n "$(TARGET)" ]; then \
+		TARGET_FLAG="-target=$(TARGET)"; \
+		echo -e "${YELLOW}Targeting specific resource: $(TARGET)${NC}"; \
+	fi; \
+	if [ -z "$(ENV)" ]; then \
 		for env in $(ENVIRONMENTS); do \
 			cd $(TOFU_DIR) && tofu workspace select $${env} || tofu workspace new $${env}; \
 			echo -e "\n#########################################################"; \
@@ -125,7 +130,7 @@ apply:
 			if [ -f "$${env}.tfplan" ]; then \
 				tofu apply $${env}.tfplan && cd .. || cd ..; \
 			else \
-				tofu apply $(EXTRA_ARGS) -auto-approve && cd .. || cd ..; \
+				tofu apply $$TARGET_FLAG $(EXTRA_ARGS) -auto-approve && cd .. || cd ..; \
 			fi; \
 		done; \
 	else \
@@ -134,7 +139,7 @@ apply:
 		if [ -f "$(ENV).tfplan" ]; then \
 			tofu apply $(ENV).tfplan; \
 		else \
-			tofu apply $(EXTRA_ARGS) -auto-approve; \
+			tofu apply $$TARGET_FLAG $(EXTRA_ARGS) -auto-approve; \
 		fi; \
 	fi
 
