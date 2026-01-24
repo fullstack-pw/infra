@@ -1,3 +1,9 @@
+## [1.7.1](https://github.com/fullstack-pw/infra/compare/v1.7.0...v1.7.1) (2026-01-24)
+
+### Bug Fixes
+
+* **cicd:** only wait for newly created clusters, skip existing ones ([d58c4e5](https://github.com/fullstack-pw/infra/commit/d58c4e5eed1ca49bbe3e478b809a99f965f9e24a))
+
 ## [1.7.0](https://github.com/fullstack-pw/infra/compare/v1.6.8...v1.7.0) (2026-01-24)
 
 ### Features
