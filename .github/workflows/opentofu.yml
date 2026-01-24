@@ -194,20 +194,22 @@ jobs:
             for cluster in $AFTER; do
               if ! echo "$BEFORE" | grep -q "^${cluster}$"; then
                 echo "Detected NEW cluster '$cluster' in workspace '$workspace'"
-                echo "Waiting for cluster '$cluster' in namespace '$cluster' to become Available..."
+                echo "Waiting for Cluster API object '$cluster' in namespace '$cluster' on tools cluster to become Available..."
 
                 TIMEOUT=1800  # 30 minutes
                 ELAPSED=0
                 INTERVAL=10
 
                 while [ $ELAPSED -lt $TIMEOUT ]; do
-                  # Check if cluster exists and is Available
-                  if kubectl --context "$workspace" get cluster "$cluster" -n "$cluster" -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' 2>/dev/null | grep -q "True"; then
+                  # Check Cluster API object on tools cluster (management cluster)
+                  AVAILABLE_STATUS=$(kubectl --context tools get cluster "$cluster" -n "$cluster" -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' 2>/dev/null || echo "")
+
+                  if [ "$AVAILABLE_STATUS" == "True" ]; then
                     echo "Cluster '$cluster' is now Available!"
                     break
                   fi
 
-                  echo "Cluster '$cluster' not yet available, waiting... ($ELAPSED/$TIMEOUT seconds)"
+                  echo "Cluster '$cluster' not yet available (status: ${AVAILABLE_STATUS:-NotFound}), waiting... ($ELAPSED/$TIMEOUT seconds)"
                   sleep $INTERVAL
                   ELAPSED=$((ELAPSED + INTERVAL))
                 done
@@ -215,7 +217,7 @@ jobs:
                 if [ $ELAPSED -ge $TIMEOUT ]; then
                   echo "ERROR: Timeout waiting for cluster '$cluster' to become Available"
                   echo "Cluster status:"
-                  kubectl --context "$workspace" get cluster "$cluster" -n "$cluster" -o yaml 2>/dev/null || echo "Cluster not found"
+                  kubectl --context tools get cluster "$cluster" -n "$cluster" -o yaml 2>/dev/null || echo "Cluster not found"
                   exit 1
                 fi
               else
