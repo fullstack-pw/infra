@@ -338,64 +338,64 @@ variable "config" {
           autoscaler_max     = 4
 
         },
-        # {
-        #   cluster_type                = "k0s"
-        #   name                        = "k0s-test"
-        #   kubernetes_version          = "v1.32.6+k0s.0"
-        #   control_plane_endpoint_host = "k0s-test-api.fullstack.pw" # DNS hostname for ingress
-        #   control_plane_endpoint_ip   = "192.168.1.1"               # Not used for k0s, but required field
-        #   ip_range_start              = "192.168.1.86"
-        #   ip_range_end                = "192.168.1.89"
-        #   gateway                     = "192.168.1.1"
-        #   prefix                      = 24
-        #   dns_servers                 = ["192.168.1.3", "8.8.4.4"]
-
-        #   source_node   = "node03"
-        #   template_id   = 104 # Ubuntu 24 template
-        #   allowed_nodes = ["node03"]
-
-        #   cp_replicas = 1 # Control plane pods (not VMs)
-        #   wk_replicas = 1 # Worker VMs
-
-        #   wk_disk_size = 30
-        #   wk_memory    = 8192
-        #   wk_cores     = 8
-
-        #   cni_type     = "calico"
-        #   pod_cidr     = "10.244.0.0/16"
-        #   service_cidr = "10.96.0.0/12"
-        # },
         {
-          cluster_type              = "k3s"
-          name                      = "poc"
-          k3s_version               = "v1.30.6+k3s1"
-          control_plane_endpoint_ip = "192.168.1.90"
-          ip_range_start            = "192.168.1.91"
-          ip_range_end              = "192.168.1.99"
-          gateway                   = "192.168.1.1"
-          prefix                    = 24
-          dns_servers               = ["192.168.1.3", "8.8.4.4"]
+          cluster_type                = "k0s"
+          name                        = "k0s-test"
+          kubernetes_version          = "v1.32.6+k0s.0"
+          control_plane_endpoint_host = "k0s-test-api.fullstack.pw" # DNS hostname for ingress
+          control_plane_endpoint_ip   = "192.168.1.1"               # Not used for k0s, but required field
+          ip_range_start              = "192.168.1.86"
+          ip_range_end                = "192.168.1.89"
+          gateway                     = "192.168.1.1"
+          prefix                      = 24
+          dns_servers                 = ["192.168.1.3", "8.8.4.4"]
 
           source_node   = "node03"
-          template_id   = 104
+          template_id   = 104 # Ubuntu 24 template
           allowed_nodes = ["node03"]
 
-          cp_replicas = 1
-          wk_replicas = 0
+          cp_replicas = 1 # Control plane pods (not VMs)
+          wk_replicas = 1 # Worker VMs
 
-          cp_disk_size = 30
-          cp_memory    = 8192
-          cp_cores     = 8
           wk_disk_size = 30
-          wk_memory    = 4096
-          wk_cores     = 4
+          wk_memory    = 8192
+          wk_cores     = 8
 
-          disable_cloud_controller = false
-          #disable_components  = ["traefik", "servicelb", "metrics-server"]
-          disable_components = []
+          cni_type     = "calico"
+          pod_cidr     = "10.244.0.0/16"
+          service_cidr = "10.96.0.0/12"
+        },
+        # {
+        #   cluster_type              = "k3s"
+        #   name                      = "poc"
+        #   k3s_version               = "v1.30.6+k3s1"
+        #   control_plane_endpoint_ip = "192.168.1.90"
+        #   ip_range_start            = "192.168.1.91"
+        #   ip_range_end              = "192.168.1.99"
+        #   gateway                   = "192.168.1.1"
+        #   prefix                    = 24
+        #   dns_servers               = ["192.168.1.3", "8.8.4.4"]
 
-          autoscaler_enabled = false
-        }
+        #   source_node   = "node03"
+        #   template_id   = 104
+        #   allowed_nodes = ["node03"]
+
+        #   cp_replicas = 1
+        #   wk_replicas = 0
+
+        #   cp_disk_size = 30
+        #   cp_memory    = 8192
+        #   cp_cores     = 8
+        #   wk_disk_size = 30
+        #   wk_memory    = 4096
+        #   wk_cores     = 4
+
+        #   disable_cloud_controller = false
+        #   #disable_components  = ["traefik", "servicelb", "metrics-server"]
+        #   disable_components = []
+
+        #   autoscaler_enabled = false
+        # }
       ]
       prometheus_namespaces     = []
       prometheus_memory_limit   = "2048Mi"
