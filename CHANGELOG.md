@@ -1,3 +1,13 @@
+## [1.7.2](https://github.com/fullstack-pw/infra/compare/v1.7.1...v1.7.2) (2026-01-24)
+
+### Bug Fixes
+
+* **cicd:** wait for newly created clusters on cluster obj status ([7ac3342](https://github.com/fullstack-pw/infra/commit/7ac3342cb3ddd5a3ef7afe017608d32305fc8001))
+
+### Tests
+
+* **k3s:** bootstrap ([2970709](https://github.com/fullstack-pw/infra/commit/2970709c4fe46efaa69af0027a2f35af82dc2d46))
+
 ## [1.7.1](https://github.com/fullstack-pw/infra/compare/v1.7.0...v1.7.1) (2026-01-24)
 
 ### Bug Fixes
