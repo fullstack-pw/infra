@@ -214,7 +214,8 @@ jobs:
 
             while [ $ELAPSED -lt $TIMEOUT ]; do
               # Always check on tools cluster where Cluster API objects live
-              AVAILABLE_STATUS=$(kubectl --context tools get cluster "$cluster" -n "$cluster" -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' 2>/dev/null || echo "")
+              # Use full API group to target Cluster API objects, not postgres clusters
+              AVAILABLE_STATUS=$(kubectl --context tools get cluster.cluster.x-k8s.io "$cluster" -n "$cluster" -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' 2>/dev/null || echo "")
 
               if [ "$AVAILABLE_STATUS" == "True" ]; then
                 echo "Cluster '$cluster' is now Available!"
@@ -229,7 +230,7 @@ jobs:
             if [ $ELAPSED -ge $TIMEOUT ]; then
               echo "ERROR: Timeout waiting for cluster '$cluster' to become Available"
               echo "Cluster status:"
-              kubectl --context tools get cluster "$cluster" -n "$cluster" -o yaml 2>/dev/null || echo "Cluster not found"
+              kubectl --context tools get cluster.cluster.x-k8s.io "$cluster" -n "$cluster" -o yaml 2>/dev/null || echo "Cluster not found"
               exit 1
             fi
           done
