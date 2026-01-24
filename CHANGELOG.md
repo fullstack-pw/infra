@@ -1,3 +1,13 @@
+## [1.7.9](https://github.com/fullstack-pw/infra/compare/v1.7.8...v1.7.9) (2026-01-24)
+
+### Tasks
+
+* Update KUBECONFIG with Cluster API clusters ([e390530](https://github.com/fullstack-pw/infra/commit/e390530987e0e39ce8579e33dfece890902fdca2))
+
+### Tests
+
+* **cicd:** add k0s cluster ([6776597](https://github.com/fullstack-pw/infra/commit/67765973d60dddfa2ded0c48914cffd02517f0f3))
+
 ## [1.7.8](https://github.com/fullstack-pw/infra/compare/v1.7.7...v1.7.8) (2026-01-24)
 
 ### Tasks
