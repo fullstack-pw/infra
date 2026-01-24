@@ -1,3 +1,13 @@
+## [1.7.8](https://github.com/fullstack-pw/infra/compare/v1.7.7...v1.7.8) (2026-01-24)
+
+### Tasks
+
+* Update KUBECONFIG with Cluster API clusters ([896bc38](https://github.com/fullstack-pw/infra/commit/896bc38f9cff534c2f50d8a360fab7e9fad1504d))
+
+### Tests
+
+* **cicd:** add k3s cluster ([95be7e1](https://github.com/fullstack-pw/infra/commit/95be7e1a07e7aaef0db83280b20742c4d4ba25b0))
+
 ## [1.7.7](https://github.com/fullstack-pw/infra/compare/v1.7.6...v1.7.7) (2026-01-24)
 
 ### Tasks
