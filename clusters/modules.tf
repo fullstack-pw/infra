@@ -348,11 +348,11 @@ module "clusterapi_operator" {
   depends_on = [module.vault]
 }
 
-module "proxmox_clusters" {
-  count  = contains(keys(var.config[terraform.workspace]), "proxmox-cluster") ? 1 : 0
-  source = "../modules/apps/proxmox-cluster"
+module "kubernetes_clusters" {
+  count  = contains(keys(var.config[terraform.workspace]), "kubernetes-cluster") ? 1 : 0
+  source = "../modules/apps/kubernetes-cluster"
 
-  clusters = var.config[terraform.workspace].proxmox-cluster
+  clusters = try(var.config[terraform.workspace].kubernetes-cluster, [{}])
 
   cluster_api_dependencies = [module.clusterapi_operator]
 

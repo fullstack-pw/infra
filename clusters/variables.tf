@@ -274,160 +274,162 @@ variable "config" {
         }
         roles = "kube,app,db"
       }
-      proxmox-cluster = [
-        {
-          name                      = "dev"
-          kubernetes_version        = "v1.33.0"
-          control_plane_endpoint_ip = "192.168.1.50"
-          ip_range_start            = "192.168.1.51"
-          ip_range_end              = "192.168.1.56"
-          gateway                   = "192.168.1.1"
-          prefix                    = 24
-          dns_servers               = ["192.168.1.3", "8.8.4.4"]
+      # proxmox-cluster = [] # Migrated to kubernetes-cluster module
+      # OLD - Moved to kubernetes-cluster array below
+      # proxmox-cluster = [
+      #   {
+      #     name                      = "dev"
+      #     kubernetes_version        = "v1.33.0"
+      #     control_plane_endpoint_ip = "192.168.1.50"
+      #     ip_range_start            = "192.168.1.51"
+      #     ip_range_end              = "192.168.1.56"
+      #     gateway                   = "192.168.1.1"
+      #     prefix                    = 24
+      #     dns_servers               = ["192.168.1.3", "8.8.4.4"]
+      #
+      #     source_node   = "node03"
+      #     template_id   = 9005
+      #     allowed_nodes = ["node03"]
+      #
+      #     cp_replicas = 1
+      #     wk_replicas = 2
+      #
+      #     cp_disk_size = 20
+      #     cp_memory    = 4096
+      #     cp_cores     = 4
+      #     wk_disk_size = 30
+      #     wk_memory    = 8192
+      #     wk_cores     = 8
+      #
+      #     autoscaler_enabled = true
+      #     autoscaler_min     = 2
+      #     autoscaler_max     = 4
+      #   },
+      #   {
+      #     cluster_type              = "kubeadm"
+      #     name                      = "prod"
+      #     kubernetes_version        = "v1.31.4"
+      #     control_plane_endpoint_ip = "192.168.1.70"
+      #     ip_range_start            = "192.168.1.71"
+      #     ip_range_end              = "192.168.1.79"
+      #     gateway                   = "192.168.1.1"
+      #     prefix                    = 24
+      #     dns_servers               = ["192.168.1.3"]
+      #
+      #     source_node   = "node03"
+      #     template_id   = 9004
+      #     allowed_nodes = ["node03"]
+      #
+      #     cp_replicas = 1
+      #     wk_replicas = 2
+      #
+      #     cp_disk_size           = 20
+      #     cp_memory              = 4096
+      #     cp_cores               = 4
+      #     wk_disk_size           = 30
+      #     wk_memory              = 8192
+      #     wk_cores               = 8
+      #     skip_cloud_init_status = false
+      #     skip_qemu_guest_agent  = false
+      #     provider_id_injection  = false
+      #
+      #     cni_manifest_url = "https://raw.githubusercontent.com/projectcalico/calico/v3.29.1/manifests/calico.yaml"
+      #
+      #     autoscaler_enabled = true
+      #     autoscaler_min     = 2
+      #     autoscaler_max     = 4
+      #
+      #   },
+      # {
+      #   cluster_type              = "rke2"
+      #   name                      = "rke2-test"
+      #   rke2_version              = "v1.33.1+rke2r1"
+      #   kubernetes_version        = "v1.33.0"
+      #   control_plane_endpoint_ip = "192.168.1.90"
+      #   ip_range_start            = "192.168.1.91"
+      #   ip_range_end              = "192.168.1.95"
+      #   gateway                   = "192.168.1.1"
+      #   prefix                    = 24
+      #   dns_servers               = ["192.168.1.3", "8.8.4.4"]
 
-          source_node   = "node03"
-          template_id   = 9005
-          allowed_nodes = ["node03"]
+      #   source_node   = "node03"
+      #   template_id   = 104
+      #   allowed_nodes = ["node03"]
 
-          cp_replicas = 1
-          wk_replicas = 2
+      #   cp_replicas = 1
+      #   wk_replicas = 2
 
-          cp_disk_size = 20
-          cp_memory    = 4096
-          cp_cores     = 4
-          wk_disk_size = 30
-          wk_memory    = 8192
-          wk_cores     = 8
+      #   cp_disk_size = 20
+      #   cp_memory    = 4096
+      #   cp_cores     = 4
+      #   wk_disk_size = 30
+      #   wk_memory    = 8192
+      #   wk_cores     = 8
 
-          autoscaler_enabled = true
-          autoscaler_min     = 2
-          autoscaler_max     = 4
-        },
-        {
-          cluster_type              = "kubeadm"
-          name                      = "prod"
-          kubernetes_version        = "v1.31.4"
-          control_plane_endpoint_ip = "192.168.1.70"
-          ip_range_start            = "192.168.1.71"
-          ip_range_end              = "192.168.1.79"
-          gateway                   = "192.168.1.1"
-          prefix                    = 24
-          dns_servers               = ["192.168.1.3"]
+      #   rke2_cni                 = "cilium"
+      #   rke2_registration_method = "internal-first"
 
-          source_node   = "node03"
-          template_id   = 9004
-          allowed_nodes = ["node03"]
+      #   autoscaler_enabled = false
+      # },
+      # {
+      #   cluster_type                = "k0s"
+      #   name                        = "k0s"
+      #   kubernetes_version          = "v1.32.6+k0s.0"
+      #   control_plane_endpoint_host = "k0s-api.fullstack.pw" # DNS hostname for ingress
+      #   control_plane_endpoint_ip   = "192.168.1.1"          # Not used for k0s, but required field
+      #   ip_range_start              = "192.168.1.86"
+      #   ip_range_end                = "192.168.1.89"
+      #   gateway                     = "192.168.1.1"
+      #   prefix                      = 24
+      #   dns_servers                 = ["192.168.1.3", "8.8.4.4"]
 
-          cp_replicas = 1
-          wk_replicas = 2
+      #   source_node   = "node03"
+      #   template_id   = 104 # Ubuntu 24 template
+      #   allowed_nodes = ["node03"]
 
-          cp_disk_size           = 20
-          cp_memory              = 4096
-          cp_cores               = 4
-          wk_disk_size           = 30
-          wk_memory              = 8192
-          wk_cores               = 8
-          skip_cloud_init_status = false
-          skip_qemu_guest_agent  = false
-          provider_id_injection  = false
+      #   cp_replicas = 1 # Control plane pods (not VMs)
+      #   wk_replicas = 1 # Worker VMs
 
-          cni_manifest_url = "https://raw.githubusercontent.com/projectcalico/calico/v3.29.1/manifests/calico.yaml"
+      #   wk_disk_size = 30
+      #   wk_memory    = 8192
+      #   wk_cores     = 8
 
-          autoscaler_enabled = true
-          autoscaler_min     = 2
-          autoscaler_max     = 4
+      #   cni_type     = "calico"
+      #   pod_cidr     = "10.244.0.0/16"
+      #   service_cidr = "10.96.0.0/12"
+      # },
+      # {
+      #   cluster_type              = "k3s"
+      #   name                      = "poc"
+      #   k3s_version               = "v1.30.6+k3s1"
+      #   control_plane_endpoint_ip = "192.168.1.90"
+      #   ip_range_start            = "192.168.1.91"
+      #   ip_range_end              = "192.168.1.99"
+      #   gateway                   = "192.168.1.1"
+      #   prefix                    = 24
+      #   dns_servers               = ["192.168.1.3", "8.8.4.4"]
 
-        },
-        # {
-        #   cluster_type              = "rke2"
-        #   name                      = "rke2-test"
-        #   rke2_version              = "v1.33.1+rke2r1"
-        #   kubernetes_version        = "v1.33.0"
-        #   control_plane_endpoint_ip = "192.168.1.90"
-        #   ip_range_start            = "192.168.1.91"
-        #   ip_range_end              = "192.168.1.95"
-        #   gateway                   = "192.168.1.1"
-        #   prefix                    = 24
-        #   dns_servers               = ["192.168.1.3", "8.8.4.4"]
+      #   source_node   = "node03"
+      #   template_id   = 104
+      #   allowed_nodes = ["node03"]
 
-        #   source_node   = "node03"
-        #   template_id   = 104
-        #   allowed_nodes = ["node03"]
+      #   cp_replicas = 1
+      #   wk_replicas = 0
 
-        #   cp_replicas = 1
-        #   wk_replicas = 2
+      #   cp_disk_size = 30
+      #   cp_memory    = 8192
+      #   cp_cores     = 8
+      #   wk_disk_size = 30
+      #   wk_memory    = 4096
+      #   wk_cores     = 4
 
-        #   cp_disk_size = 20
-        #   cp_memory    = 4096
-        #   cp_cores     = 4
-        #   wk_disk_size = 30
-        #   wk_memory    = 8192
-        #   wk_cores     = 8
+      #   disable_cloud_controller = false
+      #   #disable_components  = ["traefik", "servicelb", "metrics-server"]
+      #   disable_components = []
 
-        #   rke2_cni                 = "cilium"
-        #   rke2_registration_method = "internal-first"
-
-        #   autoscaler_enabled = false
-        # },
-        # {
-        #   cluster_type                = "k0s"
-        #   name                        = "k0s"
-        #   kubernetes_version          = "v1.32.6+k0s.0"
-        #   control_plane_endpoint_host = "k0s-api.fullstack.pw" # DNS hostname for ingress
-        #   control_plane_endpoint_ip   = "192.168.1.1"          # Not used for k0s, but required field
-        #   ip_range_start              = "192.168.1.86"
-        #   ip_range_end                = "192.168.1.89"
-        #   gateway                     = "192.168.1.1"
-        #   prefix                      = 24
-        #   dns_servers                 = ["192.168.1.3", "8.8.4.4"]
-
-        #   source_node   = "node03"
-        #   template_id   = 104 # Ubuntu 24 template
-        #   allowed_nodes = ["node03"]
-
-        #   cp_replicas = 1 # Control plane pods (not VMs)
-        #   wk_replicas = 1 # Worker VMs
-
-        #   wk_disk_size = 30
-        #   wk_memory    = 8192
-        #   wk_cores     = 8
-
-        #   cni_type     = "calico"
-        #   pod_cidr     = "10.244.0.0/16"
-        #   service_cidr = "10.96.0.0/12"
-        # },
-        # {
-        #   cluster_type              = "k3s"
-        #   name                      = "poc"
-        #   k3s_version               = "v1.30.6+k3s1"
-        #   control_plane_endpoint_ip = "192.168.1.90"
-        #   ip_range_start            = "192.168.1.91"
-        #   ip_range_end              = "192.168.1.99"
-        #   gateway                   = "192.168.1.1"
-        #   prefix                    = 24
-        #   dns_servers               = ["192.168.1.3", "8.8.4.4"]
-
-        #   source_node   = "node03"
-        #   template_id   = 104
-        #   allowed_nodes = ["node03"]
-
-        #   cp_replicas = 1
-        #   wk_replicas = 0
-
-        #   cp_disk_size = 30
-        #   cp_memory    = 8192
-        #   cp_cores     = 8
-        #   wk_disk_size = 30
-        #   wk_memory    = 4096
-        #   wk_cores     = 4
-
-        #   disable_cloud_controller = false
-        #   #disable_components  = ["traefik", "servicelb", "metrics-server"]
-        #   disable_components = []
-
-        #   autoscaler_enabled = false
-        # }
-      ]
+      #   autoscaler_enabled = false
+      # }
+      # ]
       prometheus_namespaces     = []
       prometheus_memory_limit   = "2048Mi"
       prometheus_memory_request = "512Mi"
@@ -489,6 +491,159 @@ variable "config" {
         domain   = "auth.fullstack.pw"
         redis_db = 1
       }
+
+      kubernetes-cluster = [
+        {
+          cluster_type              = "talos"
+          name                      = "dev"
+          kubernetes_version        = "v1.33.0"
+          control_plane_endpoint_ip = "192.168.1.50"
+          ip_range_start            = "192.168.1.51"
+          ip_range_end              = "192.168.1.56"
+          gateway                   = "192.168.1.1"
+          prefix                    = 24
+          dns_servers               = ["192.168.1.3", "8.8.4.4"]
+
+          source_node   = "node03"
+          template_id   = 9005
+          allowed_nodes = ["node03"]
+
+          cp_replicas = 1
+          wk_replicas = 2
+
+          cp_disk_size = 20
+          cp_memory    = 4096
+          cp_cores     = 4
+          wk_disk_size = 30
+          wk_memory    = 8192
+          wk_cores     = 8
+
+          autoscaler_enabled = true
+          autoscaler_min     = 2
+          autoscaler_max     = 4
+        },
+        {
+          cluster_type              = "kubeadm"
+          name                      = "prod"
+          kubernetes_version        = "v1.31.4"
+          control_plane_endpoint_ip = "192.168.1.70"
+          ip_range_start            = "192.168.1.71"
+          ip_range_end              = "192.168.1.79"
+          gateway                   = "192.168.1.1"
+          prefix                    = 24
+          dns_servers               = ["192.168.1.3"]
+
+          source_node   = "node03"
+          template_id   = 9004
+          allowed_nodes = ["node03"]
+
+          cp_replicas = 1
+          wk_replicas = 2
+
+          cp_disk_size           = 20
+          cp_memory              = 4096
+          cp_cores               = 4
+          wk_disk_size           = 30
+          wk_memory              = 8192
+          wk_cores               = 8
+          skip_cloud_init_status = false
+          skip_qemu_guest_agent  = false
+          provider_id_injection  = false
+
+          cni_manifest_url = "https://raw.githubusercontent.com/projectcalico/calico/v3.29.1/manifests/calico.yaml"
+
+          autoscaler_enabled = true
+          autoscaler_min     = 2
+          autoscaler_max     = 4
+        },
+        # {
+        #   cluster_type              = "talos"
+        #   name                      = "test"
+        #   kubernetes_version        = "v1.33.0"
+        #   control_plane_endpoint_ip = "192.168.1.80"
+        #   ip_range_start            = "192.168.1.81"
+        #   ip_range_end              = "192.168.1.85"
+        #   gateway                   = "192.168.1.1"
+        #   prefix                    = 24
+        #   dns_servers               = ["192.168.1.3", "8.8.4.4"]
+
+        #   source_node   = "node03"
+        #   template_id   = 9005
+        #   allowed_nodes = ["node03"]
+
+        #   cp_replicas = 1
+        #   wk_replicas = 1
+
+        #   cp_disk_size = 20
+        #   cp_memory    = 4096
+        #   cp_cores     = 4
+        #   wk_disk_size = 20
+        #   wk_memory    = 4096
+        #   wk_cores     = 4
+
+        #   autoscaler_enabled = false
+        # },
+        # {
+        #   cluster_type              = "kubeadm"
+        #   name                      = "kubeadm-test"
+        #   kubernetes_version        = "v1.31.4"
+        #   control_plane_endpoint_ip = "192.168.1.100"
+        #   ip_range_start            = "192.168.1.101"
+        #   ip_range_end              = "192.168.1.105"
+        #   gateway                   = "192.168.1.1"
+        #   prefix                    = 24
+        #   dns_servers               = ["192.168.1.3"]
+
+        #   source_node   = "node03"
+        #   template_id   = 9004
+        #   allowed_nodes = ["node03"]
+
+        #   cp_replicas = 1
+        #   wk_replicas = 1
+
+        #   cp_disk_size           = 20
+        #   cp_memory              = 4096
+        #   cp_cores               = 4
+        #   wk_disk_size           = 20
+        #   wk_memory              = 4096
+        #   wk_cores               = 4
+        #   skip_cloud_init_status = false
+        #   skip_qemu_guest_agent  = false
+        #   provider_id_injection  = false
+
+        #   cni_manifest_url = "https://raw.githubusercontent.com/projectcalico/calico/v3.29.1/manifests/calico.yaml"
+
+        #   autoscaler_enabled = false
+        # },
+        {
+          cluster_type              = "k3s"
+          name                      = "k3s-test"
+          k3s_version               = "v1.30.6+k3s1"
+          control_plane_endpoint_ip = "192.168.1.110"
+          ip_range_start            = "192.168.1.111"
+          ip_range_end              = "192.168.1.115"
+          gateway                   = "192.168.1.1"
+          prefix                    = 24
+          dns_servers               = ["192.168.1.3"]
+
+          source_node   = "node03"
+          template_id   = 9004
+          allowed_nodes = ["node03"]
+
+          cp_replicas = 1
+          wk_replicas = 1
+
+          cp_disk_size = 20
+          cp_memory    = 4096
+          cp_cores     = 4
+          wk_disk_size = 20
+          wk_memory    = 4096
+          wk_cores     = 4
+
+          disable_components = ["traefik", "servicelb"]
+          autoscaler_enabled = false
+        }
+      ]
     }
     observability = {
       kubernetes_context = "k8s-observability"

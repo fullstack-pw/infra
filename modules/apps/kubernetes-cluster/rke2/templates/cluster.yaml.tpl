@@ -7,10 +7,10 @@ spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-        - ${pod_cidr}
+        - 10.244.0.0/16
     services:
       cidrBlocks:
-        - ${service_cidr}
+        - 10.96.0.0/12
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: RKE2ControlPlane

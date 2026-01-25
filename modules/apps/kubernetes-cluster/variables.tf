@@ -12,7 +12,6 @@ variable "clusters" {
 
     wk_replicas = optional(number, 3)
 
-    # Cluster autoscaler configuration
     autoscaler_enabled = optional(bool, false)
     autoscaler_min     = optional(number, 1)
     autoscaler_max     = optional(number, 10)
@@ -86,16 +85,10 @@ variable "clusters" {
 
   validation {
     condition = alltrue([
-      for cluster in var.clusters : contains(["talos", "kubeadm", "k3s", "k0s", "rke2"], cluster.cluster_type)
+      for cluster in var.clusters : contains(["talos", "kubeadm", "k3s", "k0s", "rke2"], lookup(cluster, "cluster_type", "talos"))
     ])
     error_message = "Cluster type must be one of: talos, kubeadm, k3s, k0s, rke2."
   }
-}
-
-variable "namespace" {
-  description = "Namespace for cluster-api resources"
-  type        = string
-  default     = "clusters"
 }
 
 variable "credentials_ref_name" {
@@ -105,16 +98,15 @@ variable "credentials_ref_name" {
 }
 
 variable "qemu_guest_agent_image" {
-  description = "QEMU guest agent image"
+  description = "QEMU guest agent image for Talos"
   type        = string
   default     = "ghcr.io/siderolabs/qemu-guest-agent:10.1.2"
 }
 
 variable "cloud_controller_manifests" {
-  description = "List of cloud controller manager manifests to apply"
+  description = "List of cloud controller manager manifests to apply for Talos"
   type        = list(string)
   default = [
-    #"https://raw.githubusercontent.com/siderolabs/talos-cloud-controller-manager/main/docs/deploy/cloud-controller-manager.yml",
     "https://raw.githubusercontent.com/siderolabs/talos-cloud-controller-manager/refs/heads/main/docs/deploy/cloud-controller-manager-daemonset.yml",
     "https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/main/deploy/standalone-install.yaml"
   ]
@@ -139,7 +131,7 @@ variable "proxmox_url" {
 }
 
 variable "proxmox_secret" {
-  description = "Proxmox username"
+  description = "Proxmox API secret"
   type        = string
   default     = ""
   sensitive   = true
@@ -153,7 +145,7 @@ variable "proxmox_token" {
 }
 
 variable "ssh_authorized_keys" {
-  description = "List of SSH authorized keys for accessing cluster nodes (kubeadm and k3s)"
+  description = "List of SSH authorized keys for accessing cluster nodes (kubeadm, k3s, rke2)"
   type        = list(string)
   default     = []
 }

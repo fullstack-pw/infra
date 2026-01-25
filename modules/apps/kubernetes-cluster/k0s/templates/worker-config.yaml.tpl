@@ -7,3 +7,4 @@ spec:
   template:
     spec:
       version: ${kubernetes_version}
+      preInstalledK0s: true
