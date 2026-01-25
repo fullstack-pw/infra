@@ -1,3 +1,10 @@
+## [1.8.1](https://github.com/fullstack-pw/infra/compare/v1.8.0...v1.8.1) (2026-01-25)
+
+### Tasks
+
+* **cleaning:** remove k3s test cluster ([35a2d5c](https://github.com/fullstack-pw/infra/commit/35a2d5c08ed59a6b1177fa400dd9ac7ac1a44a32))
+* Update KUBECONFIG with Cluster API clusters ([4caeac1](https://github.com/fullstack-pw/infra/commit/4caeac1ba5f0bfb36eec6b4dbaa52bc7c8c3104c))
+
 ## [1.8.0](https://github.com/fullstack-pw/infra/compare/v1.7.9...v1.8.0) (2026-01-25)
 
 ### Features
