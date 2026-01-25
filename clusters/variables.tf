@@ -615,34 +615,34 @@ variable "config" {
 
         #   autoscaler_enabled = false
         # },
-        {
-          cluster_type              = "k3s"
-          name                      = "k3s-test"
-          k3s_version               = "v1.30.6+k3s1"
-          control_plane_endpoint_ip = "192.168.1.110"
-          ip_range_start            = "192.168.1.111"
-          ip_range_end              = "192.168.1.115"
-          gateway                   = "192.168.1.1"
-          prefix                    = 24
-          dns_servers               = ["192.168.1.3"]
+        # {
+        #   cluster_type              = "k3s"
+        #   name                      = "k3s-test"
+        #   k3s_version               = "v1.30.6+k3s1"
+        #   control_plane_endpoint_ip = "192.168.1.110"
+        #   ip_range_start            = "192.168.1.111"
+        #   ip_range_end              = "192.168.1.115"
+        #   gateway                   = "192.168.1.1"
+        #   prefix                    = 24
+        #   dns_servers               = ["192.168.1.3"]
 
-          source_node   = "node03"
-          template_id   = 9004
-          allowed_nodes = ["node03"]
+        #   source_node   = "node03"
+        #   template_id   = 9004
+        #   allowed_nodes = ["node03"]
 
-          cp_replicas = 1
-          wk_replicas = 1
+        #   cp_replicas = 1
+        #   wk_replicas = 1
 
-          cp_disk_size = 20
-          cp_memory    = 4096
-          cp_cores     = 4
-          wk_disk_size = 20
-          wk_memory    = 4096
-          wk_cores     = 4
+        #   cp_disk_size = 20
+        #   cp_memory    = 4096
+        #   cp_cores     = 4
+        #   wk_disk_size = 20
+        #   wk_memory    = 4096
+        #   wk_cores     = 4
 
-          disable_components = ["traefik", "servicelb"]
-          autoscaler_enabled = false
-        }
+        #   disable_components = ["traefik", "servicelb"]
+        #   autoscaler_enabled = false
+        # }
       ]
     }
     observability = {
