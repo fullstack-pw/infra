@@ -360,6 +360,124 @@ module "cluster_templates" {
         autoscaler_max         = each.value.autoscaler_max
       }
     }
+    ] : each.value.cluster_type == "rke2" ? [
+    # RKE2 cluster templates
+    {
+      path = "${path.module}/templates/rke2-cluster.yaml.tpl"
+      vars = {
+        cluster_name            = each.value.name
+        namespace               = each.value.name
+        rke2_control_plane_name = "${each.value.name}-rke2-cp"
+        proxmox_cluster_name    = each.value.name
+        pod_cidr                = each.value.pod_cidr
+        service_cidr            = each.value.service_cidr
+      }
+    },
+    {
+      path = "${path.module}/templates/cp-proxmoxcluster.yaml.tpl"
+      vars = {
+        cluster_name                = each.value.name
+        namespace                   = each.value.name
+        proxmox_cluster_name        = each.value.name
+        control_plane_endpoint_ip   = each.value.control_plane_endpoint_ip
+        control_plane_endpoint_port = each.value.control_plane_endpoint_port
+        dns_servers                 = jsonencode(each.value.dns_servers)
+        ip_range_start              = each.value.ip_range_start
+        ip_range_end                = each.value.ip_range_end
+        gateway                     = each.value.gateway
+        prefix                      = each.value.prefix
+        allowed_nodes               = jsonencode(each.value.allowed_nodes)
+        credentials_ref_name        = var.credentials_ref_name
+        memory_adjustment           = each.value.memory_adjustment
+      }
+    },
+    {
+      path = "${path.module}/templates/rke2-control-plane.yaml.tpl"
+      vars = {
+        cluster_name                = each.value.name
+        namespace                   = each.value.name
+        rke2_control_plane_name     = "${each.value.name}-rke2-cp"
+        rke2_version                = each.value.rke2_version
+        cp_replicas                 = each.value.cp_replicas
+        control_plane_template_name = "${each.value.name}-control-plane-template"
+        control_plane_endpoint_ip   = each.value.control_plane_endpoint_ip
+        ssh_authorized_keys         = jsonencode(var.ssh_authorized_keys)
+        rke2_cni                    = each.value.rke2_cni
+        rke2_registration_method    = each.value.rke2_registration_method
+        disable_rke2_components     = jsonencode(each.value.disable_rke2_components)
+        rke2_server_args            = jsonencode(each.value.rke2_server_args)
+        rke2_agent_args             = jsonencode(each.value.rke2_agent_args)
+        rke2_node_labels            = jsonencode(each.value.rke2_node_labels)
+        rke2_node_taints            = jsonencode(each.value.rke2_node_taints)
+      }
+    },
+    {
+      path = "${path.module}/templates/cp-proxmoxmachinetemplate.yaml.tpl"
+      vars = {
+        cluster_name                = each.value.name
+        namespace                   = each.value.name
+        control_plane_template_name = "${each.value.name}-control-plane-template"
+        cp_disk_size                = each.value.cp_disk_size
+        cp_memory                   = each.value.cp_memory
+        cp_cores                    = each.value.cp_cores
+        cp_sockets                  = each.value.cp_sockets
+        source_node                 = each.value.source_node
+        template_id                 = each.value.template_id
+        network_bridge              = each.value.network_bridge
+        network_model               = each.value.network_model
+        disk_format                 = each.value.disk_format
+        skip_cloud_init_status      = each.value.skip_cloud_init_status
+        skip_qemu_guest_agent       = each.value.skip_qemu_guest_agent
+        provider_id_injection       = each.value.provider_id_injection
+      }
+    },
+    {
+      path = "${path.module}/templates/wk-proxmoxmachinetemplate.yaml.tpl"
+      vars = {
+        cluster_name           = each.value.name
+        namespace              = each.value.name
+        worker_template_name   = "${each.value.name}-worker-template"
+        wk_disk_size           = each.value.wk_disk_size
+        wk_memory              = each.value.wk_memory
+        wk_cores               = each.value.wk_cores
+        wk_sockets             = each.value.wk_sockets
+        source_node            = each.value.source_node
+        template_id            = each.value.template_id
+        network_bridge         = each.value.network_bridge
+        network_model          = each.value.network_model
+        disk_format            = each.value.disk_format
+        skip_cloud_init_status = each.value.skip_cloud_init_status
+        skip_qemu_guest_agent  = each.value.skip_qemu_guest_agent
+        provider_id_injection  = each.value.provider_id_injection
+      }
+    },
+    {
+      path = "${path.module}/templates/rke2-config-template.yaml.tpl"
+      vars = {
+        cluster_name            = each.value.name
+        namespace               = each.value.name
+        worker_rke2_config_name = "${each.value.name}-worker-rke2-config"
+        ssh_authorized_keys     = jsonencode(var.ssh_authorized_keys)
+        rke2_agent_args         = jsonencode(each.value.rke2_agent_args)
+        rke2_node_labels        = jsonencode(each.value.rke2_node_labels)
+        rke2_node_taints        = jsonencode(each.value.rke2_node_taints)
+      }
+    },
+    {
+      path = "${path.module}/templates/rke2-machinedeployment.yaml.tpl"
+      vars = {
+        cluster_name            = each.value.name
+        namespace               = each.value.name
+        worker_deployment_name  = "${each.value.name}-workers"
+        worker_rke2_config_name = "${each.value.name}-worker-rke2-config"
+        worker_template_name    = "${each.value.name}-worker-template"
+        wk_replicas             = each.value.wk_replicas
+        rke2_version            = each.value.rke2_version
+        autoscaler_enabled      = each.value.autoscaler_enabled
+        autoscaler_min          = each.value.autoscaler_min
+        autoscaler_max          = each.value.autoscaler_max
+      }
+    }
     ] : [
     # Talos cluster templates (existing)
     {
@@ -486,7 +604,7 @@ locals {
 resource "kubernetes_manifest" "proxmox_cluster" {
   for_each = local.clusters
 
-  manifest = local.cluster_manifests[each.key]["ProxmoxCluster-${(each.value.cluster_type == "kubeadm" || each.value.cluster_type == "k3s" || each.value.cluster_type == "k0s") ? each.value.name : "${each.value.name}-proxmox-cluster"}"]
+  manifest = local.cluster_manifests[each.key]["ProxmoxCluster-${(each.value.cluster_type == "kubeadm" || each.value.cluster_type == "k3s" || each.value.cluster_type == "k0s" || each.value.cluster_type == "rke2") ? each.value.name : "${each.value.name}-proxmox-cluster"}"]
 
   depends_on = [
     kubernetes_secret.proxmox_credentials,
@@ -525,6 +643,8 @@ resource "kubernetes_manifest" "control_plane" {
     ? "KThreesControlPlane-${each.value.name}-k3s-cp"
     : each.value.cluster_type == "k0s"
     ? "K0smotronControlPlane-${each.value.name}-k0s-cp"
+    : each.value.cluster_type == "rke2"
+    ? "RKE2ControlPlane-${each.value.name}-rke2-cp"
     : "TalosControlPlane-${each.value.name}-talos-cp"
   ]
 
@@ -542,6 +662,8 @@ resource "kubernetes_manifest" "worker_config_template" {
     ? "KThreesConfigTemplate-${each.value.name}-worker-k3s-config"
     : each.value.cluster_type == "k0s"
     ? "K0sWorkerConfigTemplate-${each.value.name}-worker-k0s-config"
+    : each.value.cluster_type == "rke2"
+    ? "RKE2ConfigTemplate-${each.value.name}-worker-rke2-config"
     : "TalosConfigTemplate-${each.value.name}-talosconfig-workers"
   ]
 
@@ -559,6 +681,8 @@ resource "kubernetes_manifest" "machine_deployment" {
     ? "MachineDeployment-${each.value.name}-workers"
     : each.value.cluster_type == "k0s"
     ? "MachineDeployment-${each.value.name}-k0s-workers"
+    : each.value.cluster_type == "rke2"
+    ? "MachineDeployment-${each.value.name}-workers"
     : "MachineDeployment-${each.value.name}-machinedeploy-workers"
   ]
 
@@ -599,17 +723,17 @@ resource "kubernetes_manifest" "cluster" {
   ]
 }
 
-# Ingress for k0s control plane - only created for k0s clusters
-resource "kubernetes_manifest" "control_plane_ingress" {
-  for_each = {
-    for name, cluster in local.clusters : name => cluster
-    if cluster.cluster_type == "k0s"
-  }
+# # Ingress for k0s control plane - only created for k0s clusters
+# resource "kubernetes_manifest" "control_plane_ingress" {
+#   for_each = {
+#     for name, cluster in local.clusters : name => cluster
+#     if cluster.cluster_type == "k0s"
+#   }
 
-  manifest = local.cluster_manifests[each.key]["Ingress-${each.value.name}-apiserver"]
+#   manifest = local.cluster_manifests[each.key]["Ingress-${each.value.name}-k0smotron"]
 
-  depends_on = [
-    module.namespace,
-    kubernetes_manifest.control_plane
-  ]
-}
+#   depends_on = [
+#     module.namespace,
+#     kubernetes_manifest.control_plane
+#   ]
+# }

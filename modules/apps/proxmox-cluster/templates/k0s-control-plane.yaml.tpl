@@ -10,8 +10,11 @@ spec:
     type: ClusterIP
     apiPort: 6443
     konnectivityPort: 8132
-  controllerPlaneFlags:
-    - --disable-components=helm
+  ingress:
+    className: "traefik"
+    apiHost: ${control_plane_endpoint_host}
+    konnectivityHost: ${control_plane_endpoint_host}
+    port: 443
   k0sConfig:
     apiVersion: k0s.k0sproject.io/v1beta1
     kind: ClusterConfig
@@ -19,7 +22,6 @@ spec:
       name: k0s
     spec:
       api:
-        externalAddress: ${control_plane_endpoint_host}
         sans:
           - ${control_plane_endpoint_host}
       network:

@@ -44,6 +44,7 @@ module "helm_release" {
     enable_k3s_provider       = var.enable_k3s_provider
     enable_kubeadm_provider   = var.enable_kubeadm_provider
     enable_k0smotron_provider = var.enable_k0smotron_provider
+    enable_rke2_provider      = var.enable_rke2_provider
     enable_ipam_provider      = var.enable_ipam_provider
 
     # Provider versions
@@ -57,6 +58,8 @@ module "helm_release" {
     kubeadm_controlplane_version   = var.kubeadm_controlplane_version
     k0smotron_bootstrap_version    = var.k0smotron_bootstrap_version
     k0smotron_controlplane_version = var.k0smotron_controlplane_version
+    rke2_bootstrap_version         = var.rke2_bootstrap_version
+    rke2_controlplane_version      = var.rke2_controlplane_version
     ipam_version                   = var.ipam_version
 
     # Proxmox configuration

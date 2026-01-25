@@ -332,7 +332,8 @@ module "clusterapi_operator" {
   enable_talos_provider     = true
   enable_k3s_provider       = true
   enable_kubeadm_provider   = true
-  enable_k0smotron_provider = true
+  enable_k0smotron_provider = false
+  enable_rke2_provider      = true
 
   # Downgrade to CAPI v1.9 for compatibility with CAPMOX v0.7.x
   # core_provider_version        = "v1.9.4"

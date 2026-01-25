@@ -1,5 +1,5 @@
 variable "clusters" {
-  description = "List of Talos, Kubeadm, K3s, or K0s clusters to create"
+  description = "List of Talos, Kubeadm, K3s, K0s, or RKE2 clusters to create"
   type = list(object({
     cluster_type       = optional(string, "talos")
     name               = string
@@ -60,6 +60,16 @@ variable "clusters" {
     disable_components       = optional(list(string), ["traefik", "servicelb"])
     node_labels              = optional(map(string), {})
     node_taints              = optional(list(string), [])
+
+    # RKE2-specific fields
+    rke2_version             = optional(string, "v1.33.1+rke2r1")
+    rke2_cni                 = optional(string, "cilium")
+    rke2_registration_method = optional(string, "internal-first")
+    disable_rke2_components  = optional(list(string), [])
+    rke2_server_args         = optional(list(string), [])
+    rke2_agent_args          = optional(list(string), [])
+    rke2_node_labels         = optional(map(string), {})
+    rke2_node_taints         = optional(list(string), [])
   }))
 
   validation {
@@ -76,9 +86,9 @@ variable "clusters" {
 
   validation {
     condition = alltrue([
-      for cluster in var.clusters : contains(["talos", "kubeadm", "k3s", "k0s"], cluster.cluster_type)
+      for cluster in var.clusters : contains(["talos", "kubeadm", "k3s", "k0s", "rke2"], cluster.cluster_type)
     ])
-    error_message = "Cluster type must be one of: talos, kubeadm, k3s, k0s."
+    error_message = "Cluster type must be one of: talos, kubeadm, k3s, k0s, rke2."
   }
 }
 

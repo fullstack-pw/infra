@@ -39,6 +39,13 @@ bootstrap:
   k0sproject-k0smotron:
     version: "${k0smotron_bootstrap_version}"
 %{ endif ~}
+%{ if enable_rke2_provider ~}
+  rke2:
+    enabled: yes
+    version: "${rke2_bootstrap_version}"
+    fetchConfig:
+      url: "https://github.com/rancher/cluster-api-provider-rke2/releases/download/${rke2_bootstrap_version}/bootstrap-components.yaml"
+%{ endif ~}
 
 # ControlPlane Providers
 controlPlane:
@@ -60,6 +67,13 @@ controlPlane:
 %{ if enable_k0smotron_provider ~}
   k0sproject-k0smotron:
     version: "${k0smotron_controlplane_version}"
+%{ endif ~}
+%{ if enable_rke2_provider ~}
+  rke2:
+    enabled: yes
+    version: "${rke2_controlplane_version}"
+    fetchConfig:
+      url: "https://github.com/rancher/cluster-api-provider-rke2/releases/download/${rke2_controlplane_version}/control-plane-components.yaml"
 %{ endif ~}
 
 # IPAM Providers

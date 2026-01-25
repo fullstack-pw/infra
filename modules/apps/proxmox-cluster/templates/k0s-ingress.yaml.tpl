@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ${cluster_name}-apiserver
+  name: ${cluster_name}-k0smotron
   namespace: ${namespace}
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
@@ -18,10 +18,10 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: ${k0smotron_control_plane_name}
+            name: kmc-${cluster_name}
             port:
               number: 6443
   tls:
   - hosts:
     - ${control_plane_endpoint_host}
-    secretName: ${cluster_name}-api-tls
+    secretName: ${cluster_name}-k0smotron-tls

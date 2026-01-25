@@ -53,6 +53,12 @@ variable "enable_k0smotron_provider" {
   default     = false
 }
 
+variable "enable_rke2_provider" {
+  description = "Enable RKE2 bootstrap and control-plane providers"
+  type        = bool
+  default     = false
+}
+
 variable "enable_ipam_provider" {
   description = "Enable in-cluster IPAM provider"
   type        = bool
@@ -118,6 +124,18 @@ variable "k0smotron_controlplane_version" {
   description = "K0smotron control-plane provider version"
   type        = string
   default     = "v1.10.2"
+}
+
+variable "rke2_bootstrap_version" {
+  description = "RKE2 bootstrap provider version"
+  type        = string
+  default     = "v0.21.1"
+}
+
+variable "rke2_controlplane_version" {
+  description = "RKE2 control-plane provider version"
+  type        = string
+  default     = "v0.21.1"
 }
 
 variable "ipam_version" {
