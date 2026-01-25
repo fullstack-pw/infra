@@ -1,3 +1,13 @@
+## [1.8.0](https://github.com/fullstack-pw/infra/compare/v1.7.9...v1.8.0) (2026-01-25)
+
+### Features
+
+* **cluster-api:** add rke2 ([47a2f82](https://github.com/fullstack-pw/infra/commit/47a2f82a19affd4926e4cf405f0ba0cd92091160))
+
+### Tasks
+
+* **proxmox-cluster:** refactor and rename ([5ea7d08](https://github.com/fullstack-pw/infra/commit/5ea7d08962e43c23aa31ad08df98ff7a63e3ec91))
+
 ## [1.7.9](https://github.com/fullstack-pw/infra/compare/v1.7.8...v1.7.9) (2026-01-24)
 
 ### Tasks
