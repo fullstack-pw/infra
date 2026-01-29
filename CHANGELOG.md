@@ -1,3 +1,13 @@
+## [1.9.0](https://github.com/fullstack-pw/infra/compare/v1.8.1...v1.9.0) (2026-01-29)
+
+### Features
+
+* **ephemeral-clusters:** add PR-based ephemeral K3s clusters ([dfc2aa1](https://github.com/fullstack-pw/infra/commit/dfc2aa13220edcabbbeab32445de57c5cce2793e))
+
+### Tasks
+
+* Update KUBECONFIG with Cluster API clusters ([be4c7f7](https://github.com/fullstack-pw/infra/commit/be4c7f772da48b41be97422d68b6a7ef93231c7e))
+
 ## [1.8.1](https://github.com/fullstack-pw/infra/compare/v1.8.0...v1.8.1) (2026-01-25)
 
 ### Tasks
