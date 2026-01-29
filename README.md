@@ -29,25 +29,59 @@ Production-grade infrastructure-as-code repository demonstrating enterprise DevO
 
 **Automated CI/CD Pipelines**
 
-10 GitHub Actions workflows provide comprehensive automation:
+7 GitHub Actions workflows provide comprehensive automation:
 
 | Workflow | Purpose | Trigger |
 |----------|---------|---------|
-| opentofu.yml | OpenTofu workflow, plans on PR and apply on merge | PR/Merge to main |
-| ansible.yml | VM provisioning via `[ansible PLAYBOOK]` commit tag | Commit tag detection |
-| build.yml | Docker image builds on Dockerfile changes | File path changes |
-| sec-trivy.yml | Container and IaC vulnerability scanning | Pull request / Push |
-| sec-trufflehog.yml | Secret leak detection in commits | Pull request / Push |
-| conventional-commits.yml | Commit message validation | Pull request |
-| release.yml | Semantic versioning and changelog generation | Merge to main |
+| [opentofu.yml](.github/workflows/opentofu.yml) | OpenTofu workflow, plans on PR and apply on merge | PR/Merge to main |
+| [ansible.yml](.github/workflows/ansible.yml) | VM provisioning via `[ansible PLAYBOOK]` commit tag | Commit tag detection |
+| [build.yml](.github/workflows/build.yml) | Docker image builds on Dockerfile changes | File path changes |
+| [sec-trivy.yml](.github/workflows/sec-trivy.yml) | Container and IaC vulnerability scanning | Pull request / Push |
+| [sec-trufflehog.yml](.github/workflows/sec-trufflehog.yml) | Secret leak detection in commits | Pull request / Push |
+| [conventional-commits.yml](.github/workflows/conventional-commits.yml) | Commit message validation | Pull request |
+| [release.yml](.github/workflows/release.yml) | Semantic versioning and changelog generation | Merge to main |
+
+**OpenTofu Workflow Deep Dive** ([opentofu.yml](.github/workflows/opentofu.yml)):
+
+**Plan Phase (on PR)**:
+1. Detects changes in `clusters/**` and `secrets/**`
+2. Runs `make plan` for all environments
+3. Posts truncated plan summary to PR (65KB limit) with full plan in artifacts
+
+**Apply Phase (on merge to main)**:
+1. **Capture Before State**: Stores cluster names from `proxmox_cluster_names` output
+2. **Apply Changes**: Runs `make apply` for all environments
+3. **Capture After State**: Compares cluster outputs to detect changes
+4. **Cluster Change Detection**: Identifies NEW/DELETED clusters across sandboxy/tools/observability workspaces
+5. **Wait for Cluster Availability**:
+   - Monitors Cluster API objects on management cluster (tools)
+   - Waits up to 30 minutes with 10-second polling for cluster to reach "Available" status
+   - Checks `cluster.cluster.x-k8s.io` CRD status condition
+6. **Update Kubeconfigs in SOPS**:
+   - Calls [clusters/scripts/update_kubeconfig_sops.sh](clusters/scripts/update_kubeconfig_sops.sh)
+   - Extracts kubeconfig from Cluster API secret: `<cluster>-kubeconfig` in namespace `<cluster>`
+   - Merges with existing kubeconfig in SOPS file
+   - Updates encrypted [secrets/common/cluster-secret-store/secrets/KUBECONFIG.yaml](secrets/common/cluster-secret-store/secrets/KUBECONFIG.yaml)
+   - Commits with message: "chore: Update KUBECONFIG with Cluster API clusters"
+7. **Sync to Vault**:
+   - Runs `make apply ENV=tools TARGET='module.vault[0]'`
+   - External Secrets Operator syncs to Kubernetes secrets in namespaces with `cluster-secrets=true` label
+8. **Error Handling**:
+   - Kubeconfig update failures post warning comment with manual recovery steps
+   - Workflow continues on error to prevent blocking deployments
+
+**External Secrets Automation**:
+- When secrets are added/removed in [secrets/](secrets/) directory, OpenTofu automatically updates ExternalSecret objects
+- Changes propagate to all clusters via Vault synchronization
+- Namespaces with label `cluster-secrets=true` receive updated secrets automatically
 
 
 **Progressive Delivery with Argo Rollouts**
 
 Blue-Green deployment strategy with automated E2E testing and production promotion:
 
-1. **Build Phase**: GitHub Actions builds and pushes container image to Harbor registry
-2. **Dev Deployment**: Pipeline updates dev kustomization with new image tag, ArgoCD syncs
+1. **Build Phase**: GitHub Actions ([build.yml](.github/workflows/build.yml)) builds and pushes container image to Harbor registry (`registry.fullstack.pw`)
+2. **Dev Deployment**: Pipeline updates dev kustomization with new image tag, ArgoCD syncs to dev cluster
 3. **E2E Testing**: Argo Rollouts triggers prePromotionAnalysis running Cypress tests against dev environment
 4. **Auto-Promotion**: On test success, postPromotionAnalysis job automatically promotes to prod by updating prod kustomization
 5. **Prod Deployment**: ArgoCD syncs prod overlay, Argo Rollouts performs Blue-Green switch
@@ -56,17 +90,55 @@ Blue-Green deployment strategy with automated E2E testing and production promoti
 Build → Push Image → Update Dev Tag → ArgoCD Sync → Cypress Tests → Update Prod Tag → ArgoCD Sync → Live
 ```
 
+**ArgoCD ApplicationSet Pattern**:
+
+ApplicationSets use matrix generators to deploy applications across multiple environments:
+
+```yaml
+generators:
+  - matrix:
+      generators:
+        - list:  # Applications
+            elements: [writer, enqueuer, memorizer, ascii-frontend]
+        - list:  # Environments
+            elements:
+              - env: dev
+                server: https://192.168.1.50:6443
+                domain: dev.{{.app}}.fullstack.pw
+              - env: prod
+                server: https://192.168.1.70:6443
+                domain: "{{.app}}.fullstack.pw"
+```
+
+**App-of-Apps Hierarchy**:
+- Root applications: [dev-apps.yaml](argocd-apps/dev-apps.yaml), [prod-apps.yaml](argocd-apps/prod-apps.yaml)
+- Source: [argocd-apps/app-of-apps/](argocd-apps/app-of-apps/) directory structure
+- Auto-sync with pruning and self-healing enabled
+- Retry policy: 5 attempts with exponential backoff
+
+**Application Repositories**:
+- [cks-backend](https://github.com/fullstack-pw/cks-backend) - Backend APIs with Kustomize overlays
+- [cks-frontend](https://github.com/fullstack-pw/cks-frontend) - Web UI with Kustomize overlays
+- [demo-apps](https://github.com/fullstack-pw/demo-apps) - Demo applications showcasing patterns
+
 Key components:
 - AnalysisTemplate with Kubernetes Job provider for Cypress test execution
 - Separate AnalysisTemplate per application for production promotion (git commit automation)
 - `autoPromotionEnabled: true` for fully automated pipeline
 - Prod overlay removes prePromotionAnalysis (tests only run in dev)
+- Kustomize overlays for environment-specific configuration
 
 **Self-Hosted Runner Infrastructure**
 - Actions Runner Controller (ARC) deployed on tools cluster
 - Custom runner image with kubectl, Helm, Terraform, SOPS, Docker CLI, and cloud provider tools
 - GitLab CI runners for multi-platform pipeline support
 - Centralized reusable workflows in dedicated pipelines repository
+
+**Key Data Flows**:
+1. **Infrastructure**: Git → CI/CD → Tools (CAPI) → Workload Clusters
+2. **Secrets**: SOPS → CI/CD → Vault → External Secrets → K8s Secrets
+3. **Applications**: External Repos → ArgoCD → Deployments
+4. **Progressive Delivery**: Build → Dev → Tests → Prod (automated)
 
 ### Continuous Observability
 
@@ -93,46 +165,95 @@ Edge collectors on all workload clusters:
 
 ## Cluster Bootstrapping
 
-### Cluster-API
+### Modern Cluster API Provisioning
 
-Bootstrap dynamic kubeadm/talos clusters directly via OpenTofu.
+**Tools cluster serves as Cluster API management cluster**, deploying and managing workload clusters on Proxmox infrastructure:
 
-### Single-Commit Ansible Workflow (LEGACY)
+**Cluster Provisioning Workflow**:
+1. **Define Cluster**: Add cluster configuration to `clusters/variables.tf` under tools workspace
+2. **CI/CD Apply**: GitHub Actions runs `make apply ENV=tools`, creating Cluster API manifests
+3. **Cluster API Provisioning**: Cluster API operator provisions VMs on Proxmox and bootstraps Kubernetes
+4. **Automated Kubeconfig Management**:
+   - CI/CD detects cluster changes via output comparison (before/after apply)
+   - Waits up to 30 minutes for cluster to reach "Available" status
+   - Extracts kubeconfig from Cluster API secret (`<cluster>-kubeconfig` in namespace `<cluster>`)
+   - Updates SOPS-encrypted [KUBECONFIG.yaml](secrets/common/cluster-secret-store/secrets/KUBECONFIG.yaml)
+   - Commits changes automatically and syncs to Vault
+   - External Secrets Operator propagates to all clusters with `cluster-secrets=true` label
+5. **Immediate Availability**: Cluster ready for OpenTofu and CI/CD pipelines
 
-The `[ansible PLAYBOOK]` pattern enables fully automated cluster provisioning:
+**Cluster API Components**:
+- **Management Cluster**: tools (K3s on NODE02)
+- **Cluster API Operator**: v1.12.0 with CAPMOX v0.7.5 (Proxmox provider)
+- **Supported Distributions**:
+  - **Talos Linux**: Immutable infrastructure with declarative configuration (dev cluster)
+  - **kubeadm**: Standard Kubernetes with HA support (prod cluster)
+  - **K3s, K0s, RKE2**: Additional distributions supported
+- **Polymorphic Module**: [modules/apps/kubernetes-cluster](modules/apps/kubernetes-cluster/) supports all cluster types
+
+**Key Script**: [clusters/scripts/update_kubeconfig_sops.sh](clusters/scripts/update_kubeconfig_sops.sh) handles kubeconfig extraction, merging, SOPS encryption, and git commits.
+
+### Legacy Proxmox/Ansible Provisioning
+
+The `[ansible PLAYBOOK]` pattern remains supported for existing K3s clusters (tools, home, observability):
 
 ```bash
 git commit -m "feat(proxmox): add k8s-observability VM [ansible k8s-observability]"
 ```
 
-**Automated Pipeline Chain**
+**Automated Pipeline Chain**:
 1. Release workflow generates semantic version tag
-2. Terraform creates VM from YAML definition in Proxmox
-3. Terraform updates Ansible inventory, preserving `[ansible]` tag in commit message
+2. OpenTofu creates VM from YAML definition in [proxmox/vms/](proxmox/vms/)
+3. OpenTofu updates Ansible inventory, preserving `[ansible]` tag in commit message
 4. Ansible workflow triggers on tag detection
-5. Ansible installs K3s/K8s, configures storage paths
+5. Ansible installs and configures Kubernetes (K3s, kubeadm, vanilla, Talos)
 6. Python script extracts kubeconfig, updates IP and context name
 7. Kubeconfig merged into central Vault KV store
-8. Cluster immediately available to Terraform and CI/CD pipelines
+8. Cluster immediately available to OpenTofu and CI/CD pipelines
 
-### Supported Kubernetes Distributions
-
-| Distribution | Provisioning Method | Use Case |
-|--------------|---------------------|----------|
-| K3s | Ansible playbook with custom storage paths | Lightweight single-node clusters (dev, stg, prod, tools, home) |
-| Vanilla K8s | Kubeadm via Ansible | Multi-node HA clusters (sandbox) |
-| Talos Linux | Cluster API + Talos configs | Immutable infrastructure with declarative configuration |
-| KubeVirt | Operator on existing K8s | Nested virtualization on Kubernetes (sandboxy) |
+This method provisioned all current clusters but is being phased out in favor of Cluster API for new deployments.
 
 ### Bootstrap Components
 
-Terraform automatically deploys platform services to new clusters:
-- cert-manager for TLS automation
-- External-DNS for dynamic DNS record management
-- External Secrets for Vault integration
-- Observability stack (hub or edge collector based on cluster role)
-- Ingress controllers (Istio or NGINX)
-- ArgoCD for GitOps application delivery
+OpenTofu automatically deploys platform services to clusters based on workspace configuration in [clusters/variables.tf](clusters/variables.tf):
+
+**Core Infrastructure** (most clusters):
+- cert-manager for automated TLS with Let's Encrypt
+- External-DNS for dynamic DNS record management (Cloudflare)
+- External Secrets for Vault → Kubernetes secret synchronization
+- Metrics Server for resource metrics
+
+**Ingress & Service Mesh**:
+- MetalLB for LoadBalancer service type (dev, prod)
+- Istio service mesh with mTLS (dev, prod)
+- Ingress-NGINX (alternative ingress controller)
+
+**GitOps & CI/CD**:
+- ArgoCD for GitOps application delivery (dev, prod, tools)
+- GitHub Actions Runner Controller (tools)
+- GitLab CI runners (tools)
+
+**Observability**:
+- Observability-box (edge collector) on workload clusters
+- Full observability stack (Prometheus, Grafana, Jaeger, Loki) on observability cluster
+
+**Storage**:
+- Local Path Provisioner for dynamic local storage (dev, prod)
+- Longhorn distributed storage (sandboxy for snapshot capability)
+
+**Data Services** (tools cluster):
+- CloudNativePG for PostgreSQL
+- Redis for caching
+- NATS for messaging
+- MinIO for S3-compatible object storage
+
+**Cluster Management** (tools cluster only):
+- Cluster API Operator v1.12.0 with CAPMOX v0.7.5
+- HashiCorp Vault for centralized secrets
+- Harbor container registry
+- Teleport agent for secure access
+
+Configuration is workspace-specific via `workload` variable - modules only deploy when listed in workspace's workload array.
 
 ## Infrastructure Resilience
 
@@ -243,17 +364,36 @@ Git (SOPS encrypted) → CI/CD (decrypt) → Vault (runtime) → External Secret
 
 ```
 infra/
-├── clusters/             # Kubernetes workload definitions (Terraform)
+├── clusters/             # Kubernetes workload definitions (OpenTofu)
+│   ├── variables.tf     # Workspace configurations and Cluster API cluster definitions
+│   ├── modules.tf       # All module invocations with conditional logic
+│   ├── load_secrets.py  # SOPS decryption to JSON
+│   └── scripts/
+│       └── update_kubeconfig_sops.sh  # Kubeconfig extraction and SOPS management
 ├── modules/
-│   ├── base/            # 11 foundational modules (helm, namespace, ingress, monitoring, etc.)
-│   └── apps/            # 24 application modules (argocd, vault, observability, istio, etc.)
+│   ├── base/            # 10 foundational modules (helm, namespace, ingress, monitoring, credentials, persistence, istio-gateway, istio-virtualservice, cnpg-database, values-template)
+│   └── apps/            # 32 application modules categorized as:
+│       ├── Cluster: kubernetes-cluster, clusterapi-operator
+│       ├── Infrastructure: istio, metallb, external-secrets, cert-manager, externaldns, ingress-nginx, kubelet-csr-approver, local-path-provisioner, metrics-server
+│       ├── Data: cloudnative-postgres, cloudnative-postgres-operator, redis, nats, minio
+│       ├── Observability: observability, observability-box
+│       ├── CI/CD: argocd, github-runner, gitlab-runner
+│       ├── Security: vault, teleport-agent, authentik
+│       ├── Storage: longhorn, local-path-provisioner
+│       ├── Virtualization: kubevirt, kubevirt-operator
+│       └── Other: harbor, immich, registry, cluster-autoscaler, oracle-backup
 ├── proxmox/
-│   ├── vms/             # YAML VM definitions for declarative provisioning
-│   ├── playbooks/       # Ansible configuration playbooks
+│   ├── vms/             # YAML VM definitions for declarative provisioning (legacy)
+│   ├── playbooks/       # Ansible configuration playbooks (legacy K3s clusters)
 │   └── scripts/         # Automation scripts (Talos, kubeconfig management)
 ├── argocd-apps/         # GitOps application manifests
-├── secrets/             # SOPS-encrypted secrets
+│   ├── app-of-apps/     # ArgoCD app-of-apps hierarchy
+│   ├── demo-apps-applicationset.yaml  # Matrix generator for multi-env deployments
+│   └── cks-apps-applicationset.yaml   # CKS platform applications
+├── secrets/             # SOPS-encrypted secrets (age encryption)
+│   └── common/cluster-secret-store/secrets/  # Cluster-wide secrets synced via External Secrets
 ├── .github/workflows/   # CI/CD automation pipelines
+├── Makefile             # Development commands (plan, apply, init, fmt, validate)
 └── docs/                # Technical documentation
 ```
 
@@ -268,42 +408,192 @@ infra/
 
 ## Kubernetes Environments
 
-| Cluster | Type | Purpose | Node(s) | Key Workloads |
-|---------|------|---------|---------|---------------|
-| dev | Talos | Development environment | dynamic | Development services, Istio service mesh |
-| prod | kubeadm | Production environment | dynamic | Production services |
-| tools | K3s | Platform services | k8s-tools | cluster-api, PostgreSQL, Redis, NATS, CI/CD runners, Vault |
-| home | K3s | Home automation | k8s-home | Immich photo management |
-| observability | K3s | Central monitoring hub | k8s-observability | Prometheus, Grafana, Jaeger, Loki |
-| sandboxy | K3s | Experimentation | k8s-sandbox | KubeVirt, Longhorn distributed storage |
+| Cluster | Type | Provisioning | Purpose | Node(s) | Key Workloads |
+|---------|------|--------------|---------|---------|---------------|
+| dev | Talos | Cluster API | Development environment | 1 CP + 2 workers | Development services, Istio service mesh, ArgoCD |
+| prod | kubeadm | Cluster API | Production environment | 1 CP + 2 workers | Production services, Istio service mesh, ArgoCD |
+| tools | K3s | Legacy Ansible | Platform services & Cluster API management cluster | k8s-tools (single node) | Cluster API operator, CloudNativePG, Redis, NATS, CI/CD runners (GitHub/GitLab), Vault, Harbor, MinIO, ArgoCD |
+| home | K3s | Legacy Ansible | Home automation | k8s-home (single node) | Immich photo management, External Secrets |
+| observability | K3s | Legacy Ansible | Central monitoring hub | k8s-observability (single node) | Prometheus (kube-prometheus-stack), Grafana, Jaeger, Loki, OpenTelemetry Collector |
+| sandboxy | K3s | Legacy Ansible | CKS (Certified Kubernetes Security) platform | k8s-sandbox (single node) | KubeVirt for VM virtualization, Longhorn for snapshot-based storage, maintains pool of standby VMs for instant CKS scenario provisioning with rapid reset |
 
 ## Technology Stack
 
 **Infrastructure Layer**
-- OpenTofu 1.11.3+, Ansible, Proxmox VE
+- OpenTofu 1.11.3+
+- Ansible (legacy cluster provisioning)
+- Proxmox VE (hypervisor)
+- Cluster API v1.12.0 with CAPMOX v0.7.5 (Proxmox provider)
 
-**Kubernetes**
-- K3s, kubeadm, Talos Linux
+**Kubernetes Distributions**
+- K3s (lightweight, single-node)
+- kubeadm (standard multi-node)
+- Talos Linux (immutable infrastructure)
 
 **Platform Services**
-- ArgoCD 7.7.12, HashiCorp Vault, cert-manager, External Secrets Operator, Istio
+- ArgoCD 7.7.12 (GitOps)
+- HashiCorp Vault (secrets management)
+- cert-manager (TLS automation)
+- External Secrets Operator (Vault → K8s sync)
+- Istio (service mesh)
+- MetalLB (LoadBalancer)
 
 **Observability**
-- Prometheus (kube-prometheus-stack v79.0.1), Grafana, Jaeger v2.57.0, Loki v6.28.0, OpenTelemetry v0.33.0, Fluent Bit v0.48.9
+- Prometheus (kube-prometheus-stack v79.0.1)
+- Grafana (dashboards)
+- Jaeger v2.57.0 (distributed tracing)
+- Loki v6.28.0 (log aggregation)
+- OpenTelemetry Collector v0.33.0 (telemetry ingestion)
+- Fluent Bit v0.48.9 (log forwarding)
 
 **Data Services**
-- PostgreSQL 15 with pgvector, Redis (Bitnami), NATS with JetStream, MinIO S3
+- CloudNativePG operator (PostgreSQL 15+ with pgvector, automated backups, managed roles/databases)
+- Redis (Bitnami)
+- NATS with JetStream (messaging)
+- MinIO (S3-compatible object storage)
 
 **CI/CD**
-- GitHub Actions (ARC), GitLab CI, custom runner images with comprehensive tooling
-- Argo Rollouts for Blue-Green deployments with automated E2E testing (Cypress)
+- GitHub Actions with Actions Runner Controller (ARC)
+- GitLab CI runners
+- Argo Rollouts (Blue-Green deployments with automated E2E testing via Cypress)
+- Harbor (container registry)
+- Custom runner images with kubectl, Helm, OpenTofu, SOPS, Docker CLI
 
 **Security**
-- SOPS with age encryption, Trivy, TruffleHog, Istio, cert-manager, Teleport agent
+- SOPS with age encryption
+- Trivy (vulnerability scanning)
+- TruffleHog (secret leak detection)
+- Istio mTLS (service mesh security)
+- cert-manager with Let's Encrypt
+- Teleport agent (secure access)
+- Authentik (identity provider)
 
 ## FAQ
 
-**How github runners access clusters?**
-- We have a 'cluster-secrets' secret available at namespace level when we have labelled namespace with 'cluster-secrets=true', this secret keys are the keys content of all ./secrets/common/cluster-secret-store/secrets, external-secrets sync vault secrets to this 'cluster-secrets'
+### How do GitHub runners access clusters?
 
-- How 'cluster-secrets' is dynamically updated accordingly ./secrets/common/cluster-secret-store/secrets contents? Make plan/apply decodes SOPS secrets and put on ./clusters/tmp, then this data is passed to external-secrets module with 'secret_data' processed here clusters/locals.tf 
+Clusters are accessible via the `cluster-secrets` Kubernetes secret deployed to namespaces with label `cluster-secrets=true`. This secret contains:
+- `KUBECONFIG`: Combined kubeconfig for all clusters
+- All other secrets from [secrets/common/cluster-secret-store/secrets/](secrets/common/cluster-secret-store/secrets/)
+
+**Synchronization Flow**:
+1. SOPS-encrypted secrets stored in [secrets/](secrets/) directory
+2. `make plan/apply` runs [clusters/load_secrets.py](clusters/load_secrets.py) to decrypt secrets to `clusters/tmp/secrets.json`
+3. OpenTofu processes secrets via `locals.tf` and passes to External Secrets module
+4. External Secrets module creates ExternalSecret objects referencing Vault paths
+5. External Secrets Operator syncs from Vault to Kubernetes secrets
+6. Namespaces with `cluster-secrets=true` label automatically receive `cluster-secrets` secret
+
+**Automatic Secret Updates**:
+When secrets are added/removed in code:
+- OpenTofu detects changes and updates ExternalSecret objects
+- External Secrets Operator automatically propagates changes to all clusters
+- No manual intervention required - fully automated across all environments
+
+### How is kubeconfig managed for Cluster API clusters?
+
+**Automated Workflow** (triggered on cluster changes):
+1. CI/CD detects cluster changes via output comparison (before/after apply)
+2. Waits up to 30 minutes for Cluster API cluster to reach "Available" status
+3. [clusters/scripts/update_kubeconfig_sops.sh](clusters/scripts/update_kubeconfig_sops.sh) extracts kubeconfig from Cluster API secret
+4. Merges with existing kubeconfig in [secrets/common/cluster-secret-store/secrets/KUBECONFIG.yaml](secrets/common/cluster-secret-store/secrets/KUBECONFIG.yaml)
+5. Git commit: "chore: Update KUBECONFIG with Cluster API clusters"
+6. Syncs to Vault via `make apply ENV=tools TARGET='module.vault[0]'`
+7. External Secrets propagates to all clusters
+
+**Manual Recovery** (if automation fails):
+```bash
+./clusters/scripts/update_kubeconfig_sops.sh \
+  --cluster-name <cluster> \
+  --namespace <cluster> \
+  --management-context tools
+```
+
+### How do I add a new Cluster API cluster?
+
+1. Add cluster configuration to [clusters/variables.tf](clusters/variables.tf) under tools workspace:
+```hcl
+tools = {
+  kubernetes-cluster = [
+    {
+      cluster_type = "talos"  # or "kubeadm"
+      name = "new-cluster"
+      kubernetes_version = "v1.33.0"
+      control_plane_endpoint_ip = "192.168.1.80"
+      ip_range_start = "192.168.1.81"
+      ip_range_end = "192.168.1.89"
+      gateway = "192.168.1.1"
+      prefix = 24
+      dns_servers = ["192.168.1.3", "8.8.4.4"]
+
+      source_node = "node03"
+      template_id = 9005
+      allowed_nodes = ["node03"]
+
+      cp_replicas = 1
+      wk_replicas = 2
+
+      cp_disk_size = 20
+      cp_memory = 4096
+      cp_cores = 4
+      wk_disk_size = 30
+      wk_memory = 8192
+      wk_cores = 8
+    }
+  ]
+}
+```
+2. Commit and push to trigger CI/CD
+3. CI/CD automatically provisions cluster and updates kubeconfig in Vault
+4. Cluster immediately available to OpenTofu and CI/CD pipelines
+
+### How do I add a new module to an environment?
+
+1. Add module name to workspace's `workload` list in [clusters/variables.tf](clusters/variables.tf):
+```hcl
+variable "workload" {
+  default = {
+    dev = ["existing-module", "new-module"]
+  }
+}
+```
+2. Add module configuration under workspace in `config` variable:
+```hcl
+variable "config" {
+  default = {
+    dev = {
+      new-module = {
+        # module-specific settings
+      }
+    }
+  }
+}
+```
+3. Verify module exists in [clusters/modules.tf](clusters/modules.tf) with conditional count:
+```hcl
+module "new_module" {
+  count  = contains(local.workload, "new-module") ? 1 : 0
+  source = "../modules/apps/new-module"
+}
+```
+4. Run `make plan ENV=dev` to preview, then `make apply ENV=dev` to deploy
+
+### What is sandboxy cluster used for?
+
+The sandboxy cluster serves as a **CKS (Certified Kubernetes Security) training platform**:
+
+**Architecture**:
+- KubeVirt for VM virtualization on Kubernetes
+- Longhorn for distributed storage with snapshot capability
+- Pool of standby VMs ready for instant provisioning
+
+**Workflow**:
+1. CKS maintains pool of standby VMs (running on KubeVirt)
+2. User starts a CKS scenario
+3. VM instantly provisioned from pool (no wait time)
+4. User completes scenario exercises
+5. CKS triggers Longhorn snapshot restore
+6. VM reset to clean state and returned to pool
+7. Rapid reset enables high-throughput scenario execution
+
+This architecture provides instant scenario availability and eliminates waiting for VM provisioning/cleanup. 
