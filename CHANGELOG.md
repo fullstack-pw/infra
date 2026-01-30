@@ -1,3 +1,9 @@
+## [1.9.4](https://github.com/fullstack-pw/infra/compare/v1.9.3...v1.9.4) (2026-01-30)
+
+### Bug Fixes
+
+* **ephemeral:** correct Vault KV v2 data format in IP pool manager ([92e3422](https://github.com/fullstack-pw/infra/commit/92e342294f2df9c26e6c1d1de70276bd525df783))
+
 ## [1.9.3](https://github.com/fullstack-pw/infra/compare/v1.9.2...v1.9.3) (2026-01-30)
 
 ### Bug Fixes
