@@ -34,9 +34,16 @@ save_allocations() {
     local allocations="$1"
     local version="${2:-0}"
 
-    # Always use CAS - version 0 means path doesn't exist yet
-    # This ensures atomic create-if-not-exists behavior
-    echo "$allocations" | vault kv put -cas="$version" "$VAULT_PATH" data=@-
+    # Create JSON payload for Vault
+    local payload=$(jq -n --argjson data "$allocations" '{data: $data}')
+
+    if [[ "$version" -eq 0 ]]; then
+        # First write (no version check)
+        vault kv put "$VAULT_PATH" - <<< "$payload" > /dev/null
+    else
+        # CAS write with version check
+        vault kv put -cas="$version" "$VAULT_PATH" - <<< "$payload" > /dev/null
+    fi
 }
 
 # Function to get current version from Vault
@@ -62,8 +69,6 @@ allocate_ip() {
         # Get current allocations and version
         local allocations=$(get_allocations)
         local version=$(get_version)
-
-        echo -e "${YELLOW}DEBUG: Current version=$version, allocations=$allocations${NC}" >&2
 
         # Check if cluster already has an IP
         local existing_ip=$(echo "$allocations" | jq -r --arg cluster "$cluster_name" 'to_entries[] | select(.value == $cluster) | .key')
@@ -97,19 +102,15 @@ allocate_ip() {
         # Add new allocation
         local new_allocations=$(echo "$allocations" | jq --arg ip "$ip_found" --arg cluster "$cluster_name" '. + {($ip): $cluster}')
 
-        echo -e "${YELLOW}DEBUG: Attempting to allocate $ip_found with version=$version${NC}" >&2
-        echo -e "${YELLOW}DEBUG: New allocations: $new_allocations${NC}" >&2
-
         # Try to save with CAS
-        if save_allocations "$new_allocations" "$version"; then
+        if save_allocations "$new_allocations" "$version" 2>/dev/null; then
             echo -e "${GREEN}Successfully allocated IP $ip_found to cluster $cluster_name${NC}" >&2
             echo "$ip_found"
             return 0
         else
             # CAS conflict, retry
-            local exit_code=$?
             retry=$((retry + 1))
-            echo -e "${YELLOW}CAS conflict (exit code: $exit_code), retrying ($retry/$max_retries)...${NC}" >&2
+            echo -e "${YELLOW}CAS conflict, retrying ($retry/$max_retries)...${NC}" >&2
             sleep 1
         fi
     done
