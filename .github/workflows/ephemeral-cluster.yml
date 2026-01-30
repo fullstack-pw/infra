@@ -56,6 +56,16 @@ jobs:
         run: |
           kubectl apply -f /tmp/cluster.yaml --context tools --kubeconfig /home/runner/.kube/config
 
+      - name: Copy Proxmox credentials to namespace
+        run: |
+          CLUSTER_NAME="${{ steps.allocate.outputs.cluster_name }}"
+          # Copy proxmox-credentials from another namespace (e.g., k3s-test)
+          kubectl --context tools --kubeconfig /home/runner/.kube/config \
+            get secret proxmox-credentials -n k3s-test -o json | \
+            jq 'del(.metadata.namespace,.metadata.uid,.metadata.resourceVersion,.metadata.creationTimestamp,.metadata.ownerReferences,.metadata.finalizers)' | \
+            kubectl --context tools --kubeconfig /home/runner/.kube/config apply -n "$CLUSTER_NAME" -f - || \
+            echo "Warning: Could not copy proxmox-credentials (may already exist)"
+
       - name: Wait for cluster available
         run: |
           CLUSTER_NAME="${{ steps.allocate.outputs.cluster_name }}"
