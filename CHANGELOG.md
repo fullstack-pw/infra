@@ -1,3 +1,9 @@
+## [1.10.1](https://github.com/fullstack-pw/infra/compare/v1.10.0...v1.10.1) (2026-01-30)
+
+### Bug Fixes
+
+* **ephemeral:** use Pi-hole external-dns instead of Cloudflare ([21f71ad](https://github.com/fullstack-pw/infra/commit/21f71ad713b2bfc3c60f748d08ee2be376ded8f2))
+
 ## [1.10.0](https://github.com/fullstack-pw/infra/compare/v1.9.12...v1.10.0) (2026-01-30)
 
 ### Features
