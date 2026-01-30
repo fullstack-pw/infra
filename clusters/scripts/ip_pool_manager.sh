@@ -34,15 +34,12 @@ save_allocations() {
     local allocations="$1"
     local version="${2:-0}"
 
-    # Create JSON payload for Vault
-    local payload=$(jq -n --argjson data "$allocations" '{data: $data}')
-
     if [[ "$version" -eq 0 ]]; then
         # First write (no version check)
-        vault kv put "$VAULT_PATH" - <<< "$payload" > /dev/null
+        echo "$allocations" | vault kv put "$VAULT_PATH" data=@- > /dev/null
     else
         # CAS write with version check
-        vault kv put -cas="$version" "$VAULT_PATH" - <<< "$payload" > /dev/null
+        echo "$allocations" | vault kv put -cas="$version" "$VAULT_PATH" data=@- > /dev/null
     fi
 }
 

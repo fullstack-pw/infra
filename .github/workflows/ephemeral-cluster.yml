@@ -44,7 +44,7 @@ jobs:
 
       - name: Create cluster via Cluster API
         run: |
-          kubectl apply -f /tmp/cluster.yaml --context tools
+          kubectl apply -f /tmp/cluster.yaml --context tools --kubeconfig /home/runner/.kube/config
 
       - name: Wait for cluster available
         run: |
@@ -53,7 +53,7 @@ jobs:
           kubectl wait --for=condition=Available \
             cluster/$CLUSTER_NAME \
             -n $CLUSTER_NAME \
-            --timeout=5m --context tools
+            --timeout=5m --context tools --kubeconfig /home/runner/.kube/config
 
       - name: Extract kubeconfig
         id: kubeconfig
@@ -61,7 +61,7 @@ jobs:
           CLUSTER_NAME="${{ steps.allocate.outputs.cluster_name }}"
           kubectl get secret ${CLUSTER_NAME}-kubeconfig \
             -n $CLUSTER_NAME \
-            -o jsonpath='{.data.value}' --context tools | base64 -d > /tmp/kubeconfig
+            -o jsonpath='{.data.value}' --context tools --kubeconfig /home/runner/.kube/config| base64 -d > /tmp/kubeconfig
           echo "kubeconfig_path=/tmp/kubeconfig" >> $GITHUB_OUTPUT
 
       - name: Store kubeconfig in Vault
@@ -178,7 +178,7 @@ jobs:
           CLUSTER_NAME="${{ steps.allocate.outputs.cluster_name }}"
 
           # Delete cluster if it was created
-          kubectl delete cluster $CLUSTER_NAME -n $CLUSTER_NAME --context tools --ignore-not-found=true
+          kubectl delete cluster $CLUSTER_NAME -n $CLUSTER_NAME --context tools --ignore-not-found=true --kubeconfig /home/runner/.kube/config
 
           # Release IP
           ./clusters/scripts/ip_pool_manager.sh release "$CLUSTER_NAME" || true
@@ -198,14 +198,14 @@ jobs:
           CLUSTER_NAME="${{ github.event.client_payload.cluster_name }}"
           echo "Deleting cluster: $CLUSTER_NAME"
 
-          kubectl delete cluster $CLUSTER_NAME -n $CLUSTER_NAME --context tools --ignore-not-found=true
+          kubectl delete cluster $CLUSTER_NAME -n $CLUSTER_NAME --context tools --ignore-not-found=true --kubeconfig /home/runner/.kube/config
 
           # Wait for cluster deletion
           kubectl wait --for=delete cluster/$CLUSTER_NAME -n $CLUSTER_NAME \
-            --timeout=5m --context tools || true
+            --timeout=5m --context tools --kubeconfig /home/runner/.kube/config || true
 
           # Delete namespace
-          kubectl delete namespace $CLUSTER_NAME --context tools --ignore-not-found=true
+          kubectl delete namespace $CLUSTER_NAME --context tools --ignore-not-found=true --kubeconfig /home/runner/.kube/config
 
       - name: Release IP from pool
         run: |
@@ -221,7 +221,7 @@ jobs:
         run: |
           CLUSTER_NAME="${{ github.event.client_payload.cluster_name }}"
           APP_NAME=$(echo "$CLUSTER_NAME" | sed 's/pr-//')
-          kubectl delete application $APP_NAME -n argocd --context tools --ignore-not-found=true
+          kubectl delete application $APP_NAME -n argocd --context tools --ignore-not-found=true --kubeconfig /home/runner/.kube/config
 
       - name: Post cleanup confirmation
         if: success()
