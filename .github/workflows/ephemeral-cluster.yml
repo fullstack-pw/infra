@@ -152,21 +152,18 @@ jobs:
           script: |
             const clusterName = '${{ steps.allocate.outputs.cluster_name }}';
             const clusterIP = '${{ steps.allocate.outputs.ip }}';
-            const dnsName = `pr-${{ github.event.client_payload.pr_number }}-${{ github.event.client_payload.repository }}.ephemeral.fullstack.pw`;
             const prNumber = parseInt('${{ github.event.client_payload.pr_number }}');
             const repo = '${{ github.event.client_payload.repository }}';
+            const dnsName = 'pr-' + prNumber + '-' + repo + '.ephemeral.fullstack.pw';
 
-            const body = `## Ephemeral Cluster Ready
-
-**Cluster Name:** \`${clusterName}\`
-**Cluster IP:** \`${clusterIP}\`
-**DNS:** \`${dnsName}\`
-**Status:** Ready for deployment
-
-The ephemeral cluster is now available for testing. Your application will be deployed shortly.
-
----
-*This cluster will auto-cleanup 1 hour after PR close or after 3 days maximum lifetime.*`;
+            const body = '## Ephemeral Cluster Ready\n\n' +
+              '**Cluster Name:** `' + clusterName + '`\n' +
+              '**Cluster IP:** `' + clusterIP + '`\n' +
+              '**DNS:** `' + dnsName + '`\n' +
+              '**Status:** Ready for deployment\n\n' +
+              'The ephemeral cluster is now available for testing. Your application will be deployed shortly.\n\n' +
+              '---\n' +
+              '*This cluster will auto-cleanup 1 hour after PR close or after 3 days maximum lifetime.*';
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -236,19 +233,16 @@ The ephemeral cluster is now available for testing. Your application will be dep
             const prNumber = parseInt('${{ github.event.client_payload.pr_number }}');
             const repo = '${{ github.event.client_payload.repository }}';
 
-            const body = `## 🧹 Ephemeral Cluster Deleted
-
-**Cluster Name:** \`${clusterName}\`
-**Status:** Cleaned up
-
-Resources released:
-- VM deleted from Proxmox
-- IP returned to pool
-- Kubeconfig removed from Vault
-- DNS records removed
-
----
-*Ephemeral cluster resources have been fully cleaned up.*`;
+            const body = '## Ephemeral Cluster Deleted\n\n' +
+              '**Cluster Name:** `' + clusterName + '`\n' +
+              '**Status:** Cleaned up\n\n' +
+              'Resources released:\n' +
+              '- VM deleted from Proxmox\n' +
+              '- IP returned to pool\n' +
+              '- Kubeconfig removed from Vault\n' +
+              '- DNS records removed\n\n' +
+              '---\n' +
+              '*Ephemeral cluster resources have been fully cleaned up.*';
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
