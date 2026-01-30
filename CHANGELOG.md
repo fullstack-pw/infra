@@ -1,3 +1,9 @@
+## [1.9.9](https://github.com/fullstack-pw/infra/compare/v1.9.8...v1.9.9) (2026-01-30)
+
+### Bug Fixes
+
+* **runner:** python ([e3d9c1f](https://github.com/fullstack-pw/infra/commit/e3d9c1f92aa58d3fedad4e5fd7a47af35db2b5df))
+
 ## [1.9.8](https://github.com/fullstack-pw/infra/compare/v1.9.7...v1.9.8) (2026-01-30)
 
 ### Bug Fixes
