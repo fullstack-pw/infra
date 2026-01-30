@@ -1,3 +1,9 @@
+## [1.10.4](https://github.com/fullstack-pw/infra/compare/v1.10.3...v1.10.4) (2026-01-30)
+
+### Bug Fixes
+
+* **ephemeral:** wait for cert-manager webhook before applying ClusterIssuer ([0c8584b](https://github.com/fullstack-pw/infra/commit/0c8584b3501047f5be8f34d31289216d9d9ee79c))
+
 ## [1.10.3](https://github.com/fullstack-pw/infra/compare/v1.10.2...v1.10.3) (2026-01-30)
 
 ### Bug Fixes
