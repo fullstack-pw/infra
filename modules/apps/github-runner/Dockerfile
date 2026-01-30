@@ -82,8 +82,8 @@ RUN echo 'source <(kubectl completion bash)' >> /home/runner/.bashrc \
     && echo 'complete -F __start_kubectl k' >> /home/runner/.bashrc
 
 RUN python3 -m venv ./python-venv \
-    source ./python-venv/bin/activate \
-    pip3 install --no-cache-dir \
+    && source ./python-venv/bin/activate \
+    && pip3 install \
     pyyaml \
     hvac \
     requests \
