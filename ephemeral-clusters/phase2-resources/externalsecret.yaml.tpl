@@ -1,3 +1,4 @@
+---
 # ExternalSecret template (optional)
 # Syncs secrets from Vault to Kubernetes
 # Requires SecretStore to be configured in Phase 1
