@@ -8,7 +8,7 @@ env:
   VAULT_ADDR: https://vault.fullstack.pw
 jobs:
   create-cluster:
-    if: github.event.action == 'create_ephemeral_cluster'
+    if: github.event_name == 'repository_dispatch' && github.event.action == 'create_ephemeral_cluster'
     runs-on: self-hosted
     steps:
       - name: Checkout repository
@@ -190,7 +190,7 @@ The ephemeral cluster is now available for testing. Your application will be dep
           vault kv delete kv/ephemeral-clusters/${CLUSTER_NAME}/kubeconfig || true
 
   delete-cluster:
-    if: github.event.action == 'delete_ephemeral_cluster'
+    if: github.event_name == 'repository_dispatch' && github.event.action == 'delete_ephemeral_cluster'
     runs-on: self-hosted
     steps:
       - name: Checkout repository
