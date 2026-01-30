@@ -1,3 +1,9 @@
+## [1.10.0](https://github.com/fullstack-pw/infra/compare/v1.9.12...v1.10.0) (2026-01-30)
+
+### Features
+
+* **ephemeral:** implement 2-IP allocation and add proxmox-credentials copy ([2b5ad23](https://github.com/fullstack-pw/infra/commit/2b5ad233410d84dcdbb5ff0cafa99fa4ad89e78e))
+
 ## [1.9.12](https://github.com/fullstack-pw/infra/compare/v1.9.11...v1.9.12) (2026-01-30)
 
 ### Bug Fixes
