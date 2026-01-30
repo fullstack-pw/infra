@@ -1,3 +1,9 @@
+## [1.9.11](https://github.com/fullstack-pw/infra/compare/v1.9.10...v1.9.11) (2026-01-30)
+
+### Tasks
+
+* **runner:** image ([#133](https://github.com/fullstack-pw/infra/issues/133)) ([41f9221](https://github.com/fullstack-pw/infra/commit/41f92213d074b9164c4b9fa50727cb22db8f5979))
+
 ## [1.9.10](https://github.com/fullstack-pw/infra/compare/v1.9.9...v1.9.10) (2026-01-30)
 
 ### Bug Fixes
