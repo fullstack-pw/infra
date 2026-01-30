@@ -71,24 +71,25 @@ RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /
     && apt-get install -y docker-ce-cli \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --no-cache-dir \
+RUN mkdir -p /home/runner/.kube ~/.sops/keys ~/.aws ~/.config/gcloud \
+    && chown -R runner:runner /home/runner
+
+USER runner
+
+RUN echo 'source <(kubectl completion bash)' >> /home/runner/.bashrc \
+    && echo 'source <(helm completion bash)' >> /home/runner/.bashrc \
+    && echo 'alias k=kubectl' >> /home/runner/.bashrc \
+    && echo 'complete -F __start_kubectl k' >> /home/runner/.bashrc
+
+RUN python3 -m venv ./python-venv \
+    source ./python-venv/bin/activate \
+    pip3 install --no-cache-dir \
     pyyaml \
     hvac \
     requests \
     boto3 \
     kubernetes \
     ansible
-
-RUN mkdir -p /home/runner/.kube ~/.sops/keys ~/.aws ~/.config/gcloud \
-    && chown -R runner:runner /home/runner
-
-RUN echo 'source <(kubectl completion bash)' >> /home/runner/.bashrc \
-    && echo 'source <(helm completion bash)' >> /home/runner/.bashrc \
-    && echo 'alias k=kubectl' >> /home/runner/.bashrc \
-    && echo 'complete -F __start_kubectl k' >> /home/runner/.bashrc \
-    && chown runner:runner /home/runner/.bashrc
-
-USER runner
 
 ENV PATH="${HOME}/.local/bin:${PATH}" \
     DOCKER_BUILDKIT=1
