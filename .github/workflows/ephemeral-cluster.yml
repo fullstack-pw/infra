@@ -149,12 +149,18 @@ jobs:
           export DNS_NAME="pr-${{ github.event.client_payload.pr_number }}-${{ github.event.client_payload.repository }}.ephemeral.fullstack.pw"
           export CLUSTER_IP="${{ steps.allocate.outputs.ip }}"
           export CLUSTER_NAME="${{ steps.allocate.outputs.cluster_name }}"
+          export PR_NUMBER="${{ github.event.client_payload.pr_number }}"
 
           # Apply ClusterIssuer (static)
           kubectl apply -f ephemeral-clusters/phase2-resources/clusterissuer.yaml --kubeconfig /tmp/kubeconfig
 
-          # Apply templated resources
+          # Apply templated resources (excluding postgres if not needed)
           for f in ephemeral-clusters/phase2-resources/*.tpl; do
+            # Skip postgres resources if install_postgres is not true
+            if [[ "$f" == *"postgres"* ]] && [[ "${{ github.event.client_payload.install_postgres }}" != "true" ]]; then
+              echo "Skipping $f (postgres not enabled)"
+              continue
+            fi
             envsubst < "$f"
           done | kubectl apply --kubeconfig /tmp/kubeconfig -f -
 
