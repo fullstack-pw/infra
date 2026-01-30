@@ -1,3 +1,9 @@
+## [1.10.5](https://github.com/fullstack-pw/infra/compare/v1.10.4...v1.10.5) (2026-01-30)
+
+### Bug Fixes
+
+* **ephemeral:** add YAML document separators to phase2 templates ([19e2e5f](https://github.com/fullstack-pw/infra/commit/19e2e5f663ecbb418f179ffdebc941d61dc3f3c2))
+
 ## [1.10.4](https://github.com/fullstack-pw/infra/compare/v1.10.3...v1.10.4) (2026-01-30)
 
 ### Bug Fixes
