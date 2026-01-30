@@ -20,7 +20,7 @@ RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/s
     && curl -fsSL https://packages.opentofu.org/opentofu/tofu/gpgkey | gpg --dearmor -o /usr/share/keyrings/opentofu-repo-keyring.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/opentofu-archive-keyring.gpg,/usr/share/keyrings/opentofu-repo-keyring.gpg] https://packages.opentofu.org/opentofu/tofu/any/ any main" | tee /etc/apt/sources.list.d/opentofu.list \
 
-&& curl -fsSL /tmp/sops.deb "https://github.com/mozilla/sops/releases/download/v3.8.1/sops_3.8.1_amd64.deb" \
+&& curl -L "https://github.com/mozilla/sops/releases/download/v3.8.1/sops_3.8.1_amd64.deb" -o /tmp/sops.deb\
     && dpkg -i /tmp/sops.deb \
     && sops --version \
     && rm /tmp/sops.deb \
