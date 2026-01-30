@@ -1,3 +1,13 @@
+## [1.9.10](https://github.com/fullstack-pw/infra/compare/v1.9.9...v1.9.10) (2026-01-30)
+
+### Bug Fixes
+
+* **runner:** add gettext ([faa6a36](https://github.com/fullstack-pw/infra/commit/faa6a36e65e1a5b19a77f86251f8e76f76acb229))
+
+### Reverts
+
+* **ephemeral:** restore original IP pool manager script ([262a54d](https://github.com/fullstack-pw/infra/commit/262a54db4609c6c2bfd327e7a31bea6544539372))
+
 ## [1.9.9](https://github.com/fullstack-pw/infra/compare/v1.9.8...v1.9.9) (2026-01-30)
 
 ### Bug Fixes
