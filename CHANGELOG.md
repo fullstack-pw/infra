@@ -1,3 +1,9 @@
+## [1.9.3](https://github.com/fullstack-pw/infra/compare/v1.9.2...v1.9.3) (2026-01-30)
+
+### Bug Fixes
+
+* **ephemeral-cluster:** fix YAML syntax in GitHub script comments ([06aee7f](https://github.com/fullstack-pw/infra/commit/06aee7fc2b24f28d9957c7beb21a7bed83485d32))
+
 ## [1.9.2](https://github.com/fullstack-pw/infra/compare/v1.9.1...v1.9.2) (2026-01-30)
 
 ### Bug Fixes
