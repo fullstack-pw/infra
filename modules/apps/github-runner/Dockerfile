@@ -76,7 +76,7 @@ RUN echo 'source <(kubectl completion bash)' >> /home/runner/.bashrc \
     && echo 'alias k=kubectl' >> /home/runner/.bashrc \
     && echo 'complete -F __start_kubectl k' >> /home/runner/.bashrc \
 
- python3 -m venv ./python-venv \
+&& python3 -m venv ./python-venv \
     && . ./python-venv/bin/activate \
     && pip3 install \
     pyyaml \
