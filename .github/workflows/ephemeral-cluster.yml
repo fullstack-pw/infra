@@ -4,6 +4,8 @@ on:
   repository_dispatch:
     types: [create_ephemeral_cluster, delete_ephemeral_cluster]
 
+env:
+  VAULT_ADDR: https://vault.fullstack.pw
 jobs:
   create-cluster:
     if: github.event.action == 'create_ephemeral_cluster'
@@ -15,11 +17,9 @@ jobs:
       - name: Check IP pool capacity
         id: check-capacity
         run: |
-          export VAULT_ADDR=https://vault.fullstack.pw
-          export VAULT_TOKEN=${{ secrets.VAULT_TOKEN }}
-          CAPACITY=$(./clusters/scripts/ip_pool_manager.sh check-capacity)
-          echo "capacity=$CAPACITY"
-          if [ "$CAPACITY" -eq 0 ]; then
+          ./clusters/scripts/ip_pool_manager.sh check-capacity
+          CAPACITY_RESULT=$?
+          if [ "$CAPACITY_RESULT" -ne 0 ]; then
             echo "::error::IP pool exhausted. All 10 ephemeral cluster slots are in use. Please close old PRs or wait for auto-cleanup."
             exit 1
           fi
@@ -27,8 +27,6 @@ jobs:
       - name: Allocate IP from pool
         id: allocate
         run: |
-          export VAULT_ADDR=https://vault.fullstack.pw
-          export VAULT_TOKEN=${{ secrets.VAULT_TOKEN }}
           CLUSTER_NAME="pr-${{ github.event.client_payload.repository }}-${{ github.event.client_payload.pr_number }}"
           IP=$(./clusters/scripts/ip_pool_manager.sh allocate "$CLUSTER_NAME")
           echo "ip=$IP" >> $GITHUB_OUTPUT
@@ -47,13 +45,6 @@ jobs:
       - name: Create cluster via Cluster API
         run: |
           kubectl apply -f /tmp/cluster.yaml --context tools
-
-      - name: Copy proxmox-credentials secret
-        run: |
-          CLUSTER_NAME="${{ steps.allocate.outputs.cluster_name }}"
-          kubectl --context tools get secret proxmox-credentials -n k3s-test -o json | \
-            jq 'del(.metadata.creationTimestamp, .metadata.resourceVersion, .metadata.uid, .metadata.ownerReferences, .metadata.finalizers) | .metadata.namespace = "'$CLUSTER_NAME'"' | \
-            kubectl --context tools apply -f - || echo "Warning: Could not copy proxmox-credentials"
 
       - name: Wait for cluster available
         run: |
@@ -75,31 +66,16 @@ jobs:
 
       - name: Store kubeconfig in Vault
         run: |
-          export VAULT_ADDR=https://vault.fullstack.pw
-          export VAULT_TOKEN=${{ secrets.VAULT_TOKEN }}
           CLUSTER_NAME="${{ steps.allocate.outputs.cluster_name }}"
           vault kv put kv/ephemeral-clusters/${CLUSTER_NAME}/kubeconfig \
             value=@/tmp/kubeconfig
-
-      - name: Create Cloudflare API token secret
-        run: |
-          export VAULT_ADDR=https://vault.fullstack.pw
-          export VAULT_TOKEN=${{ secrets.VAULT_TOKEN }}
-          CF_TOKEN=$(vault kv get -field=api-token kv/cloudflare)
-          kubectl create namespace external-dns \
-            --kubeconfig /tmp/kubeconfig \
-            --dry-run=client -o yaml | kubectl apply --kubeconfig /tmp/kubeconfig -f -
-          kubectl create secret generic cloudflare-api-token \
-            --from-literal=api-token="$CF_TOKEN" \
-            -n external-dns \
-            --kubeconfig /tmp/kubeconfig \
-            --dry-run=client -o yaml | kubectl apply --kubeconfig /tmp/kubeconfig -f -
 
       - name: Install Phase 1 - Operators
         run: |
           kubectl apply -k ephemeral-clusters/phase1-operators/ --kubeconfig /tmp/kubeconfig
 
-      - name: Install CloudNativePG via Helm
+      - name: Install CloudNativePG via Helm (optional)
+        if: github.event.client_payload.install_postgres == 'true'
         run: |
           helm repo add cloudnative-pg https://cloudnative-pg.github.io/charts || true
           helm repo update cloudnative-pg
@@ -123,20 +99,21 @@ jobs:
           kubectl wait --for=condition=Available deployment/external-secrets \
             -n external-secrets --timeout=3m --kubeconfig /tmp/kubeconfig
 
-          echo "Waiting for CloudNativePG..."
-          kubectl wait --for=condition=Available deployment/cnpg-cloudnative-pg \
-            -n cnpg-system --timeout=3m --kubeconfig /tmp/kubeconfig
+          if [ "${{ github.event.client_payload.install_postgres }}" == "true" ]; then
+            echo "Waiting for CloudNativePG..."
+            kubectl wait --for=condition=Available deployment/cnpg-cloudnative-pg \
+              -n cnpg-system --timeout=3m --kubeconfig /tmp/kubeconfig
+          fi
 
       - name: Wait for CRDs established
         run: |
-          kubectl wait --for condition=established --timeout=3m --kubeconfig /tmp/kubeconfig \
-            crd/certificates.cert-manager.io \
-            crd/clusterissuers.cert-manager.io \
-            crd/dnsendpoints.externaldns.k8s.io \
-            crd/secretstores.external-secrets.io \
-            crd/externalsecrets.external-secrets.io \
-            crd/clusters.postgresql.cnpg.io \
-            crd/backups.postgresql.cnpg.io
+          CRDS="crd/certificates.cert-manager.io crd/clusterissuers.cert-manager.io crd/dnsendpoints.externaldns.k8s.io crd/secretstores.external-secrets.io crd/externalsecrets.external-secrets.io"
+
+          if [ "${{ github.event.client_payload.install_postgres }}" == "true" ]; then
+            CRDS="$CRDS crd/clusters.postgresql.cnpg.io crd/backups.postgresql.cnpg.io"
+          fi
+
+          kubectl wait --for condition=established --timeout=3m --kubeconfig /tmp/kubeconfig $CRDS
 
       - name: Install Phase 2 - Resources
         run: |
@@ -152,18 +129,20 @@ jobs:
             envsubst < "$f"
           done | kubectl apply --kubeconfig /tmp/kubeconfig -f -
 
-      - name: Wait for DNS propagation
+      - name: Verify Phase 2 resources
         run: |
-          DNS_NAME="pr-${{ github.event.client_payload.pr_number }}-${{ github.event.client_payload.repository }}.ephemeral.fullstack.pw"
-          CLUSTER_IP="${{ steps.allocate.outputs.ip }}"
+          echo "Verifying ClusterIssuer..."
+          kubectl get clusterissuer letsencrypt-staging --kubeconfig /tmp/kubeconfig
 
-          echo "Waiting for DNS propagation of $DNS_NAME to $CLUSTER_IP..."
-          timeout 300 bash -c "
-            until dig +short $DNS_NAME | grep -q '$CLUSTER_IP'; do
-              echo 'Waiting for DNS propagation...'
-              sleep 5
-            done
-          " || echo "DNS propagation timeout - may take additional time"
+          echo "Verifying ExternalSecret..."
+          kubectl get externalsecret -n default --kubeconfig /tmp/kubeconfig
+
+          if [ "${{ github.event.client_payload.install_postgres }}" == "true" ]; then
+            echo "Verifying PostgreSQL Cluster..."
+            kubectl get cluster.postgresql.cnpg.io postgres -n default --kubeconfig /tmp/kubeconfig
+          fi
+
+          echo "Phase 2 resources verified successfully"
 
       - name: Post cluster info comment
         if: success()
@@ -174,31 +153,31 @@ jobs:
             const clusterName = '${{ steps.allocate.outputs.cluster_name }}';
             const clusterIP = '${{ steps.allocate.outputs.ip }}';
             const dnsName = `pr-${{ github.event.client_payload.pr_number }}-${{ github.event.client_payload.repository }}.ephemeral.fullstack.pw`;
+            const prNumber = parseInt('${{ github.event.client_payload.pr_number }}');
+            const repo = '${{ github.event.client_payload.repository }}';
 
-            const body = `## 🚀 Ephemeral Cluster Ready
+            const body = `## Ephemeral Cluster Ready
 
 **Cluster Name:** \`${clusterName}\`
 **Cluster IP:** \`${clusterIP}\`
 **DNS:** \`${dnsName}\`
-**Status:** ✅ Ready for deployment
+**Status:** Ready for deployment
 
 The ephemeral cluster is now available for testing. Your application will be deployed shortly.
 
 ---
 *This cluster will auto-cleanup 1 hour after PR close or after 3 days maximum lifetime.*`;
 
-            github.rest.issues.createComment({
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
-              repo: '${{ github.event.client_payload.repository }}',
-              issue_number: ${{ github.event.client_payload.pr_number }},
+              repo: repo,
+              issue_number: prNumber,
               body: body
             });
 
       - name: Cleanup on failure
         if: failure()
         run: |
-          export VAULT_ADDR=https://vault.fullstack.pw
-          export VAULT_TOKEN=${{ secrets.VAULT_TOKEN }}
           CLUSTER_NAME="${{ steps.allocate.outputs.cluster_name }}"
 
           # Delete cluster if it was created
@@ -233,15 +212,11 @@ The ephemeral cluster is now available for testing. Your application will be dep
 
       - name: Release IP from pool
         run: |
-          export VAULT_ADDR=https://vault.fullstack.pw
-          export VAULT_TOKEN=${{ secrets.VAULT_TOKEN }}
           CLUSTER_NAME="${{ github.event.client_payload.cluster_name }}"
           ./clusters/scripts/ip_pool_manager.sh release "$CLUSTER_NAME"
 
       - name: Remove kubeconfig from Vault
         run: |
-          export VAULT_ADDR=https://vault.fullstack.pw
-          export VAULT_TOKEN=${{ secrets.VAULT_TOKEN }}
           CLUSTER_NAME="${{ github.event.client_payload.cluster_name }}"
           vault kv delete kv/ephemeral-clusters/${CLUSTER_NAME}/kubeconfig || true
 
@@ -258,24 +233,26 @@ The ephemeral cluster is now available for testing. Your application will be dep
           github-token: ${{ secrets.PAT_TOKEN }}
           script: |
             const clusterName = '${{ github.event.client_payload.cluster_name }}';
+            const prNumber = parseInt('${{ github.event.client_payload.pr_number }}');
+            const repo = '${{ github.event.client_payload.repository }}';
 
             const body = `## 🧹 Ephemeral Cluster Deleted
 
 **Cluster Name:** \`${clusterName}\`
-**Status:** ✅ Cleaned up
+**Status:** Cleaned up
 
 Resources released:
-- ✅ VM deleted from Proxmox
-- ✅ IP returned to pool
-- ✅ Kubeconfig removed from Vault
-- ✅ DNS records removed
+- VM deleted from Proxmox
+- IP returned to pool
+- Kubeconfig removed from Vault
+- DNS records removed
 
 ---
 *Ephemeral cluster resources have been fully cleaned up.*`;
 
-            github.rest.issues.createComment({
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
-              repo: '${{ github.event.client_payload.repository }}',
-              issue_number: ${{ github.event.client_payload.pr_number }},
+              repo: repo,
+              issue_number: prNumber,
               body: body
             });
