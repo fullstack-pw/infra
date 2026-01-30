@@ -90,6 +90,14 @@ jobs:
           vault kv put kv/ephemeral-clusters/${CLUSTER_NAME}/kubeconfig \
             value=@/tmp/kubeconfig
 
+      - name: Create Pi-hole password secret
+        run: |
+          echo -n "$PIHOLE_PASSWORD" | kubectl create secret generic pihole-password \
+            --from-file=PIHOLE_PASSWORD=/dev/stdin \
+            -n external-dns \
+            --kubeconfig /tmp/kubeconfig \
+            --dry-run=client -o yaml | kubectl apply -f - --kubeconfig /tmp/kubeconfig
+
       - name: Install Phase 1 - Operators
         run: |
           kubectl apply -k ephemeral-clusters/phase1-operators/ --kubeconfig /tmp/kubeconfig
@@ -112,7 +120,7 @@ jobs:
             -n cert-manager --timeout=3m --kubeconfig /tmp/kubeconfig
 
           echo "Waiting for external-dns..."
-          kubectl wait --for=condition=Available deployment/external-dns-cloudflare \
+          kubectl wait --for=condition=Available deployment/external-dns \
             -n external-dns --timeout=3m --kubeconfig /tmp/kubeconfig
 
           echo "Waiting for external-secrets..."

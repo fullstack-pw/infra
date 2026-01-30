@@ -4,6 +4,6 @@ kind: Kustomization
 resources:
   - https://github.com/cert-manager/cert-manager/releases/download/v1.16.2/cert-manager.yaml
   - dnsendpoint-crd.yaml
-  - external-dns-cloudflare.yaml
+  - external-dns-pihole.yaml
   - external-secrets.yaml
   # CloudNativePG is installed via Helm (see test-provisioning.sh step 9.5)
