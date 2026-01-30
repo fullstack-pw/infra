@@ -1,3 +1,9 @@
+## [1.9.2](https://github.com/fullstack-pw/infra/compare/v1.9.1...v1.9.2) (2026-01-30)
+
+### Bug Fixes
+
+* **ephemeral-cluster:** use correct event property for repository_dispatch ([6ad899f](https://github.com/fullstack-pw/infra/commit/6ad899f716b8b9b0bf39db85b49ce4af64a4d15a))
+
 ## [1.9.1](https://github.com/fullstack-pw/infra/compare/v1.9.0...v1.9.1) (2026-01-30)
 
 ### Bug Fixes
