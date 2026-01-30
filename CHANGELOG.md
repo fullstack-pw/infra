@@ -1,3 +1,9 @@
+## [1.9.1](https://github.com/fullstack-pw/infra/compare/v1.9.0...v1.9.1) (2026-01-30)
+
+### Bug Fixes
+
+* **ephemeral-clusters:** workflow ([159dc67](https://github.com/fullstack-pw/infra/commit/159dc6734c5343f57cd372f5250649aed6b3098d))
+
 ## [1.9.0](https://github.com/fullstack-pw/infra/compare/v1.8.1...v1.9.0) (2026-01-29)
 
 ### Features
