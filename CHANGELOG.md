@@ -1,3 +1,9 @@
+## [1.10.6](https://github.com/fullstack-pw/infra/compare/v1.10.5...v1.10.6) (2026-01-30)
+
+### Bug Fixes
+
+* **ephemeral:** create vault-token secret for ExternalSecret integration ([1d192ab](https://github.com/fullstack-pw/infra/commit/1d192ab0c04723a60299274c286cb482c4ef02fb))
+
 ## [1.10.5](https://github.com/fullstack-pw/infra/compare/v1.10.4...v1.10.5) (2026-01-30)
 
 ### Bug Fixes
