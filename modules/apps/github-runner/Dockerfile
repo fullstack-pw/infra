@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y \
     make \
     python3 \
     python3-venv \
+    gettext-base \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
