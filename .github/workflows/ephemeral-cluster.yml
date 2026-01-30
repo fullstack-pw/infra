@@ -92,6 +92,7 @@ jobs:
 
       - name: Create Pi-hole password secret
         run: |
+          kubectl create ns external-dns --kubeconfig /tmp/kubeconfig
           echo -n "$PIHOLE_PASSWORD" | kubectl create secret generic pihole-password \
             --from-file=PIHOLE_PASSWORD=/dev/stdin \
             -n external-dns \
