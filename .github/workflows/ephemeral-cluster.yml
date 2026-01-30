@@ -90,14 +90,25 @@ jobs:
           vault kv put kv/ephemeral-clusters/${CLUSTER_NAME}/kubeconfig \
             value=@/tmp/kubeconfig
 
-      - name: Create Pi-hole password secret
+      - name: Create secrets
         run: |
-          kubectl create ns external-dns --kubeconfig /tmp/kubeconfig
-          echo -n "$PIHOLE_PASSWORD" | kubectl create secret generic pihole-password \
-            --from-file=PIHOLE_PASSWORD=/dev/stdin \
-            -n external-dns \
-            --kubeconfig /tmp/kubeconfig \
-            --dry-run=client -o yaml | kubectl apply -f - --kubeconfig /tmp/kubeconfig
+          # Create namespaces
+          kubectl create ns external-dns --kubeconfig /tmp/kubeconfig --dry-run=client -o yaml | kubectl apply -f - --kubeconfig /tmp/kubeconfig
+
+          # Create secrets from environment variables
+          declare -A secrets=(
+            ["pihole-password"]="external-dns:PIHOLE_PASSWORD:$PIHOLE_PASSWORD"
+            ["vault-token"]="default:token:$VAULT_TOKEN"
+          )
+
+          for secret_name in "${!secrets[@]}"; do
+            IFS=':' read -r namespace key value <<< "${secrets[$secret_name]}"
+            echo -n "$value" | kubectl create secret generic "$secret_name" \
+              --from-file="$key"=/dev/stdin \
+              -n "$namespace" \
+              --kubeconfig /tmp/kubeconfig \
+              --dry-run=client -o yaml | kubectl apply -f - --kubeconfig /tmp/kubeconfig
+          done
 
       - name: Install Phase 1 - Operators
         run: |
