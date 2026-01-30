@@ -1,3 +1,9 @@
+## [1.10.2](https://github.com/fullstack-pw/infra/compare/v1.10.1...v1.10.2) (2026-01-30)
+
+### Bug Fixes
+
+* **ephemeral:** externaldns ns ([7ec488d](https://github.com/fullstack-pw/infra/commit/7ec488d999c7368baf0f6d99fa9876d8bb4d2d43))
+
 ## [1.10.1](https://github.com/fullstack-pw/infra/compare/v1.10.0...v1.10.1) (2026-01-30)
 
 ### Bug Fixes
