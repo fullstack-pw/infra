@@ -17,10 +17,11 @@ jobs:
       - name: Check IP pool capacity
         id: check-capacity
         run: |
-          ./clusters/scripts/ip_pool_manager.sh check-capacity
+          AVAILABLE=$(./clusters/scripts/ip_pool_manager.sh check-capacity)
           CAPACITY_RESULT=$?
+          echo "Capacity available: $AVAILABLE slots free"
           if [ "$CAPACITY_RESULT" -ne 0 ]; then
-            echo "::error::IP pool exhausted. All 10 ephemeral cluster slots are in use. Please close old PRs or wait for auto-cleanup."
+            echo "::error::IP pool exhausted. All 5 ephemeral cluster slots are in use (10 IPs / 2 per cluster). Please close old PRs or wait for auto-cleanup."
             exit 1
           fi
 
@@ -28,15 +29,24 @@ jobs:
         id: allocate
         run: |
           CLUSTER_NAME="pr-${{ github.event.client_payload.repository }}-${{ github.event.client_payload.pr_number }}"
-          IP=$(./clusters/scripts/ip_pool_manager.sh allocate "$CLUSTER_NAME")
-          echo "ip=$IP" >> $GITHUB_OUTPUT
+          CLUSTER_IP=$(./clusters/scripts/ip_pool_manager.sh allocate "$CLUSTER_NAME")
+
+          # Calculate node IP (VIP + 1) - each cluster needs 2 IPs
+          IP_LAST_OCTET=$(echo "$CLUSTER_IP" | cut -d'.' -f4)
+          NODE_IP_LAST_OCTET=$((IP_LAST_OCTET + 1))
+          NODE_IP="192.168.1.${NODE_IP_LAST_OCTET}"
+
+          echo "ip=$CLUSTER_IP" >> $GITHUB_OUTPUT
+          echo "node_ip=$NODE_IP" >> $GITHUB_OUTPUT
           echo "cluster_name=$CLUSTER_NAME" >> $GITHUB_OUTPUT
-          echo "Allocated IP: $IP for cluster: $CLUSTER_NAME"
+          echo "Allocated control plane VIP: $CLUSTER_IP for cluster: $CLUSTER_NAME"
+          echo "Node IP: $NODE_IP"
 
       - name: Render Cluster API manifest
         run: |
           export CLUSTER_NAME="${{ steps.allocate.outputs.cluster_name }}"
           export CLUSTER_IP="${{ steps.allocate.outputs.ip }}"
+          export NODE_IP="${{ steps.allocate.outputs.node_ip }}"
           export PR_NUMBER="${{ github.event.client_payload.pr_number }}"
           export REPOSITORY="${{ github.event.client_payload.repository }}"
           envsubst < ephemeral-clusters/cluster-api/k3s-cluster.yaml.tpl > /tmp/cluster.yaml

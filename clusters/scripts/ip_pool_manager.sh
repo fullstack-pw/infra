@@ -78,29 +78,41 @@ allocate_ip() {
             return 0
         fi
 
-        # Find first available IP
+        # Find first available IP pair (each cluster needs 2 consecutive IPs: VIP and node)
         local ip_found=""
-        for ip_suffix in $(seq $IP_POOL_START $IP_POOL_END); do
-            local ip="$IP_PREFIX.$ip_suffix"
-            local allocated=$(echo "$allocations" | jq -r --arg ip "$ip" '.[$ip] // empty')
+        for ip_suffix in $(seq $IP_POOL_START 2 $IP_POOL_END); do
+            local vip="$IP_PREFIX.$ip_suffix"
+            local node_ip="$IP_PREFIX.$((ip_suffix + 1))"
+            local vip_allocated=$(echo "$allocations" | jq -r --arg ip "$vip" '.[$ip] // empty')
+            local node_allocated=$(echo "$allocations" | jq -r --arg ip "$node_ip" '.[$ip] // empty')
 
-            if [[ -z "$allocated" ]]; then
-                ip_found="$ip"
+            # Check if both IPs are available
+            if [[ -z "$vip_allocated" ]] && [[ -z "$node_allocated" ]]; then
+                ip_found="$vip"
                 break
             fi
         done
 
         if [[ -z "$ip_found" ]]; then
-            echo -e "${RED}Error: IP pool exhausted. Maximum 10 concurrent ephemeral clusters.${NC}"
+            echo -e "${RED}Error: IP pool exhausted. Maximum 5 concurrent ephemeral clusters.${NC}"
             echo -e "${YELLOW}Active allocations:${NC}"
             echo "$allocations" | jq -r 'to_entries[] | "\(.key) -> \(.value)"'
             echo ""
             echo -e "${YELLOW}Please close old PRs or wait for auto-cleanup to free IPs.${NC}"
+            echo -e "${YELLOW}Note: Each cluster requires 2 consecutive IPs (VIP + node).${NC}"
             exit 1
         fi
 
-        # Add new allocation
-        local new_allocations=$(echo "$allocations" | jq --arg ip "$ip_found" --arg cluster "$cluster_name" '. + {($ip): $cluster}')
+        # Calculate node IP
+        local ip_suffix=$(echo "$ip_found" | cut -d'.' -f4)
+        local node_ip="$IP_PREFIX.$((ip_suffix + 1))"
+
+        # Add new allocations for both VIP and node
+        local new_allocations=$(echo "$allocations" | jq \
+            --arg vip "$ip_found" \
+            --arg node "$node_ip" \
+            --arg cluster "$cluster_name" \
+            '. + {($vip): $cluster, ($node): $cluster}')
 
         # Try to save with CAS
         if save_allocations "$new_allocations" "$version" 2>/dev/null; then
@@ -138,16 +150,19 @@ release_ip() {
         local allocations=$(get_allocations)
         local version=$(get_version)
 
-        # Find IP for this cluster
-        local ip_to_release=$(echo "$allocations" | jq -r --arg cluster "$cluster_name" 'to_entries[] | select(.value == $cluster) | .key')
+        # Find all IPs for this cluster (should be 2: VIP and node)
+        local ips_to_release=$(echo "$allocations" | jq -r --arg cluster "$cluster_name" 'to_entries[] | select(.value == $cluster) | .key')
 
-        if [[ -z "$ip_to_release" ]]; then
+        if [[ -z "$ips_to_release" ]]; then
             echo -e "${YELLOW}Warning: No IP allocation found for cluster $cluster_name${NC}"
             return 0
         fi
 
-        # Remove allocation
-        local new_allocations=$(echo "$allocations" | jq --arg ip "$ip_to_release" 'del(.[$ip])')
+        # Remove all allocations for this cluster
+        local new_allocations="$allocations"
+        for ip in $ips_to_release; do
+            new_allocations=$(echo "$new_allocations" | jq --arg ip "$ip" 'del(.[$ip])')
+        done
 
         # Try to save with CAS
         if save_allocations "$new_allocations" "$version" 2>/dev/null; then
@@ -194,9 +209,13 @@ list_allocations() {
 check_capacity() {
     local allocations=$(get_allocations)
     local count=$(echo "$allocations" | jq 'length')
-    local available=$((10 - count))
+    # Each cluster uses 2 IPs, so max clusters = 10 IPs / 2 = 5 clusters
+    # Available IPs = 10 - used IPs
+    # Available clusters = available IPs / 2
+    local available_ips=$((10 - count))
+    local available_clusters=$((available_ips / 2))
 
-    echo "$available"
+    echo "$available_clusters"
 
     if [[ $count -ge 10 ]]; then
         return 1  # At capacity

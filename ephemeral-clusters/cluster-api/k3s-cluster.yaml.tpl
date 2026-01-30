@@ -59,7 +59,7 @@ spec:
     - 192.168.1.3
   ipv4Config:
     addresses:
-      - ${CLUSTER_IP}-${CLUSTER_IP}
+      - ${NODE_IP}-${NODE_IP}
     gateway: 192.168.1.1
     prefix: 24
     metric: 100
