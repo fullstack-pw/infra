@@ -1,3 +1,9 @@
+## [1.10.3](https://github.com/fullstack-pw/infra/compare/v1.10.2...v1.10.3) (2026-01-30)
+
+### Bug Fixes
+
+* **ephemeral:** skip postgres resources when install_postgres=false ([25db90d](https://github.com/fullstack-pw/infra/commit/25db90d2ccc001aea030c22a5d3823a7518d6cc5))
+
 ## [1.10.2](https://github.com/fullstack-pw/infra/compare/v1.10.1...v1.10.2) (2026-01-30)
 
 ### Bug Fixes
