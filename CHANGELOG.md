@@ -1,3 +1,9 @@
+## [1.9.5](https://github.com/fullstack-pw/infra/compare/v1.9.4...v1.9.5) (2026-01-30)
+
+### Bug Fixes
+
+* **runner:** vault ([bc375b8](https://github.com/fullstack-pw/infra/commit/bc375b80dba202edc9da44aeed91d6e6a2692343))
+
 ## [1.9.4](https://github.com/fullstack-pw/infra/compare/v1.9.3...v1.9.4) (2026-01-30)
 
 ### Bug Fixes
