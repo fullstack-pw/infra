@@ -1,3 +1,9 @@
+## [1.9.12](https://github.com/fullstack-pw/infra/compare/v1.9.11...v1.9.12) (2026-01-30)
+
+### Bug Fixes
+
+* **ephemeral:** ip alloc ([0be5aa2](https://github.com/fullstack-pw/infra/commit/0be5aa2206bd5aba4e7cb6711ea36ce8eec67fc5))
+
 ## [1.9.11](https://github.com/fullstack-pw/infra/compare/v1.9.10...v1.9.11) (2026-01-30)
 
 ### Tasks
