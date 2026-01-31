@@ -1,3 +1,9 @@
+## [1.10.7](https://github.com/fullstack-pw/infra/compare/v1.10.6...v1.10.7) (2026-01-31)
+
+### Bug Fixes
+
+* **ephemeral:** redirect skip message to stderr to avoid polluting YAML stream ([0548fc7](https://github.com/fullstack-pw/infra/commit/0548fc7c600a8c4fb0288082483e943b5b8e99b4))
+
 ## [1.10.6](https://github.com/fullstack-pw/infra/compare/v1.10.5...v1.10.6) (2026-01-30)
 
 ### Bug Fixes
