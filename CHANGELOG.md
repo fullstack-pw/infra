@@ -1,3 +1,9 @@
+## [1.10.8](https://github.com/fullstack-pw/infra/compare/v1.10.7...v1.10.8) (2026-01-31)
+
+### Bug Fixes
+
+* **ephemeral:** github token ([825ec92](https://github.com/fullstack-pw/infra/commit/825ec92dd7487287dd0dbbe0a3ff65c537f19565))
+
 ## [1.10.7](https://github.com/fullstack-pw/infra/compare/v1.10.6...v1.10.7) (2026-01-31)
 
 ### Bug Fixes
