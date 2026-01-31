@@ -173,7 +173,7 @@ jobs:
           for f in ephemeral-clusters/phase2-resources/*.tpl; do
             # Skip postgres resources if install_postgres is not true
             if [[ "$f" == *"postgres"* ]] && [[ "${{ github.event.client_payload.install_postgres }}" != "true" ]]; then
-              echo "Skipping $f (postgres not enabled)"
+              echo "Skipping $f (postgres not enabled)" >&2
               continue
             fi
             envsubst < "$f"
