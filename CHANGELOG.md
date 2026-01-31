@@ -1,3 +1,9 @@
+## [1.10.9](https://github.com/fullstack-pw/infra/compare/v1.10.8...v1.10.9) (2026-01-31)
+
+### Code Refactoring
+
+* **ephemeral:** remove PR comment steps, app pipeline will handle this ([64d5785](https://github.com/fullstack-pw/infra/commit/64d5785f8cab8e6faafa20cc063c34b320126339))
+
 ## [1.10.8](https://github.com/fullstack-pw/infra/compare/v1.10.7...v1.10.8) (2026-01-31)
 
 ### Bug Fixes
