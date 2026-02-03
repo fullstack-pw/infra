@@ -1,3 +1,10 @@
+## [1.10.20](https://github.com/fullstack-pw/infra/compare/v1.10.19...v1.10.20) (2026-02-03)
+
+### Bug Fixes
+
+* **ephemeral:** ip pool ([bb321c0](https://github.com/fullstack-pw/infra/commit/bb321c0dbfa7f021f9a76bd948b90fd18d65eb45))
+* **ephemeral:** make apply steps ([8cfa3f1](https://github.com/fullstack-pw/infra/commit/8cfa3f15f20c1e3f4afd0c15193a5f25da82cf9a))
+
 ## [1.10.19](https://github.com/fullstack-pw/infra/compare/v1.10.18...v1.10.19) (2026-02-03)
 
 ### Bug Fixes
