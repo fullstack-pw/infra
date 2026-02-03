@@ -1,3 +1,9 @@
+## [1.10.22](https://github.com/fullstack-pw/infra/compare/v1.10.21...v1.10.22) (2026-02-03)
+
+### Bug Fixes
+
+* **ephemeral:** reduce complexity ([3374a01](https://github.com/fullstack-pw/infra/commit/3374a01b43f52b4526df6b6d3bb0c4f6e717215a))
+
 ## [1.10.21](https://github.com/fullstack-pw/infra/compare/v1.10.20...v1.10.21) (2026-02-03)
 
 ### Bug Fixes
