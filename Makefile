@@ -3,6 +3,7 @@ SHELL := /bin/bash
 ENVIRONMENTS := dev prod sandboxy tools observability
 DEFAULT_ENV := tools
 TOFU_DIR := clusters
+EPHEMERAL_TOFU_DIR := ephemeral-clusters/opentofu
 EPHEMERAL_DIR := ephemeral-clusters/opentofu
 PROXMOX_DIR := proxmox
 MODULES_DIR := modules
@@ -263,8 +264,6 @@ install-age:
 	fi
 
 install-crypto-tools: install-sops install-age
-	@echo "Setting up SOPS environment variables..."
-	@export "SOPS_AGE_KEY_FILE=/home/runner/.sops/keys/sops-key.txt"
 	@echo "Crypto tools installation and setup complete."
 
 
@@ -338,9 +337,9 @@ ephemeral-plan:
 		echo -e "${RED}ERROR: WORKSPACE is required. Example: make ephemeral-plan WORKSPACE=pr-cks-backend-1${NC}"; \
 		exit 1; \
 	fi
-	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TOFU_DIR) && \
-		if [ -f "../python-venv/bin/activate" ]; then source ../python-venv/bin/activate; fi && \
-		python3 load_secrets.py --secrets-dir ../../secrets && cd ..
+	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(EPHEMERAL_TOFU_DIR) && \
+		if [ -f "../../python-venv/bin/activate" ]; then source ../../python-venv/bin/activate; fi && \
+		python3 load_secrets.py --secrets-dir ../../secrets && cd ../..
 	@echo -e "${CYAN}Planning ephemeral infrastructure for $(WORKSPACE)...${NC}"
 	@cd $(EPHEMERAL_DIR) && \
 		tofu workspace select $(WORKSPACE) || tofu workspace new $(WORKSPACE) && \
@@ -352,9 +351,9 @@ ephemeral-apply:
 		echo -e "${RED}ERROR: WORKSPACE is required. Example: make ephemeral-apply WORKSPACE=pr-cks-backend-1${NC}"; \
 		exit 1; \
 	fi
-	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TOFU_DIR) && \
-		if [ -f "../python-venv/bin/activate" ]; then source ../python-venv/bin/activate; fi && \
-		python3 load_secrets.py --secrets-dir ../../secrets && cd ..
+	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(EPHEMERAL_TOFU_DIR) && \
+		if [ -f "../../python-venv/bin/activate" ]; then source ../../python-venv/bin/activate; fi && \
+		python3 load_secrets.py --secrets-dir ../../secrets && cd ../..
 	@echo -e "${CYAN}Applying ephemeral infrastructure for $(WORKSPACE) (4 phases)...${NC}"
 	@cd $(EPHEMERAL_DIR) && \
 		tofu workspace select $(WORKSPACE) && \
