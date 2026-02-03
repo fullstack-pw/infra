@@ -1,3 +1,9 @@
+## [1.10.12](https://github.com/fullstack-pw/infra/compare/v1.10.11...v1.10.12) (2026-02-03)
+
+### Bug Fixes
+
+* **runner:** pyenv ([c71df42](https://github.com/fullstack-pw/infra/commit/c71df427815860b460a47cf9dbb3fff0d4573db6))
+
 ## [1.10.11](https://github.com/fullstack-pw/infra/compare/v1.10.10...v1.10.11) (2026-02-03)
 
 ### Tasks
