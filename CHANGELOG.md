@@ -1,3 +1,9 @@
+## [1.10.14](https://github.com/fullstack-pw/infra/compare/v1.10.13...v1.10.14) (2026-02-03)
+
+### Bug Fixes
+
+* **ephemeral:** modules path ([739aef5](https://github.com/fullstack-pw/infra/commit/739aef56ab03870dcc18760e0c0d9b1584bbc179))
+
 ## [1.10.13](https://github.com/fullstack-pw/infra/compare/v1.10.12...v1.10.13) (2026-02-03)
 
 ### Bug Fixes
