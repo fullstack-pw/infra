@@ -1,3 +1,10 @@
+## [1.10.19](https://github.com/fullstack-pw/infra/compare/v1.10.18...v1.10.19) (2026-02-03)
+
+### Bug Fixes
+
+* **ephemeral:** add flag to creste new tofu workspaces ([b5b7975](https://github.com/fullstack-pw/infra/commit/b5b7975d82cf5ac9d591a4cff9fb59210059b0de))
+* **ephemeral:** init ([9c77c9a](https://github.com/fullstack-pw/infra/commit/9c77c9a50f0f5cd4af8a06aca20f98514048cbbc))
+
 ## [1.10.18](https://github.com/fullstack-pw/infra/compare/v1.10.17...v1.10.18) (2026-02-03)
 
 ### Bug Fixes
