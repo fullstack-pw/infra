@@ -1,3 +1,9 @@
+## [1.10.10](https://github.com/fullstack-pw/infra/compare/v1.10.9...v1.10.10) (2026-02-03)
+
+### Tasks
+
+* **ephemeral-clusters:** refactor to opentofu ([5f75dd3](https://github.com/fullstack-pw/infra/commit/5f75dd3ac78184f137b82d675196d9b3ac555a30))
+
 ## [1.10.9](https://github.com/fullstack-pw/infra/compare/v1.10.8...v1.10.9) (2026-01-31)
 
 ### Code Refactoring
