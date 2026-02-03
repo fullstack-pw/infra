@@ -387,18 +387,12 @@ ephemeral-destroy:
 		exit 1; \
 	fi
 	@echo -e "${RED}WARNING: This will destroy ephemeral infrastructure for $(WORKSPACE)!${NC}"
-	@echo -e "${RED}Type '$(WORKSPACE)' to confirm: ${NC}"
-	@read confirmation; \
-	if [ "$$confirmation" = "$(WORKSPACE)" ]; then \
 		echo -e "${YELLOW}Destroying ephemeral infrastructure for $(WORKSPACE)...${NC}"; \
 		cd $(EPHEMERAL_DIR) && \
-			tofu workspace select $(WORKSPACE) && \
-			tofu destroy -auto-approve && \
-			tofu workspace select default && \
-			tofu workspace delete $(WORKSPACE); \
-	else \
-		echo -e "${YELLOW}Destroy operation cancelled.${NC}"; \
-	fi
+		tofu workspace select $(WORKSPACE) && \
+		tofu destroy -auto-approve && \
+		tofu workspace select default && \
+		tofu workspace delete $(WORKSPACE); \
 
 .PHONY: ephemeral-workspace
 ephemeral-workspace:
