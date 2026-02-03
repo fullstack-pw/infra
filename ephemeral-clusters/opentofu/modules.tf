@@ -68,7 +68,7 @@ module "cert_manager" {
 
 module "external_secrets" {
   count  = contains(local.workload, "external_secrets") ? 1 : 0
-  source = "../../../modules/apps/external-secrets"
+  source = "../../modules/apps/external-secrets"
 
   include_pr_kubeconfig = true # Enable PR_KUBECONFIG for ephemeral clusters
   install_crd           = var.config[terraform.workspace].crds_installed
