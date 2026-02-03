@@ -1,3 +1,9 @@
+## [1.10.16](https://github.com/fullstack-pw/infra/compare/v1.10.15...v1.10.16) (2026-02-03)
+
+### Bug Fixes
+
+* **ephemeral:** init ([585ac9a](https://github.com/fullstack-pw/infra/commit/585ac9aff7546ce84251ea303fee2b753f1366c0))
+
 ## [1.10.15](https://github.com/fullstack-pw/infra/compare/v1.10.14...v1.10.15) (2026-02-03)
 
 ### Bug Fixes
