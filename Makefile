@@ -264,7 +264,7 @@ install-age:
 
 install-crypto-tools: install-sops install-age
 	@echo "Setting up SOPS environment variables..."
-	@echo "SOPS_AGE_KEY_FILE=/home/runner/.sops/keys/sops-key.txt" >> $(if $(GITHUB_ENV),$(GITHUB_ENV),${HOME}/.bashrc)
+	@export "SOPS_AGE_KEY_FILE=/home/runner/.sops/keys/sops-key.txt"
 	@echo "Crypto tools installation and setup complete."
 
 
