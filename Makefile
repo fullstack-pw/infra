@@ -342,7 +342,7 @@ ephemeral-plan:
 		python3 load_secrets.py --secrets-dir ../../secrets && cd ../..
 	@echo -e "${CYAN}Planning ephemeral infrastructure for $(WORKSPACE)...${NC}"
 	@cd $(EPHEMERAL_DIR) && \
-		tofu workspace select $(WORKSPACE) || tofu workspace new $(WORKSPACE) && \
+		tofu workspace select -or-create $(WORKSPACE)&& \
 		tofu plan $(EXTRA_ARGS) -out=$(WORKSPACE).tfplan
 
 .PHONY: ephemeral-apply
@@ -356,7 +356,7 @@ ephemeral-apply:
 		python3 load_secrets.py --secrets-dir ../../secrets && cd ../..
 	@echo -e "${CYAN}Applying ephemeral infrastructure for $(WORKSPACE) (4 phases)...${NC}"
 	@cd $(EPHEMERAL_DIR) && \
-		tofu workspace select $(WORKSPACE) && \
+		tofu workspace select -or-create $(WORKSPACE) && \
 		echo -e "${GREEN}Phase 1: Base apps without CRDs...${NC}" && \
 		tofu apply -var="install_crd=false" -auto-approve && \
 		echo -e "${GREEN}Phase 2: Base apps with CRDs...${NC}" && \
