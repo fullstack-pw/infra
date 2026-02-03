@@ -3,6 +3,7 @@ SHELL := /bin/bash
 ENVIRONMENTS := dev prod sandboxy tools observability
 DEFAULT_ENV := tools
 TOFU_DIR := clusters
+EPHEMERAL_DIR := ephemeral-clusters/opentofu
 PROXMOX_DIR := proxmox
 MODULES_DIR := modules
 EXTRA_ARGS ?=
@@ -37,6 +38,13 @@ Talos Cluster Management:
   make update-kubeconfigs         - Update all Talos cluster kubeconfigs in Vault
   make update-kubeconfigs ENV=<env> - Update kubeconfigs for specific environment
   make test-kubeconfig-update     - Test kubeconfig update with dry-run mode
+
+Ephemeral Cluster Management:
+  make ephemeral-init                      - Initialize OpenTofu for ephemeral clusters
+  make ephemeral-plan WORKSPACE=<name>     - Plan ephemeral infrastructure
+  make ephemeral-apply WORKSPACE=<name>    - Apply ephemeral infrastructure (4 phases)
+  make ephemeral-destroy WORKSPACE=<name>  - Destroy ephemeral infrastructure
+  make ephemeral-workspace                 - List ephemeral workspaces
 
 Environment Management:
   make init                     - Initialize OpenTofu for all environments
@@ -317,3 +325,69 @@ test-kubeconfig-update:
 		--management-context tools \
 		--dry-run \
 		--debug
+
+
+.PHONY: ephemeral-init
+ephemeral-init:
+	@echo -e "${CYAN}Initializing OpenTofu for ephemeral clusters...${NC}"
+	@cd $(EPHEMERAL_DIR) && tofu init -reconfigure -upgrade
+
+.PHONY: ephemeral-plan
+ephemeral-plan:
+	@if [ -z "$(WORKSPACE)" ]; then \
+		echo -e "${RED}ERROR: WORKSPACE is required. Example: make ephemeral-plan WORKSPACE=pr-cks-backend-1${NC}"; \
+		exit 1; \
+	fi
+	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TOFU_DIR) && \
+		if [ -f "../python-venv/bin/activate" ]; then source ../python-venv/bin/activate; fi && \
+		python3 load_secrets.py && cd ..
+	@echo -e "${CYAN}Planning ephemeral infrastructure for $(WORKSPACE)...${NC}"
+	@cd $(EPHEMERAL_DIR) && \
+		tofu workspace select $(WORKSPACE) || tofu workspace new $(WORKSPACE) && \
+		tofu plan $(EXTRA_ARGS) -out=$(WORKSPACE).tfplan
+
+.PHONY: ephemeral-apply
+ephemeral-apply:
+	@if [ -z "$(WORKSPACE)" ]; then \
+		echo -e "${RED}ERROR: WORKSPACE is required. Example: make ephemeral-apply WORKSPACE=pr-cks-backend-1${NC}"; \
+		exit 1; \
+	fi
+	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TOFU_DIR) && \
+		if [ -f "../python-venv/bin/activate" ]; then source ../python-venv/bin/activate; fi && \
+		python3 load_secrets.py && cd ..
+	@echo -e "${CYAN}Applying ephemeral infrastructure for $(WORKSPACE) (4 phases)...${NC}"
+	@cd $(EPHEMERAL_DIR) && \
+		tofu workspace select $(WORKSPACE) && \
+		echo -e "${GREEN}Phase 1: Base apps without CRDs...${NC}" && \
+		tofu apply -var="install_crd=false" -auto-approve && \
+		echo -e "${GREEN}Phase 2: Base apps with CRDs...${NC}" && \
+		tofu apply -var="install_crd=true" -auto-approve && \
+		echo -e "${GREEN}Phase 3: All apps without CRDs...${NC}" && \
+		tofu apply -auto-approve && \
+		echo -e "${GREEN}Phase 4: All apps with CRDs...${NC}" && \
+		tofu apply -auto-approve
+
+.PHONY: ephemeral-destroy
+ephemeral-destroy:
+	@if [ -z "$(WORKSPACE)" ]; then \
+		echo -e "${RED}ERROR: WORKSPACE is required. Example: make ephemeral-destroy WORKSPACE=pr-cks-backend-1${NC}"; \
+		exit 1; \
+	fi
+	@echo -e "${RED}WARNING: This will destroy ephemeral infrastructure for $(WORKSPACE)!${NC}"
+	@echo -e "${RED}Type '$(WORKSPACE)' to confirm: ${NC}"
+	@read confirmation; \
+	if [ "$$confirmation" = "$(WORKSPACE)" ]; then \
+		echo -e "${YELLOW}Destroying ephemeral infrastructure for $(WORKSPACE)...${NC}"; \
+		cd $(EPHEMERAL_DIR) && \
+			tofu workspace select $(WORKSPACE) && \
+			tofu destroy -auto-approve && \
+			tofu workspace select default && \
+			tofu workspace delete $(WORKSPACE); \
+	else \
+		echo -e "${YELLOW}Destroy operation cancelled.${NC}"; \
+	fi
+
+.PHONY: ephemeral-workspace
+ephemeral-workspace:
+	@echo -e "${CYAN}Listing ephemeral OpenTofu workspaces...${NC}"
+	@cd $(EPHEMERAL_DIR) && tofu workspace list

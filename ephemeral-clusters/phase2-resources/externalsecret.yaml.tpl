@@ -23,7 +23,7 @@ spec:
 apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret
 metadata:
-  name: app-secrets
+  name: cluster-secrets
   namespace: default
   labels:
     ephemeral: "true"
@@ -34,7 +34,7 @@ spec:
     name: vault-backend
     kind: SecretStore
   target:
-    name: app-secrets
+    name: cluster-secrets
     creationPolicy: Owner
   dataFrom:
     - extract:

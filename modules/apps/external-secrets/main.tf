@@ -109,7 +109,18 @@ resource "kubernetes_manifest" "cluster_secrets" {
         "target" = {
           "name" = "cluster-secrets"
         }
-        "data" = var.secret_data
+        "data" = concat(
+          var.secret_data,
+          var.include_pr_kubeconfig ? [
+            {
+              secretKey = "PR_KUBECONFIG"
+              remoteRef = {
+                key      = "cluster-secret-store/secrets"
+                property = "PR_KUBECONFIG"
+              }
+            }
+          ] : []
+        )
       }
     }
   }

@@ -1,0 +1,56 @@
+name: Ephemeral OpenTofu
+
+on:
+  repository_dispatch:
+    types:
+      - provision_ephemeral_infrastructure
+      - destroy_ephemeral_infrastructure
+
+jobs:
+  provision:
+    if: github.event.action == 'provision_ephemeral_infrastructure'
+    runs-on: self-hosted
+    steps:
+      - name: Checkout infra
+        uses: actions/checkout@v4
+
+      - name: Fetch PR_KUBECONFIG from Vault
+        env:
+          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+        run: |
+          vault kv get -field=PR_KUBECONFIG kv/cluster-secret-store/secrets > /tmp/pr-kubeconfig
+
+      - name: Apply ephemeral infrastructure
+        env:
+          KUBECONFIG: /tmp/pr-kubeconfig
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+        run: |
+          make ephemeral-apply WORKSPACE=${{ github.event.client_payload.cluster_name }}
+
+  destroy:
+    if: github.event.action == 'destroy_ephemeral_infrastructure'
+    runs-on: self-hosted
+    steps:
+      - name: Checkout infra
+        uses: actions/checkout@v4
+
+      - name: Fetch PR_KUBECONFIG from Vault
+        env:
+          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+        run: |
+          vault kv get -field=PR_KUBECONFIG kv/cluster-secret-store/secrets > /tmp/pr-kubeconfig
+
+      - name: Destroy infrastructure
+        env:
+          KUBECONFIG: /tmp/pr-kubeconfig
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+        run: |
+          cd ephemeral-clusters/opentofu
+          tofu workspace select ${{ github.event.client_payload.cluster_name }}
+          tofu destroy -auto-approve
+          tofu workspace select default
+          tofu workspace delete ${{ github.event.client_payload.cluster_name }}
