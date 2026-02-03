@@ -328,7 +328,7 @@ test-kubeconfig-update:
 
 
 .PHONY: ephemeral-init
-ephemeral-init:
+ephemeral-init: install-crypto-tools
 	@echo -e "${CYAN}Initializing OpenTofu for ephemeral clusters...${NC}"
 	@cd $(EPHEMERAL_DIR) && tofu init -reconfigure -upgrade
 
