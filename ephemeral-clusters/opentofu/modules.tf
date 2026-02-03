@@ -1,6 +1,6 @@
 module "externaldns" {
   count  = contains(local.workload, "externaldns") ? 1 : 0
-  source = "../modules/apps/externaldns"
+  source = "../../modules/apps/externaldns"
 
   deployment_name      = "external-dns-pihole"
   dns_provider         = "pihole"
@@ -29,7 +29,7 @@ module "externaldns" {
 
 module "externaldns_cloudflare" {
   count  = contains(local.workload, "externaldns") ? 1 : 0
-  source = "../modules/apps/externaldns"
+  source = "../../modules/apps/externaldns"
 
   crds_installed           = var.config[terraform.workspace].crds_installed
   deployment_name          = "external-dns-cloudflare"
@@ -60,7 +60,7 @@ moved {
 }
 module "cert_manager" {
   count  = contains(local.workload, "cert_manager") ? 1 : 0
-  source = "../modules/apps/certmanager"
+  source = "../../modules/apps/certmanager"
 
   install_crd       = var.config[terraform.workspace].crds_installed
   cloudflare_secret = local.secrets_json["kv/cloudflare"]["api-token"]
@@ -68,9 +68,9 @@ module "cert_manager" {
 
 module "external_secrets" {
   count  = contains(local.workload, "external_secrets") ? 1 : 0
-  source = "../../modules/apps/external-secrets"
+  source = "../../../modules/apps/external-secrets"
 
-  include_pr_kubeconfig = true  # Enable PR_KUBECONFIG for ephemeral clusters
+  include_pr_kubeconfig = true # Enable PR_KUBECONFIG for ephemeral clusters
   install_crd           = var.config[terraform.workspace].crds_installed
   secret_data           = local.secret_data
   vault_token           = local.secrets_json["kv/cluster-secret-store/secrets/VAULT_TOKEN"]["VAULT_TOKEN"]
@@ -84,7 +84,7 @@ module "external_secrets" {
 
 module "argocd" {
   count  = contains(local.workload, "argocd") ? 1 : 0
-  source = "../modules/apps/argocd"
+  source = "../../modules/apps/argocd"
 
   namespace              = "argocd"
   install_argocd         = terraform.workspace == "tools"
@@ -103,7 +103,7 @@ module "argocd" {
 
 module "observability-box" {
   count  = contains(local.workload, "observability-box") ? 1 : 0
-  source = "../modules/apps/observability-box"
+  source = "../../modules/apps/observability-box"
 
   prometheus_namespaces     = try(var.config[terraform.workspace].prometheus_namespaces, [])
   prometheus_memory_limit   = try(var.config[terraform.workspace].prometheus_memory_limit, "1024Mi")
@@ -119,7 +119,7 @@ data "vault_kv_secret_v2" "postgres_ca" {
 
 module "cloudnative_pg_operator" {
   count  = contains(local.workload, "cloudnative-pg-operator") ? 1 : 0
-  source = "../modules/apps/cloudnative-postgres-operator"
+  source = "../../modules/apps/cloudnative-postgres-operator"
 
   namespace        = "cnpg-system"
   create_namespace = true
@@ -128,7 +128,7 @@ module "cloudnative_pg_operator" {
 
 module "postgres_cnpg" {
   count  = contains(local.workload, "postgres-cnpg") ? 1 : 0
-  source = "../modules/apps/cloudnative-postgres"
+  source = "../../modules/apps/cloudnative-postgres"
 
   cluster_name     = "postgres"
   namespace        = "default"
@@ -179,7 +179,7 @@ module "postgres_cnpg" {
 }
 
 module "postgres_databases" {
-  source   = "../modules/base/cnpg-database"
+  source   = "../../modules/base/cnpg-database"
   for_each = { for db in try(var.config[terraform.workspace].postgres_cnpg.databases, []) : db.name => db }
 
   create        = contains(local.workload, "postgres-cnpg")
