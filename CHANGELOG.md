@@ -1,3 +1,9 @@
+## [1.10.13](https://github.com/fullstack-pw/infra/compare/v1.10.12...v1.10.13) (2026-02-03)
+
+### Bug Fixes
+
+* **ephemeral:** ip pool script ([640d715](https://github.com/fullstack-pw/infra/commit/640d7152f49299954ee96d5552d2a8617f18b151))
+
 ## [1.10.12](https://github.com/fullstack-pw/infra/compare/v1.10.11...v1.10.12) (2026-02-03)
 
 ### Bug Fixes
