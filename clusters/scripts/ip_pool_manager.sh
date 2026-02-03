@@ -34,13 +34,19 @@ save_allocations() {
     local allocations="$1"
     local version="${2:-0}"
 
-    # Send allocations directly - Vault KV v2 will wrap it in {data: ...} automatically
+    # Convert JSON object to key=value format for vault kv put
+    # vault kv put expects: vault kv put path key1=value1 key2=value2
+    local kv_args=""
+    while IFS="=" read -r key value; do
+        kv_args="$kv_args $key=$value"
+    done < <(echo "$allocations" | jq -r 'to_entries[] | "\(.key)=\(.value)"')
+
     if [[ "$version" -eq 0 ]]; then
         # First write (no version check)
-        echo "$allocations" | vault kv put "$VAULT_PATH" - > /dev/null
+        vault kv put "$VAULT_PATH" $kv_args > /dev/null
     else
         # CAS write with version check
-        echo "$allocations" | vault kv put -cas="$version" "$VAULT_PATH" - > /dev/null
+        vault kv put -cas="$version" "$VAULT_PATH" $kv_args > /dev/null
     fi
 }
 
@@ -164,8 +170,8 @@ release_ip() {
 
         # Try to save with CAS
         if save_allocations "$new_allocations" "$version" 2>/dev/null; then
-            echo -e "${GREEN}Successfully released IP $ip_to_release from cluster $cluster_name${NC}"
-            echo "$ip_to_release"
+            echo -e "${GREEN}Successfully released IPs from cluster $cluster_name${NC}"
+            echo "$ips_to_release" | head -n 1
             return 0
         else
             # CAS conflict, retry
