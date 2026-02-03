@@ -95,8 +95,3 @@ variable "namespace_selector_label" {
   }
 }
 
-variable "include_pr_kubeconfig" {
-  description = "Include PR_KUBECONFIG secret (for ephemeral clusters only)"
-  type        = bool
-  default     = false
-}

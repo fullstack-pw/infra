@@ -70,10 +70,9 @@ module "external_secrets" {
   count  = contains(local.workload, "external_secrets") ? 1 : 0
   source = "../../modules/apps/external-secrets"
 
-  include_pr_kubeconfig = true # Enable PR_KUBECONFIG for ephemeral clusters
-  install_crd           = var.config[terraform.workspace].crds_installed
-  secret_data           = local.secret_data
-  vault_token           = local.secrets_json["kv/cluster-secret-store/secrets/VAULT_TOKEN"]["VAULT_TOKEN"]
+  install_crd  = var.config[terraform.workspace].crds_installed
+  secret_data  = local.secret_data
+  vault_token  = local.secrets_json["kv/cluster-secret-store/secrets/VAULT_TOKEN"]["VAULT_TOKEN"]
 
   namespace_selector_type = "label"
   namespace_selector_label = {
