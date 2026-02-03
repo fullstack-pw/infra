@@ -86,5 +86,5 @@ RUN echo 'source <(kubectl completion bash)' >> /home/runner/.bashrc \
     kubernetes \
     ansible
 
-ENV PATH="${HOME}/.local/bin:${PATH}" \
+ENV PATH="${HOME}/.local/bin:/home/runner/python-venv/bin:${PATH}" \
     DOCKER_BUILDKIT=1

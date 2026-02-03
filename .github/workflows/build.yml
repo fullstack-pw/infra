@@ -31,15 +31,9 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
 
-      - name: Expose HARBOR_KEY to the Workflow
-        run: echo "HARBOR_KEY=${HARBOR_KEY}" >> $GITHUB_ENV
-
-      - name: Login to Harbor
-        uses: docker/login-action@v3
-        with:
-          registry: registry.fullstack.pw
-          username: admin
-          password: ${{ env.HARBOR_KEY }}
+          #docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }} .
+          #echo "${HARBOR_KEY}" | docker login registry.fullstack.pw -u admin --password-stdin
+          #docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}
 
       - name: Find and Build Modified Dockerfiles
         run: |
@@ -73,7 +67,7 @@ jobs:
                 -t registry.fullstack.pw/library/$IMAGE_NAME:latest \
                 -t registry.fullstack.pw/library/$IMAGE_NAME:${{ steps.get_version.outputs.version }} \
                 -f "$DOCKERFILE" "$DIR"
-              
+              echo "${HARBOR_KEY}" | docker login registry.fullstack.pw -u admin --password-stdin
               docker push registry.fullstack.pw/library/$IMAGE_NAME:latest
               docker push registry.fullstack.pw/library/$IMAGE_NAME:${{ steps.get_version.outputs.version }}
             fi
