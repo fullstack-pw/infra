@@ -1,3 +1,9 @@
+## [1.10.23](https://github.com/fullstack-pw/infra/compare/v1.10.22...v1.10.23) (2026-02-03)
+
+### Bug Fixes
+
+* **ephemeral:** missing env ([27ce47b](https://github.com/fullstack-pw/infra/commit/27ce47be493e846e3f348655b55034deac667c7e))
+
 ## [1.10.22](https://github.com/fullstack-pw/infra/compare/v1.10.21...v1.10.22) (2026-02-03)
 
 ### Bug Fixes
