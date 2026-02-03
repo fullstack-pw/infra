@@ -1,3 +1,9 @@
+## [1.10.11](https://github.com/fullstack-pw/infra/compare/v1.10.10...v1.10.11) (2026-02-03)
+
+### Tasks
+
+* **ephemeral-clusters:** add flag to external-secrets ([4bdd65b](https://github.com/fullstack-pw/infra/commit/4bdd65ba4c377cdf15caff521a05ca4b5ebdd7d4))
+
 ## [1.10.10](https://github.com/fullstack-pw/infra/compare/v1.10.9...v1.10.10) (2026-02-03)
 
 ### Tasks
