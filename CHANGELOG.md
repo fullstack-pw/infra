@@ -1,3 +1,9 @@
+## [1.10.21](https://github.com/fullstack-pw/infra/compare/v1.10.20...v1.10.21) (2026-02-03)
+
+### Bug Fixes
+
+* **ephemeral:** make apply steps ([9933aea](https://github.com/fullstack-pw/infra/commit/9933aea42c03e7d8e3b6b95adfd35a11a411c91a))
+
 ## [1.10.20](https://github.com/fullstack-pw/infra/compare/v1.10.19...v1.10.20) (2026-02-03)
 
 ### Bug Fixes
