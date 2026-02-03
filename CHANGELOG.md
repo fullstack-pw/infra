@@ -1,3 +1,9 @@
+## [1.10.24](https://github.com/fullstack-pw/infra/compare/v1.10.23...v1.10.24) (2026-02-03)
+
+### Bug Fixes
+
+* **ephemeral:** destroy ([ce954cb](https://github.com/fullstack-pw/infra/commit/ce954cbbfac88eecaac155f154a7ae93c524e2ce))
+
 ## [1.10.23](https://github.com/fullstack-pw/infra/compare/v1.10.22...v1.10.23) (2026-02-03)
 
 ### Bug Fixes
