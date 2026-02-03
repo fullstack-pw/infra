@@ -340,7 +340,7 @@ ephemeral-plan:
 	fi
 	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TOFU_DIR) && \
 		if [ -f "../python-venv/bin/activate" ]; then source ../python-venv/bin/activate; fi && \
-		python3 load_secrets.py && cd ..
+		python3 load_secrets.py --secrets-dir ../../secrets && cd ..
 	@echo -e "${CYAN}Planning ephemeral infrastructure for $(WORKSPACE)...${NC}"
 	@cd $(EPHEMERAL_DIR) && \
 		tofu workspace select $(WORKSPACE) || tofu workspace new $(WORKSPACE) && \
@@ -354,7 +354,7 @@ ephemeral-apply:
 	fi
 	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(TOFU_DIR) && \
 		if [ -f "../python-venv/bin/activate" ]; then source ../python-venv/bin/activate; fi && \
-		python3 load_secrets.py && cd ..
+		python3 load_secrets.py --secrets-dir ../../secrets && cd ..
 	@echo -e "${CYAN}Applying ephemeral infrastructure for $(WORKSPACE) (4 phases)...${NC}"
 	@cd $(EPHEMERAL_DIR) && \
 		tofu workspace select $(WORKSPACE) && \
