@@ -1,3 +1,14 @@
+resource "kubernetes_labels" "default_namespace" {
+  api_version = "v1"
+  kind        = "Namespace"
+  metadata {
+    name = "default"
+  }
+  labels = {
+    "cluster-secrets" = "true"
+  }
+}
+
 module "externaldns" {
   count  = contains(local.workload, "externaldns") ? 1 : 0
   source = "../../modules/apps/externaldns"
