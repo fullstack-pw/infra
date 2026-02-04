@@ -1,3 +1,9 @@
+## [1.10.25](https://github.com/fullstack-pw/infra/compare/v1.10.24...v1.10.25) (2026-02-04)
+
+### Bug Fixes
+
+* **ephemeral:** label default ns ([85363b4](https://github.com/fullstack-pw/infra/commit/85363b4d7cc7017b0e47d088751db6414235e7c4))
+
 ## [1.10.24](https://github.com/fullstack-pw/infra/compare/v1.10.23...v1.10.24) (2026-02-03)
 
 ### Bug Fixes
