@@ -7,6 +7,7 @@ Production-grade homelab platform demonstrating enterprise DevOps practices, clo
 The fullstack.pw organization encompasses a complete infrastructure and application ecosystem built on Kubernetes, implementing:
 
 - **Multi-environment Kubernetes clusters** with Cluster API-based automated provisioning and lifecycle management
+- **Ephemeral PR-based test environments** with automatic cluster provisioning, deployment, testing, and cleanup per pull request
 - **Infrastructure as Code** with OpenTofu modular architecture (10 base + 32 application modules)
 - **GitOps-driven continuous deployment** with ArgoCD app-of-apps pattern and progressive delivery via Argo Rollouts
 - **Comprehensive observability** using Prometheus, Grafana, Jaeger, Loki, and OpenTelemetry with hub-and-spoke architecture
@@ -46,8 +47,9 @@ The fullstack.pw organization encompasses a complete infrastructure and applicat
 | home | K3s | Legacy Ansible | Home automation | k8s-home (single node) | Immich photo management, External Secrets |
 | observability | K3s | Legacy Ansible | Central telemetry hub | k8s-observability (single node) | Prometheus, Grafana, Jaeger, Loki, OpenTelemetry Collector |
 | sandboxy | K3s | Legacy Ansible | CKS training platform | k8s-sandbox (single node) | KubeVirt for VM virtualization, Longhorn for snapshot-based storage, pool of standby VMs for instant CKS scenario provisioning |
+| pr-* (ephemeral) | K3s | Cluster API | Temporary PR test environments | Single node per PR (dynamic, 5 max concurrent) | cert-manager, external-dns, external-secrets, CloudNativePG, application under test |
 
-**Note**: dev and prod clusters are managed by Cluster API operator running on tools cluster. Talos provides immutable infrastructure, while kubeadm offers standard Kubernetes. Legacy clusters (tools, home, observability, sandboxy) provisioned via Proxmox/Ansible workflow.
+**Note**: dev and prod clusters are managed by Cluster API operator running on tools cluster. Talos provides immutable infrastructure, while kubeadm offers standard Kubernetes. Legacy clusters (tools, home, observability, sandboxy) provisioned via Proxmox/Ansible workflow. Ephemeral clusters are automatically created per PR in application repositories and destroyed when PR closes.
 
 ## Repository Organization
 
@@ -212,7 +214,7 @@ Edge Prometheus → Remote Write → Central Prometheus → Grafana
 
 **Automation Workflows**
 
-7 GitHub Actions workflows:
+**Infrastructure Repository** (7 workflows):
 - opentofu.yml: Plan on PR, apply on merge with cluster change detection and kubeconfig automation
 - ansible.yml: Legacy cluster provisioning via `[ansible PLAYBOOK]` commit tag
 - build.yml: Container image build and push to Harbor registry
@@ -220,6 +222,9 @@ Edge Prometheus → Remote Write → Central Prometheus → Grafana
 - sec-trufflehog.yml: Secret leak detection in commits
 - conventional-commits.yml: Commit message validation
 - release.yml: Semantic versioning and changelog generation
+
+**Application Repositories** (ephemeral.yml):
+- Ephemeral PR-based cluster provisioning: Automatic Kubernetes cluster creation, infrastructure deployment, application build/deploy, E2E testing, and cleanup lifecycle per pull request
 
 ## DevOps Practices Demonstrated
 

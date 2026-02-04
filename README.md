@@ -193,6 +193,60 @@ Edge collectors on all workload clusters:
 
 **Key Script**: [clusters/scripts/update_kubeconfig_sops.sh](clusters/scripts/update_kubeconfig_sops.sh) handles kubeconfig extraction, merging, SOPS encryption, and git commits.
 
+### Ephemeral PR-Based Clusters
+
+**Automatic per-PR test environments** for application repositories, providing isolated Kubernetes clusters for each pull request:
+
+**Architecture**:
+- **Cluster Provisioning**: K3s clusters via Cluster API on tools cluster
+- **Infrastructure**: OpenTofu with workspace-per-PR isolation ([ephemeral-clusters/opentofu/](ephemeral-clusters/opentofu/))
+- **IP Management**: Vault-based IP pool allocation (192.168.1.140-149, 2 IPs per cluster: VIP + node)
+- **DNS**: Pi-hole for internal resolution (`pr-<number>-<repo>.ephemeral.fullstack.pw`)
+- **Capacity**: 5 concurrent ephemeral clusters maximum
+
+**Workflow Lifecycle** (example: [cks-backend/.github/workflows/ephemeral.yml](https://github.com/fullstack-pw/cks-backend/blob/main/.github/workflows/ephemeral.yml)):
+
+1. **PR Opened**:
+   - Check cluster existence via Cluster API
+   - Allocate 2 IPs from pool using [ip_pool_manager.sh](clusters/scripts/ip_pool_manager.sh)
+   - Render and apply K3s Cluster API manifest
+   - Wait for cluster "Available" status (~2 min)
+   - Extract kubeconfig on-demand (not stored in Vault)
+   - Apply infrastructure via `make ephemeral-apply` (4 phases):
+     - Phase 1: Base operators without CRDs (cert-manager, external-dns, external-secrets)
+     - Phase 2: Base operators with CRDs (ClusterIssuer, DNSEndpoint, ExternalSecret)
+     - Phase 3: Apps without postgres CRDs
+     - Phase 4: Apps with postgres CRDs
+   - Build and push Docker image (`registry.fullstack.pw/library/<app>:pr-<number>`)
+   - Deploy app with `kubectl apply -k kustomize/overlays/ephemeral/`
+   - Run Cypress E2E tests in container
+   - Post PR comment with environment URL
+
+2. **PR Updated** (new commits):
+   - Detect existing cluster (skip provisioning)
+   - Build new image with same PR tag
+   - Redeploy application
+   - Run tests
+
+3. **PR Closed**:
+   - Destroy infrastructure with `make ephemeral-destroy`
+   - Delete Cluster API cluster object
+   - Release IPs back to pool
+   - Complete (images remain in Harbor for audit)
+
+**Key Components**:
+- **IP Pool Manager**: [clusters/scripts/ip_pool_manager.sh](clusters/scripts/ip_pool_manager.sh) - Vault-based allocation with CAS (Check-And-Set) for concurrency
+- **Cluster Template**: [ephemeral-clusters/cluster-api/k3s-cluster.yaml.tpl](ephemeral-clusters/cluster-api/k3s-cluster.yaml.tpl) - Single-node K3s with external control plane VIP
+- **OpenTofu Modules**: Reuse production-proven modules from [modules/apps/](modules/apps/)
+- **Makefile Commands**: `ephemeral-init`, `ephemeral-apply`, `ephemeral-destroy`, `ephemeral-workspace`
+
+**Benefits**:
+- Isolated test environment per PR
+- Automatic provisioning and cleanup
+- Full production-like infrastructure (DNS, TLS, secrets)
+- No manual intervention required
+- Parallel PR testing (up to 5 concurrent)
+
 ### Legacy Proxmox/Ansible Provisioning
 
 The `[ansible PLAYBOOK]` pattern remains supported for existing K3s clusters (tools, home, observability):
