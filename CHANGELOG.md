@@ -1,3 +1,10 @@
+## [1.10.26](https://github.com/fullstack-pw/infra/compare/v1.10.25...v1.10.26) (2026-02-04)
+
+### Tasks
+
+* **docs:** update ([1c3ebf4](https://github.com/fullstack-pw/infra/commit/1c3ebf42bbdea5181a5ddee4072b2d5404fc881c))
+* **ephemeral:** clean old files ([2f0dda6](https://github.com/fullstack-pw/infra/commit/2f0dda61e2706f37069b56ae241deb7a55aee495))
+
 ## [1.10.25](https://github.com/fullstack-pw/infra/compare/v1.10.24...v1.10.25) (2026-02-04)
 
 ### Bug Fixes
