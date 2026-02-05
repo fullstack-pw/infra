@@ -1,3 +1,9 @@
+## [1.11.0](https://github.com/fullstack-pw/infra/compare/v1.10.26...v1.11.0) (2026-02-05)
+
+### Features
+
+* **ephemeral-clusters:** final touches ([#134](https://github.com/fullstack-pw/infra/issues/134)) ([751744b](https://github.com/fullstack-pw/infra/commit/751744bb858808565298618ca336fbf56c3a1590))
+
 ## [1.10.26](https://github.com/fullstack-pw/infra/compare/v1.10.25...v1.10.26) (2026-02-04)
 
 ### Tasks
