@@ -354,31 +354,49 @@ ephemeral-apply:
 	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(EPHEMERAL_TOFU_DIR) && \
 		if [ -f "../../python-venv/bin/activate" ]; then source ../../python-venv/bin/activate; fi && \
 		python3 load_secrets.py --secrets-dir ../../secrets && cd ../..
-	@echo -e "${CYAN}Applying ephemeral infrastructure for $(WORKSPACE) (4 phases)...${NC}"
-	@KUBECONFIG_PATH=$${KUBECONFIG:-~/.kube/config}; \
-	cd $(EPHEMERAL_DIR) && \
-		tofu workspace select -or-create $(WORKSPACE) && \
-		echo -e "${GREEN}Phase 1: Base operators without CRDs...${NC}" && \
-		echo 'workload = { "$(WORKSPACE)" = ["externaldns", "cert_manager", "external_secrets"] }' > /tmp/phase.tfvars && \
-		echo 'config = { "$(WORKSPACE)" = { kubernetes_context = "$(WORKSPACE)", crds_installed = false, argocd_ingress_class = "traefik", argocd_domain = "$(WORKSPACE).argocd.fullstack.pw", prometheus_namespaces = [], prometheus_memory_limit = "1024Mi", prometheus_memory_request = "256Mi", prometheus_storage_size = "2Gi", postgres_cnpg = { enable_superuser_access = true, crds_installed = false, managed_roles = [{ name = "root", login = true, replication = true }], databases = [], persistence_size = "1Gi", ingress_host = "$(WORKSPACE).postgres.fullstack.pw", use_istio = false, export_credentials_secret_name = "$(WORKSPACE)-postgres-credentials" } } }' >> /tmp/phase.tfvars && \
-		echo "kubeconfig_path = \"$$KUBECONFIG_PATH\"" >> /tmp/phase.tfvars && \
-		tofu apply -var-file=/tmp/phase.tfvars -auto-approve && \
-		echo -e "${GREEN}Phase 2: Base operators with CRDs...${NC}" && \
-		echo 'workload = { "$(WORKSPACE)" = ["externaldns", "cert_manager", "external_secrets"] }' > /tmp/phase.tfvars && \
-		echo 'config = { "$(WORKSPACE)" = { kubernetes_context = "$(WORKSPACE)", crds_installed = true, argocd_ingress_class = "traefik", argocd_domain = "$(WORKSPACE).argocd.fullstack.pw", prometheus_namespaces = [], prometheus_memory_limit = "1024Mi", prometheus_memory_request = "256Mi", prometheus_storage_size = "2Gi", postgres_cnpg = { enable_superuser_access = true, crds_installed = false, managed_roles = [{ name = "root", login = true, replication = true }], databases = [], persistence_size = "1Gi", ingress_host = "$(WORKSPACE).postgres.fullstack.pw", use_istio = false, export_credentials_secret_name = "$(WORKSPACE)-postgres-credentials" } } }' >> /tmp/phase.tfvars && \
-		echo "kubeconfig_path = \"$$KUBECONFIG_PATH\"" >> /tmp/phase.tfvars && \
-		tofu apply -var-file=/tmp/phase.tfvars -auto-approve && \
-		echo -e "${GREEN}Phase 3: All apps without postgres CRDs...${NC}" && \
-		echo 'workload = { "$(WORKSPACE)" = ["externaldns", "cert_manager", "external_secrets", "argocd", "cloudnative-pg-operator", "postgres-cnpg", "observability-box"] }' > /tmp/phase.tfvars && \
-		echo 'config = { "$(WORKSPACE)" = { kubernetes_context = "$(WORKSPACE)", crds_installed = true, argocd_ingress_class = "traefik", argocd_domain = "$(WORKSPACE).argocd.fullstack.pw", prometheus_namespaces = [], prometheus_memory_limit = "1024Mi", prometheus_memory_request = "256Mi", prometheus_storage_size = "2Gi", postgres_cnpg = { enable_superuser_access = true, crds_installed = false, managed_roles = [{ name = "root", login = true, replication = true }], databases = [], persistence_size = "1Gi", ingress_host = "$(WORKSPACE).postgres.fullstack.pw", use_istio = false, export_credentials_secret_name = "$(WORKSPACE)-postgres-credentials" } } }' >> /tmp/phase.tfvars && \
-		echo "kubeconfig_path = \"$$KUBECONFIG_PATH\"" >> /tmp/phase.tfvars && \
-		tofu apply -var-file=/tmp/phase.tfvars -auto-approve && \
-		echo -e "${GREEN}Phase 4: All apps with postgres CRDs...${NC}" && \
-		echo 'workload = { "$(WORKSPACE)" = ["externaldns", "cert_manager", "external_secrets", "argocd", "cloudnative-pg-operator", "postgres-cnpg", "observability-box"] }' > /tmp/phase.tfvars && \
-		echo 'config = { "$(WORKSPACE)" = { kubernetes_context = "$(WORKSPACE)", crds_installed = true, argocd_ingress_class = "traefik", argocd_domain = "$(WORKSPACE).argocd.fullstack.pw", prometheus_namespaces = [], prometheus_memory_limit = "1024Mi", prometheus_memory_request = "256Mi", prometheus_storage_size = "2Gi", postgres_cnpg = { enable_superuser_access = true, crds_installed = true, managed_roles = [{ name = "root", login = true, replication = true }], databases = [], persistence_size = "1Gi", ingress_host = "$(WORKSPACE).postgres.fullstack.pw", use_istio = false, export_credentials_secret_name = "$(WORKSPACE)-postgres-credentials" } } }' >> /tmp/phase.tfvars && \
-		echo "kubeconfig_path = \"$$KUBECONFIG_PATH\"" >> /tmp/phase.tfvars && \
-		tofu apply -var-file=/tmp/phase.tfvars -auto-approve && \
-		rm -f /tmp/phase.tfvars
+	@if [ "$(MINIMAL)" = "true" ]; then \
+		echo -e "${CYAN}Applying MINIMAL ephemeral infrastructure for $(WORKSPACE) (2 phases)...${NC}"; \
+		KUBECONFIG_PATH=$${KUBECONFIG:-~/.kube/config}; \
+		cd $(EPHEMERAL_DIR) && \
+			tofu workspace select -or-create $(WORKSPACE) && \
+				echo -e "${GREEN}Phase 1: Base operators without CRDs...${NC}" && \
+				echo 'workload = { "$(WORKSPACE)" = ["externaldns", "cert_manager", "external_secrets"] }' > /tmp/phase.tfvars && \
+				echo 'config = { "$(WORKSPACE)" = { kubernetes_context = "$(WORKSPACE)", crds_installed = false, argocd_ingress_class = "traefik" } }' >> /tmp/phase.tfvars && \
+				echo "kubeconfig_path = \"$$KUBECONFIG_PATH\"" >> /tmp/phase.tfvars && \
+			tofu apply -var-file=/tmp/phase.tfvars -auto-approve && \
+				echo -e "${GREEN}Phase 2: Base operators with CRDs...${NC}" && \
+				echo 'workload = { "$(WORKSPACE)" = ["externaldns", "cert_manager", "external_secrets"] }' > /tmp/phase.tfvars && \
+				echo 'config = { "$(WORKSPACE)" = { kubernetes_context = "$(WORKSPACE)", crds_installed = true, argocd_ingress_class = "traefik" } }' >> /tmp/phase.tfvars && \
+				echo "kubeconfig_path = \"$$KUBECONFIG_PATH\"" >> /tmp/phase.tfvars && \
+			tofu apply -var-file=/tmp/phase.tfvars -auto-approve && \
+			rm -f /tmp/phase.tfvars; \
+	else \
+		echo -e "${CYAN}Applying FULL ephemeral infrastructure for $(WORKSPACE) (4 phases)...${NC}"; \
+		KUBECONFIG_PATH=$${KUBECONFIG:-~/.kube/config}; \
+		cd $(EPHEMERAL_DIR) && \
+			tofu workspace select -or-create $(WORKSPACE) && \
+				echo -e "${GREEN}Phase 1: Base operators without CRDs...${NC}" && \
+				echo 'workload = { "$(WORKSPACE)" = ["externaldns", "cert_manager", "external_secrets"] }' > /tmp/phase.tfvars && \
+				echo 'config = { "$(WORKSPACE)" = { kubernetes_context = "$(WORKSPACE)", crds_installed = false, argocd_ingress_class = "traefik", argocd_domain = "$(WORKSPACE).argocd.fullstack.pw", prometheus_namespaces = [], prometheus_memory_limit = "1024Mi", prometheus_memory_request = "256Mi", prometheus_storage_size = "2Gi", postgres_cnpg = { enable_superuser_access = true, crds_installed = false, managed_roles = [{ name = "root", login = true, replication = true }], databases = [], persistence_size = "1Gi", ingress_host = "$(WORKSPACE).postgres.fullstack.pw", use_istio = false, export_credentials_secret_name = "$(WORKSPACE)-postgres-credentials" } } }' >> /tmp/phase.tfvars && \
+				echo "kubeconfig_path = \"$$KUBECONFIG_PATH\"" >> /tmp/phase.tfvars && \
+			tofu apply -var-file=/tmp/phase.tfvars -auto-approve && \
+				echo -e "${GREEN}Phase 2: Base operators with CRDs...${NC}" && \
+				echo 'workload = { "$(WORKSPACE)" = ["externaldns", "cert_manager", "external_secrets"] }' > /tmp/phase.tfvars && \
+				echo 'config = { "$(WORKSPACE)" = { kubernetes_context = "$(WORKSPACE)", crds_installed = true, argocd_ingress_class = "traefik", argocd_domain = "$(WORKSPACE).argocd.fullstack.pw", prometheus_namespaces = [], prometheus_memory_limit = "1024Mi", prometheus_memory_request = "256Mi", prometheus_storage_size = "2Gi", postgres_cnpg = { enable_superuser_access = true, crds_installed = false, managed_roles = [{ name = "root", login = true, replication = true }], databases = [], persistence_size = "1Gi", ingress_host = "$(WORKSPACE).postgres.fullstack.pw", use_istio = false, export_credentials_secret_name = "$(WORKSPACE)-postgres-credentials" } } }' >> /tmp/phase.tfvars && \
+				echo "kubeconfig_path = \"$$KUBECONFIG_PATH\"" >> /tmp/phase.tfvars && \
+			tofu apply -var-file=/tmp/phase.tfvars -auto-approve && \
+				echo -e "${GREEN}Phase 3: All apps without postgres CRDs...${NC}" && \
+				echo 'workload = { "$(WORKSPACE)" = ["externaldns", "cert_manager", "external_secrets", "argocd", "cloudnative-pg-operator", "postgres-cnpg", "observability-box"] }' > /tmp/phase.tfvars && \
+				echo 'config = { "$(WORKSPACE)" = { kubernetes_context = "$(WORKSPACE)", crds_installed = true, argocd_ingress_class = "traefik", argocd_domain = "$(WORKSPACE).argocd.fullstack.pw", prometheus_namespaces = [], prometheus_memory_limit = "1024Mi", prometheus_memory_request = "256Mi", prometheus_storage_size = "2Gi", postgres_cnpg = { enable_superuser_access = true, crds_installed = false, managed_roles = [{ name = "root", login = true, replication = true }], databases = [], persistence_size = "1Gi", ingress_host = "$(WORKSPACE).postgres.fullstack.pw", use_istio = false, export_credentials_secret_name = "$(WORKSPACE)-postgres-credentials" } } }' >> /tmp/phase.tfvars && \
+				echo "kubeconfig_path = \"$$KUBECONFIG_PATH\"" >> /tmp/phase.tfvars && \
+			tofu apply -var-file=/tmp/phase.tfvars -auto-approve && \
+				echo -e "${GREEN}Phase 4: All apps with postgres CRDs...${NC}" && \
+				echo 'workload = { "$(WORKSPACE)" = ["externaldns", "cert_manager", "external_secrets", "argocd", "cloudnative-pg-operator", "postgres-cnpg", "observability-box"] }' > /tmp/phase.tfvars && \
+				echo 'config = { "$(WORKSPACE)" = { kubernetes_context = "$(WORKSPACE)", crds_installed = true, argocd_ingress_class = "traefik", argocd_domain = "$(WORKSPACE).argocd.fullstack.pw", prometheus_namespaces = [], prometheus_memory_limit = "1024Mi", prometheus_memory_request = "256Mi", prometheus_storage_size = "2Gi", postgres_cnpg = { enable_superuser_access = true, crds_installed = true, managed_roles = [{ name = "root", login = true, replication = true }], databases = [], persistence_size = "1Gi", ingress_host = "$(WORKSPACE).postgres.fullstack.pw", use_istio = false, export_credentials_secret_name = "$(WORKSPACE)-postgres-credentials" } } }' >> /tmp/phase.tfvars && \
+				echo "kubeconfig_path = \"$$KUBECONFIG_PATH\"" >> /tmp/phase.tfvars && \
+			tofu apply -var-file=/tmp/phase.tfvars -auto-approve && \
+			rm -f /tmp/phase.tfvars; \
+	fi
 
 .PHONY: ephemeral-destroy
 ephemeral-destroy:
