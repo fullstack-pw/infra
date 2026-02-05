@@ -399,7 +399,7 @@ ephemeral-apply:
 	fi
 
 .PHONY: ephemeral-destroy
-ephemeral-destroy:
+ephemeral-destroy: ephemeral-init
 	@if [ -z "$(WORKSPACE)" ]; then \
 		echo -e "${RED}ERROR: WORKSPACE is required. Example: make ephemeral-destroy WORKSPACE=pr-cks-backend-1${NC}"; \
 		exit 1; \
