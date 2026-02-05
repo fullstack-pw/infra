@@ -408,10 +408,15 @@ ephemeral-destroy:
 		if [ -f "../../python-venv/bin/activate" ]; then source ../../python-venv/bin/activate; fi && \
 		python3 load_secrets.py --secrets-dir ../../secrets && cd ../..
 	@echo -e "${RED}WARNING: This will destroy ephemeral infrastructure for $(WORKSPACE)!${NC}"
-		echo -e "${YELLOW}Destroying ephemeral infrastructure for $(WORKSPACE)...${NC}"; \
-		cd $(EPHEMERAL_DIR) && \
+	@echo -e "${YELLOW}Destroying ephemeral infrastructure for $(WORKSPACE)...${NC}"; \
+	KUBECONFIG_PATH=$${KUBECONFIG:-~/.kube/config}; \
+	cd $(EPHEMERAL_DIR) && \
 		tofu workspace select $(WORKSPACE) && \
-		tofu destroy -auto-approve && \
+		echo 'workload = { "$(WORKSPACE)" = [] }' > /tmp/destroy.tfvars && \
+		echo 'config = { "$(WORKSPACE)" = { kubernetes_context = "$(WORKSPACE)", crds_installed = false, argocd_ingress_class = "traefik" } }' >> /tmp/destroy.tfvars && \
+		echo "kubeconfig_path = \"$$KUBECONFIG_PATH\"" >> /tmp/destroy.tfvars && \
+		tofu destroy -var-file=/tmp/destroy.tfvars -auto-approve && \
+		rm -f /tmp/destroy.tfvars && \
 		tofu workspace select default && \
 		tofu workspace delete $(WORKSPACE); \
 
