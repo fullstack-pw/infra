@@ -404,21 +404,17 @@ ephemeral-destroy:
 		echo -e "${RED}ERROR: WORKSPACE is required. Example: make ephemeral-destroy WORKSPACE=pr-cks-backend-1${NC}"; \
 		exit 1; \
 	fi
-	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(EPHEMERAL_TOFU_DIR) && \
-		if [ -f "../../python-venv/bin/activate" ]; then source ../../python-venv/bin/activate; fi && \
-		python3 load_secrets.py --secrets-dir ../../secrets && cd ../..
 	@echo -e "${RED}WARNING: This will destroy ephemeral infrastructure for $(WORKSPACE)!${NC}"
 	@echo -e "${YELLOW}Destroying ephemeral infrastructure for $(WORKSPACE)...${NC}"; \
-	KUBECONFIG_PATH=$${KUBECONFIG:-~/.kube/config}; \
+	echo -e "${CYAN}Step 1: Deleting Cluster API cluster (this will remove VMs automatically)...${NC}"; \
+	kubectl delete cluster "$(WORKSPACE)" -n "$(WORKSPACE)" --context tools --kubeconfig ~/.kube/config --timeout=5m || echo "Cluster already deleted or not found"; \
+	echo -e "${CYAN}Step 2: Deleting OpenTofu workspace...${NC}"; \
 	cd $(EPHEMERAL_DIR) && \
-		tofu workspace select $(WORKSPACE) && \
-		echo 'workload = { "$(WORKSPACE)" = [] }' > /tmp/destroy.tfvars && \
-		echo 'config = { "$(WORKSPACE)" = { kubernetes_context = "$(WORKSPACE)", crds_installed = false, argocd_ingress_class = "traefik" } }' >> /tmp/destroy.tfvars && \
-		echo "kubeconfig_path = \"$$KUBECONFIG_PATH\"" >> /tmp/destroy.tfvars && \
-		tofu destroy -var-file=/tmp/destroy.tfvars -auto-approve && \
-		rm -f /tmp/destroy.tfvars && \
 		tofu workspace select default && \
-		tofu workspace delete $(WORKSPACE); \
+		tofu workspace delete $(WORKSPACE) 2>/dev/null || echo "Workspace already deleted or not found"; \
+	echo -e "${CYAN}Step 3: Releasing IP from pool...${NC}"; \
+	./clusters/scripts/ip_pool_manager.sh release "$(WORKSPACE)" || echo "IP already released or not found"; \
+	echo -e "${GREEN}Ephemeral infrastructure for $(WORKSPACE) destroyed successfully!${NC}" \
 
 .PHONY: ephemeral-workspace
 ephemeral-workspace:
