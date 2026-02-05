@@ -404,6 +404,9 @@ ephemeral-destroy:
 		echo -e "${RED}ERROR: WORKSPACE is required. Example: make ephemeral-destroy WORKSPACE=pr-cks-backend-1${NC}"; \
 		exit 1; \
 	fi
+	@echo -e "${CYAN}Running load_secrets.py...${NC}" && cd $(EPHEMERAL_TOFU_DIR) && \
+		if [ -f "../../python-venv/bin/activate" ]; then source ../../python-venv/bin/activate; fi && \
+		python3 load_secrets.py --secrets-dir ../../secrets && cd ../..
 	@echo -e "${RED}WARNING: This will destroy ephemeral infrastructure for $(WORKSPACE)!${NC}"
 		echo -e "${YELLOW}Destroying ephemeral infrastructure for $(WORKSPACE)...${NC}"; \
 		cd $(EPHEMERAL_DIR) && \
