@@ -1,3 +1,9 @@
+## [1.11.2](https://github.com/fullstack-pw/infra/compare/v1.11.1...v1.11.2) (2026-02-05)
+
+### Bug Fixes
+
+* **ephemeral:** destroy ([3b17cb2](https://github.com/fullstack-pw/infra/commit/3b17cb2bdc217402377cecaf905a4c9c8cd4a3a7))
+
 ## [1.11.1](https://github.com/fullstack-pw/infra/compare/v1.11.0...v1.11.1) (2026-02-05)
 
 ### Bug Fixes
