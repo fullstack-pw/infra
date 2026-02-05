@@ -411,7 +411,7 @@ ephemeral-destroy: ephemeral-init
 	echo -e "${CYAN}Step 2: Deleting OpenTofu workspace...${NC}"; \
 	cd $(EPHEMERAL_DIR) && \
 		tofu workspace select default && \
-		tofu workspace delete $(WORKSPACE) 2>/dev/null || echo "Workspace already deleted or not found"; \
+		tofu workspace delete -force $(WORKSPACE) 2>/dev/null || echo "Workspace already deleted or not found"; \
 	echo -e "${CYAN}Step 3: Releasing IP from pool...${NC}"; \
 	./clusters/scripts/ip_pool_manager.sh release "$(WORKSPACE)" || echo "IP already released or not found"; \
 	echo -e "${GREEN}Ephemeral infrastructure for $(WORKSPACE) destroyed successfully!${NC}" \
