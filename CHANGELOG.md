@@ -1,3 +1,9 @@
+## [1.11.6](https://github.com/fullstack-pw/infra/compare/v1.11.5...v1.11.6) (2026-02-06)
+
+### Bug Fixes
+
+* **ephemeral:** resources ([7e9b622](https://github.com/fullstack-pw/infra/commit/7e9b622a8d484b97eb18005c90fd8e4552b9a5fa))
+
 ## [1.11.5](https://github.com/fullstack-pw/infra/compare/v1.11.4...v1.11.5) (2026-02-05)
 
 ### Bug Fixes
