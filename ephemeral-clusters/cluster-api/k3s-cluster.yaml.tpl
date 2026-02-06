@@ -208,8 +208,8 @@ spec:
       format: qcow2
       full: true
       numCores: 4
-      numSockets: 1
-      memoryMiB: 8192
+      numSockets: 2
+      memoryMiB: 16384
       disks:
         bootVolume:
           disk: scsi0
