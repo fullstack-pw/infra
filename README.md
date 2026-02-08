@@ -111,7 +111,7 @@ generators:
 ```
 
 **App-of-Apps Hierarchy**:
-- Root applications: [dev-apps.yaml](argocd-apps/dev-apps.yaml), [prod-apps.yaml](argocd-apps/prod-apps.yaml)
+- Root applications: [dev-apps.yaml](argocd-apps/app-of-apps/dev-apps.yaml), [prod-apps.yaml](argocd-apps/app-of-apps/prod-apps.yaml), [sandboxy-apps.yaml](argocd-apps/app-of-apps/sandboxy-apps.yaml)
 - Source: [argocd-apps/app-of-apps/](argocd-apps/app-of-apps/) directory structure
 - Auto-sync with pruning and self-healing enabled
 - Retry policy: 5 attempts with exponential backoff
@@ -119,6 +119,7 @@ generators:
 **Application Repositories**:
 - [cks-backend](https://github.com/fullstack-pw/cks-backend) - Backend APIs with Kustomize overlays
 - [cks-frontend](https://github.com/fullstack-pw/cks-frontend) - Web UI with Kustomize overlays
+- [cks-terminal-mgmt](https://github.com/fullstack-pw/cks-terminal-mgmt) - Terminal management microservice (sandboxy)
 - [demo-apps](https://github.com/fullstack-pw/demo-apps) - Demo applications showcasing patterns
 
 Key components:

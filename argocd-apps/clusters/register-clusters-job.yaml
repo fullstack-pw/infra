@@ -118,6 +118,36 @@ spec:
                   }
               EOF
 
+              # Extract sandboxy cluster credentials
+              echo "Extracting sandboxy cluster credentials..."
+              export SANDBOXY_CA=$(cat /tmp/kubeconfig | grep -A 1 "name: sandboxy" -m 1 | grep certificate-authority-data | awk '{print $2}')
+              export SANDBOXY_CERT=$(cat /tmp/kubeconfig | grep -A 2 "name: sandboxy" | grep client-certificate-data | awk '{print $2}')
+              export SANDBOXY_KEY=$(cat /tmp/kubeconfig | grep -A 3 "name: sandboxy" | grep client-key-data | awk '{print $2}')
+
+              # Create sandboxy cluster secret
+              echo "Creating sandboxy cluster secret..."
+              cat <<EOF | kubectl apply -f -
+              apiVersion: v1
+              kind: Secret
+              metadata:
+                name: sandboxy-cluster
+                namespace: argocd
+                labels:
+                  argocd.argoproj.io/secret-type: cluster
+              type: Opaque
+              stringData:
+                name: sandboxy
+                server: https://192.168.1.21:6443
+                config: |
+                  {
+                    "tlsClientConfig": {
+                      "insecure": true,
+                      "certData": "$SANDBOXY_CERT",
+                      "keyData": "$SANDBOXY_KEY"
+                    }
+                  }
+              EOF
+
               echo "Cluster registration complete"
 
               # List registered clusters
