@@ -54,7 +54,8 @@ variable "workload" {
       "kubevirt",
       "longhorn",
       "observability-box",
-      "teleport-agent"
+      "teleport-agent",
+      "argocd",
     ]
     tools = [
       "externaldns",
@@ -113,11 +114,12 @@ variable "config" {
       }
     }
     dev = {
-      kubernetes_context   = "dev"
-      crds_installed       = true
-      istio_CRDs           = true
-      argocd_ingress_class = "istio"
-      argocd_domain        = "dev.argocd.fullstack.pw"
+      kubernetes_context     = "dev"
+      crds_installed         = true
+      istio_CRDs             = true
+      argocd_ingress_class   = "istio"
+      argocd_ingress_enabled = false
+      argocd_domain          = "dev.argocd.fullstack.pw"
       gateway_dns_names = [
         "dev.ascii.fullstack.pw",
         "dev.enqueuer.fullstack.pw",
@@ -187,11 +189,12 @@ variable "config" {
       }
     }
     prod = {
-      kubernetes_context   = "prod"
-      crds_installed       = true
-      istio_CRDs           = true
-      argocd_ingress_class = "istio"
-      argocd_domain        = "argocd.fullstack.pw"
+      kubernetes_context     = "prod"
+      crds_installed         = true
+      istio_CRDs             = true
+      argocd_ingress_class   = "istio"
+      argocd_ingress_enabled = false
+      argocd_domain          = "argocd.fullstack.pw"
       gateway_dns_names = [
         "ascii.fullstack.pw",
         "enqueuer.fullstack.pw",
@@ -254,8 +257,12 @@ variable "config" {
       }
     }
     sandboxy = {
-      kubernetes_context = "sandboxy"
-      crds_installed     = true
+      kubernetes_context     = "sandboxy"
+      crds_installed         = true
+      istio_CRDs             = false
+      argocd_ingress_class   = "traefik"
+      argocd_ingress_enabled = false
+      argocd_domain          = "sandboxy.argocd.fullstack.pw"
       teleport = {
         apps = {
           "longhorn" = "http://longhorn-frontend.longhorn-system.svc.cluster.local"
@@ -281,11 +288,12 @@ variable "config" {
       ]
     }
     tools = {
-      kubernetes_context   = "tools"
-      crds_installed       = true
-      istio_CRDs           = false
-      argocd_ingress_class = "traefik"
-      argocd_domain        = "tools.argocd.fullstack.pw"
+      kubernetes_context     = "tools"
+      crds_installed         = true
+      istio_CRDs             = false
+      argocd_ingress_class   = "traefik"
+      argocd_ingress_enabled = true
+      argocd_domain          = "tools.argocd.fullstack.pw"
       teleport = {
         apps = {
           "harbor" = "http://harbor-portal.harbor.svc.cluster.local"

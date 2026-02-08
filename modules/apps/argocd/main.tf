@@ -90,6 +90,43 @@ module "argo_rollouts_helm" {
   depends_on = [module.namespace]
 }
 
+resource "kubernetes_manifest" "argocd_bootstrap" {
+  count = var.install_argocd ? 1 : 0
+
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
+    metadata = {
+      name      = "argocd-bootstrap"
+      namespace = module.namespace.name
+    }
+    spec = {
+      project = "default"
+      source = {
+        repoURL        = "https://github.com/fullstack-pw/infra.git"
+        targetRevision = "HEAD"
+        path           = "argocd-apps"
+        directory = {
+          recurse = true
+        }
+      }
+      destination = {
+        server    = "https://kubernetes.default.svc"
+        namespace = module.namespace.name
+      }
+      syncPolicy = {
+        automated = {
+          prune    = true
+          selfHeal = true
+        }
+        syncOptions = ["CreateNamespace=true"]
+      }
+    }
+  }
+
+  depends_on = [module.helm]
+}
+
 resource "kubernetes_manifest" "argocd_virtualservice" {
   count = var.install_argocd && var.istio_CRDs && var.ingress_enabled ? 1 : 0
 

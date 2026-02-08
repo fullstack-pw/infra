@@ -165,7 +165,7 @@ module "argocd" {
   install_argocd         = terraform.workspace == "tools"
   argocd_version         = "7.7.12"
   argocd_domain          = var.config[terraform.workspace].argocd_domain
-  ingress_enabled        = true
+  ingress_enabled        = var.config[terraform.workspace].argocd_ingress_enabled
   ingress_class_name     = var.config[terraform.workspace].argocd_ingress_class
   cert_issuer            = "letsencrypt-prod"
   use_istio              = contains(local.workload, "istio")

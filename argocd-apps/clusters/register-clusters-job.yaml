@@ -33,6 +33,9 @@ kind: Job
 metadata:
   name: register-clusters
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   ttlSecondsAfterFinished: 300
   template:
