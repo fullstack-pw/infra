@@ -73,7 +73,8 @@ Production-grade infrastructure-as-code repository demonstrating enterprise DevO
 **External Secrets Automation**:
 - When secrets are added/removed in [secrets/](secrets/) directory, OpenTofu automatically updates ExternalSecret objects
 - Changes propagate to all clusters via Vault synchronization
-- Namespaces with label `cluster-secrets=true` receive updated secrets automatically
+- Namespaces with label `cluster-secrets=true` receive updated secrets automatically on 'cluster-secrets' secret
+- 'cluster-secrets' secret automatically mounted and available as environment variables on github runners
 
 
 **Progressive Delivery with Argo Rollouts**
@@ -99,7 +100,11 @@ generators:
   - matrix:
       generators:
         - list:  # Applications
-            elements: [writer, enqueuer, memorizer, ascii-frontend]
+            elements:
+              - app: cks-backend
+                repoURL: https://github.com/fullstack-pw/cks-backend
+              - app: cks-frontend
+                repoURL: https://github.com/fullstack-pw/cks-frontend
         - clusters:  # Environments resolved from registered clusters
             selector:
               matchExpressions:
@@ -119,11 +124,10 @@ generators:
 - [cks-backend](https://github.com/fullstack-pw/cks-backend) - Backend APIs with Kustomize overlays
 - [cks-frontend](https://github.com/fullstack-pw/cks-frontend) - Web UI with Kustomize overlays
 - [cks-terminal-mgmt](https://github.com/fullstack-pw/cks-terminal-mgmt) - Terminal management microservice (sandboxy)
-- [demo-apps](https://github.com/fullstack-pw/demo-apps) - Demo applications showcasing patterns
 
 Key components:
-- AnalysisTemplate with Kubernetes Job provider for Cypress test execution
-- Separate AnalysisTemplate per application for production promotion (git commit automation)
+- Per-app AnalysisTemplates for Cypress test execution (e.g., `cypress-tests-cks-backend`)
+- Per-app AnalysisTemplates for production promotion via git commit automation (e.g., `promote-cks-backend-to-prod`)
 - `autoPromotionEnabled: true` for fully automated pipeline
 - Prod overlay removes prePromotionAnalysis (tests only run in dev)
 - Kustomize overlays for environment-specific configuration
@@ -442,7 +446,6 @@ infra/
 │   └── scripts/         # Automation scripts (Talos, kubeconfig management)
 ├── argocd-apps/         # GitOps application manifests
 │   ├── cks-apps-applicationset.yaml   # CKS platform apps (matrix + cluster generator)
-│   ├── demo-apps-applicationset.yaml  # Demo apps (matrix + cluster generator)
 │   ├── cks-terminal-mgmt-sandboxy.yaml # Standalone sandboxy application
 │   └── clusters/        # Cluster registration and repo secrets
 ├── secrets/             # SOPS-encrypted secrets (age encryption)
@@ -470,7 +473,7 @@ infra/
 | tools | K3s | Legacy Ansible | Platform services & Cluster API management cluster | k8s-tools (single node) | Cluster API operator, CloudNativePG, Redis, NATS, CI/CD runners (GitHub/GitLab), Vault, Harbor, MinIO, ArgoCD |
 | home | K3s | Legacy Ansible | Home automation | k8s-home (single node) | Immich photo management, External Secrets |
 | observability | K3s | Legacy Ansible | Central monitoring hub | k8s-observability (single node) | Prometheus (kube-prometheus-stack), Grafana, Jaeger, Loki, OpenTelemetry Collector |
-| sandboxy | K3s | Legacy Ansible | CKS (Certified Kubernetes Security) platform | k8s-sandbox (single node) | KubeVirt for VM virtualization, Longhorn for snapshot-based storage, maintains pool of standby VMs for instant CKS scenario provisioning with rapid reset |
+| sandboxy | K3s | Legacy Ansible | CKS (Certified Kubernetes Security) platform | k8s-sandbox (single node) | KubeVirt for VM virtualization, Longhorn for snapshot-based storage, cks-terminal-mgmt for browser-based terminal access via ttyd, maintains pool of standby VMs for instant CKS scenario provisioning with rapid reset |
 
 ## Technology Stack
 
@@ -635,7 +638,7 @@ module "new_module" {
 
 ### What is sandboxy cluster used for?
 
-The sandboxy cluster serves as a **CKS (Certified Kubernetes Security) training platform**:
+The sandboxy cluster serves mostly to **CKS (Certified Kubernetes Security) training platform**:
 
 **Architecture**:
 - KubeVirt for VM virtualization on Kubernetes
@@ -646,9 +649,15 @@ The sandboxy cluster serves as a **CKS (Certified Kubernetes Security) training 
 1. CKS maintains pool of standby VMs (running on KubeVirt)
 2. User starts a CKS scenario
 3. VM instantly provisioned from pool (no wait time)
-4. User completes scenario exercises
-5. CKS triggers Longhorn snapshot restore
-6. VM reset to clean state and returned to pool
-7. Rapid reset enables high-throughput scenario execution
+4. User opens terminal tabs (multi-terminal support via cks-terminal-mgmt + ttyd)
+5. User completes scenario exercises
+6. CKS triggers Longhorn snapshot restore
+7. VM reset to clean state and returned to pool
+8. Rapid reset enables high-throughput scenario execution
 
-This architecture provides instant scenario availability and eliminates waiting for VM provisioning/cleanup. 
+**Terminal Access**:
+- [cks-terminal-mgmt](https://github.com/fullstack-pw/cks-terminal-mgmt) runs on sandboxy alongside KubeVirt VMs
+- Spawns ttyd processes on-demand for SSH connections to VMs
+- Frontend embeds terminals via iframe with multi-tab support (multiple terminals per VM)
+
+This architecture provides instant scenario availability and eliminates waiting for VM provisioning/cleanup.
