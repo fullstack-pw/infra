@@ -9,7 +9,6 @@ spec:
   generators:
     - matrix:
         generators:
-          # List of applications
           - list:
               elements:
                 - app: writer
@@ -20,27 +19,24 @@ spec:
                   namespace: default
                 - app: ascii-frontend
                   namespace: default
-          # List of environments
-          - list:
-              elements:
-                - env: dev
-                  server: https://192.168.1.50:6443
-                  domain: dev.{{.app}}.fullstack.pw
-                - env: prod
-                  server: https://192.168.1.70:6443
-                  domain: "{{.app}}.fullstack.pw"
+          - clusters:
+              selector:
+                matchExpressions:
+                  - key: environment
+                    operator: In
+                    values: [dev, prod]
   template:
     metadata:
-      name: "{{.app}}-{{.env}}"
+      name: "{{.app}}-{{.name}}"
       labels:
         app: "{{.app}}"
-        env: "{{.env}}"
+        env: "{{.name}}"
     spec:
       project: default
       source:
         repoURL: https://github.com/fullstack-pw/demo-apps
         targetRevision: HEAD
-        path: "apps/{{.app}}/kustomize/overlays/{{.env}}"
+        path: "apps/{{.app}}/kustomize/overlays/{{.name}}"
       destination:
         server: "{{.server}}"
         namespace: "{{.namespace}}"

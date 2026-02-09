@@ -77,6 +77,7 @@ spec:
                 namespace: argocd
                 labels:
                   argocd.argoproj.io/secret-type: cluster
+                  environment: dev
               type: Opaque
               stringData:
                 name: dev
@@ -107,6 +108,7 @@ spec:
                 namespace: argocd
                 labels:
                   argocd.argoproj.io/secret-type: cluster
+                  environment: prod
               type: Opaque
               stringData:
                 name: prod
@@ -137,6 +139,7 @@ spec:
                 namespace: argocd
                 labels:
                   argocd.argoproj.io/secret-type: cluster
+                  environment: sandboxy
               type: Opaque
               stringData:
                 name: sandboxy

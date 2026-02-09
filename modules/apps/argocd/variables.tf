@@ -132,11 +132,11 @@ variable "controller_resources" {
   default = {
     requests = {
       cpu    = "250m"
-      memory = "256Mi"
+      memory = "512Mi"
     }
     limits = {
-      cpu    = "1000m"
-      memory = "1Gi"
+      cpu    = "4000m"
+      memory = "4Gi"
     }
   }
 }

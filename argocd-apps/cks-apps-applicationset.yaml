@@ -9,39 +9,33 @@ spec:
   generators:
     - matrix:
         generators:
-          # List of CKS applications
           - list:
               elements:
                 - app: cks-backend
                   namespace: default
                   repoURL: https://github.com/fullstack-pw/cks-backend
-                  domain: api.cks.fullstack.pw
                 - app: cks-frontend
                   namespace: default
                   repoURL: https://github.com/fullstack-pw/cks-frontend
-                  domain: cks.fullstack.pw
-          # List of environments
-          - list:
-              elements:
-                - env: dev
-                  server: https://192.168.1.50:6443
-                  domainPrefix: dev.
-                - env: prod
-                  server: https://192.168.1.70:6443
-                  domainPrefix: ""
+          - clusters:
+              selector:
+                matchExpressions:
+                  - key: environment
+                    operator: In
+                    values: [dev, prod]
   template:
     metadata:
-      name: "{{.app}}-{{.env}}"
+      name: "{{.app}}-{{.name}}"
       labels:
         app: "{{.app}}"
-        env: "{{.env}}"
+        env: "{{.name}}"
         project: cks
     spec:
       project: default
       source:
         repoURL: "{{.repoURL}}"
         targetRevision: HEAD
-        path: "kustomize/overlays/{{.env}}"
+        path: "kustomize/overlays/{{.name}}"
       destination:
         server: "{{.server}}"
         namespace: "{{.namespace}}"

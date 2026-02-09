@@ -23,7 +23,7 @@ Production-grade infrastructure-as-code repository demonstrating enterprise DevO
 **Git as Single Source of Truth**
 - All infrastructure changes submitted via pull requests with automated validation
 - Commit message parsing for workflow automation triggers
-- ArgoCD implementation with app-of-apps pattern for hierarchical application management
+- ArgoCD implementation with ApplicationSets and cluster generator for multi-environment deployments
 - Sync waves and hooks for ordered, controlled deployments
 - Self-healing enabled with automatic drift detection and remediation
 
@@ -92,7 +92,7 @@ Build → Push Image → Update Dev Tag → ArgoCD Sync → Cypress Tests → Up
 
 **ArgoCD ApplicationSet Pattern**:
 
-ApplicationSets use matrix generators to deploy applications across multiple environments:
+ApplicationSets use matrix generators combined with the ArgoCD cluster generator to deploy applications across registered clusters:
 
 ```yaml
 generators:
@@ -100,19 +100,18 @@ generators:
       generators:
         - list:  # Applications
             elements: [writer, enqueuer, memorizer, ascii-frontend]
-        - list:  # Environments
-            elements:
-              - env: dev
-                server: https://192.168.1.50:6443
-                domain: dev.{{.app}}.fullstack.pw
-              - env: prod
-                server: https://192.168.1.70:6443
-                domain: "{{.app}}.fullstack.pw"
+        - clusters:  # Environments resolved from registered clusters
+            selector:
+              matchExpressions:
+                - key: environment
+                  operator: In
+                  values: [dev, prod]
 ```
 
-**App-of-Apps Hierarchy**:
-- Root applications: [dev-apps.yaml](argocd-apps/app-of-apps/dev-apps.yaml), [prod-apps.yaml](argocd-apps/app-of-apps/prod-apps.yaml), [sandboxy-apps.yaml](argocd-apps/app-of-apps/sandboxy-apps.yaml)
-- Source: [argocd-apps/app-of-apps/](argocd-apps/app-of-apps/) directory structure
+**Bootstrap Architecture**:
+- IaC creates an `argocd-bootstrap` Application that recursively syncs the [argocd-apps/](argocd-apps/) directory
+- ApplicationSets generate Applications per app/cluster combination
+- Standalone Applications for apps that don't fit the matrix pattern
 - Auto-sync with pruning and self-healing enabled
 - Retry policy: 5 attempts with exponential backoff
 
@@ -442,9 +441,10 @@ infra/
 │   ├── playbooks/       # Ansible configuration playbooks (legacy K3s clusters)
 │   └── scripts/         # Automation scripts (Talos, kubeconfig management)
 ├── argocd-apps/         # GitOps application manifests
-│   ├── app-of-apps/     # ArgoCD app-of-apps hierarchy
-│   ├── demo-apps-applicationset.yaml  # Matrix generator for multi-env deployments
-│   └── cks-apps-applicationset.yaml   # CKS platform applications
+│   ├── cks-apps-applicationset.yaml   # CKS platform apps (matrix + cluster generator)
+│   ├── demo-apps-applicationset.yaml  # Demo apps (matrix + cluster generator)
+│   ├── cks-terminal-mgmt-sandboxy.yaml # Standalone sandboxy application
+│   └── clusters/        # Cluster registration and repo secrets
 ├── secrets/             # SOPS-encrypted secrets (age encryption)
 │   └── common/cluster-secret-store/secrets/  # Cluster-wide secrets synced via External Secrets
 ├── .github/workflows/   # CI/CD automation pipelines
