@@ -430,13 +430,13 @@ infra/
 │       └── update_kubeconfig_sops.sh  # Kubeconfig extraction and SOPS management
 ├── modules/
 │   ├── base/            # 10 foundational modules (helm, namespace, ingress, monitoring, credentials, persistence, istio-gateway, istio-virtualservice, cnpg-database, values-template)
-│   └── apps/            # 32 application modules categorized as:
+│   └── apps/            # 33 application modules categorized as:
 │       ├── Cluster: kubernetes-cluster, clusterapi-operator
 │       ├── Infrastructure: istio, metallb, external-secrets, cert-manager, externaldns, ingress-nginx, kubelet-csr-approver, local-path-provisioner, metrics-server
 │       ├── Data: cloudnative-postgres, cloudnative-postgres-operator, redis, nats, minio
 │       ├── Observability: observability, observability-box
 │       ├── CI/CD: argocd, github-runner, gitlab-runner
-│       ├── Security: vault, teleport-agent, authentik
+│       ├── Security: vault, teleport-agent, authentik, falco
 │       ├── Storage: longhorn, local-path-provisioner
 │       ├── Virtualization: kubevirt, kubevirt-operator
 │       └── Other: harbor, immich, registry, cluster-autoscaler, oracle-backup
@@ -470,7 +470,7 @@ infra/
 |---------|------|--------------|---------|---------|---------------|
 | dev | Talos | Cluster API | Development environment | 1 CP + 2 workers | Development services, Istio service mesh, ArgoCD |
 | prod | kubeadm | Cluster API | Production environment | 1 CP + 2 workers | Production services, Istio service mesh, ArgoCD |
-| tools | K3s | Legacy Ansible | Platform services & Cluster API management cluster | k8s-tools (single node) | Cluster API operator, CloudNativePG, Redis, NATS, CI/CD runners (GitHub/GitLab), Vault, Harbor, MinIO, ArgoCD |
+| tools | K3s | Legacy Ansible | Platform services & Cluster API management cluster | k8s-tools (single node) | Cluster API operator, CloudNativePG, Redis, NATS, CI/CD runners (GitHub/GitLab), Vault, Harbor, MinIO, ArgoCD, Falco |
 | home | K3s | Legacy Ansible | Home automation | k8s-home (single node) | Immich photo management, External Secrets |
 | observability | K3s | Legacy Ansible | Central monitoring hub | k8s-observability (single node) | Prometheus (kube-prometheus-stack), Grafana, Jaeger, Loki, OpenTelemetry Collector |
 | sandboxy | K3s | Legacy Ansible | CKS (Certified Kubernetes Security) platform | k8s-sandbox (single node) | KubeVirt for VM virtualization, Longhorn for snapshot-based storage, cks-terminal-mgmt for browser-based terminal access via ttyd, maintains pool of standby VMs for instant CKS scenario provisioning with rapid reset |
@@ -521,6 +521,7 @@ infra/
 - SOPS with age encryption
 - Trivy (vulnerability scanning)
 - TruffleHog (secret leak detection)
+- Falco (runtime security monitoring via eBPF)
 - Istio mTLS (service mesh security)
 - cert-manager with Let's Encrypt
 - Teleport agent (secure access)

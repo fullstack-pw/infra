@@ -513,6 +513,11 @@ module "cluster_autoscaler" {
   replicas = lookup(var.config[terraform.workspace], "cluster_autoscaler_replicas", 1)
 }
 
+module "falco" {
+  count  = contains(local.workload, "falco") ? 1 : 0
+  source = "../modules/apps/falco"
+}
+
 module "authentik" {
   count  = contains(local.workload, "authentik") ? 1 : 0
   source = "../modules/apps/authentik"

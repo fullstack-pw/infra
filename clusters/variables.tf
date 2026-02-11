@@ -76,6 +76,7 @@ variable "workload" {
       "postgres-cnpg",
       "oracle_backup",
       "cluster-autoscaler",
+      "falco",
       #"authentik",
     ]
     observability = [
