@@ -1,6 +1,6 @@
 /**
  * Redis Module
- * 
+ *
  * This module deploys Redis using our base modules for standardization.
  */
 

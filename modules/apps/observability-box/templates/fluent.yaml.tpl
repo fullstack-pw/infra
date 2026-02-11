@@ -2,27 +2,27 @@ luaScripts:
     extract_trace_id.lua: |
         function extract_trace_id(tag, timestamp, record)
             local log = record["log"]
-            
+
             if type(log) == "string" then
                 -- Try to extract trace ID using pattern matching
                 local _, _, trace_id = string.find(log, "TraceID=([0-9a-f]+)")
-                
+
                 if trace_id then
                     -- Add the trace ID as a new field
                     record["trace_id"] = trace_id
                 end
             end
-            
+
             return 1, timestamp, record
         end
     filter_health_checks.lua: |
         function filter_health_checks(tag, timestamp, record)
             local log = record["log"]
-            
+
             if log ~= nil and string.match(string.lower(log), "health check") then
                 return -1, timestamp, record
             end
-            
+
             return 2, timestamp, record
         end
 config:
@@ -49,12 +49,12 @@ config:
         Merge_Log_Key       log_processed
         K8S-Logging.Parser  On
         K8S-Logging.Exclude Off
-        
+
     [FILTER]
         Name                record_modifier
         Match               *
         Record              log_format structured
-        
+
     [FILTER]
         Name                lua
         Match               kube.var.log.containers.trace-demo*

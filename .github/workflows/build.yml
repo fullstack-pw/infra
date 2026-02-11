@@ -60,9 +60,9 @@ jobs:
             if [ -n "$DOCKERFILE" ]; then
               DIR=$(dirname "$DOCKERFILE")
               IMAGE_NAME=$(basename "$DIR")
-              
+
               echo "Building $DOCKERFILE as registry.fullstack.pw/library/$IMAGE_NAME:latest"
-              
+
               docker build \
                 -t registry.fullstack.pw/library/$IMAGE_NAME:latest \
                 -t registry.fullstack.pw/library/$IMAGE_NAME:${{ steps.get_version.outputs.version }} \

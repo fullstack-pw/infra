@@ -1,0 +1,50 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+        exclude: ^secrets/
+      - id: end-of-file-fixer
+        exclude: ^secrets/
+      - id: check-merge-conflict
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+        exclude: ^(secrets/|clusters/tmp/|ephemeral-clusters/opentofu/tmp/)
+      - id: check-json
+        exclude: ^(clusters/tmp/|ephemeral-clusters/opentofu/tmp/)
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: detect-private-key
+        exclude: ^(clusters/tmp/|ephemeral-clusters/opentofu/tmp/)
+
+  - repo: local
+    hooks:
+      - id: check-sops-encryption
+        name: Check SOPS encryption on secrets
+        entry: scripts/check-sops-encryption.sh
+        language: script
+        files: ^secrets/.*\.(yaml|yml|json|env)$
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: ^(secrets/|python-venv/|.*\.lock\.json$)
+
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.105.0
+    hooks:
+      - id: terraform_fmt
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        args: ['--severity=error', '-e', 'SC1091']
+
+  # - repo: https://github.com/hadolint/hadolint
+  #   rev: v2.14.0
+  #   hooks:
+  #     - id: hadolint-docker

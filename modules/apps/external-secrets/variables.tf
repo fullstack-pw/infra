@@ -94,4 +94,3 @@ variable "namespace_selector_label" {
     value = "true"
   }
 }
-

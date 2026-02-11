@@ -1,6 +1,6 @@
 /**
  * ExternalDNS Module
- * 
+ *
  * This module deploys ExternalDNS to manage DNS records from Kubernetes resources.
  */
 

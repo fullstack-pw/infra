@@ -1,6 +1,6 @@
 /**
  * Base namespace module
- * 
+ *
  * This module creates a Kubernetes namespace with optional labels and annotations.
  */
 

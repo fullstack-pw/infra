@@ -1,6 +1,6 @@
 /**
  * Base credentials module
- * 
+ *
  * This module manages credentials and secrets in Kubernetes.
  */
 

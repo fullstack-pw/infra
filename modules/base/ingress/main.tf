@@ -1,6 +1,6 @@
 /**
  * Base ingress module
- * 
+ *
  * This module creates a standard Kubernetes ingress with common annotations.
  * Supports multiple paths and port names.
  */

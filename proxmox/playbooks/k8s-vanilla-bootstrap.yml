@@ -12,9 +12,9 @@
     # Initialize the first control plane node
     - name: Initialize Kubernetes control plane on the first node
       shell: >
-        kubeadm init 
-        --control-plane-endpoint="{{ control_plane_endpoint }}" 
-        --upload-certs 
+        kubeadm init
+        --control-plane-endpoint="{{ control_plane_endpoint }}"
+        --upload-certs
         --pod-network-cidr={{ pod_network_cidr }}
         --kubernetes-version={{ kubernetes_version }}
       register: kubeadm_init

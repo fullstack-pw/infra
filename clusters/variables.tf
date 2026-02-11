@@ -587,4 +587,3 @@ variable "create_gitlab_runner_secret" {
   type        = bool
   default     = true
 }
-

@@ -58,7 +58,7 @@ def get_secrets_paths(client, mount_point='kv'):
             except Exception as e:
                 # If we get an error, this might be a leaf node
                 pass
-        
+
         list_recursive()
         return paths
     except Exception as e:
@@ -82,23 +82,23 @@ def save_to_yaml(data, output_file, environment):
     """Save structured data to a YAML file"""
     # Ensure parent directories exist
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
-    
+
     # Parse the path to determine the structure
     parts = output_file.replace('.yaml', '').split('/')
     path_parts = parts[2:]  # Skip 'secrets/dev' prefix
-    
+
     # Create nested structure
     nested_data = {}
     current = nested_data
-    
+
     # Add standard structure
-    # Example: 'cluster-secret-store/secrets/KUBECONFIG' 
+    # Example: 'cluster-secret-store/secrets/KUBECONFIG'
     # would become vault: { kv: { cluster-secret-store: { secrets: { KUBECONFIG: value } } } }
-    
+
     # Start with vault.kv
     current['vault'] = {'kv': {}}
     current = current['vault']['kv']
-    
+
     # # Handle special cases like individual keys in cluster-secret-store/secrets
     # if len(path_parts) >= 2 and path_parts[0] == 'cluster-secret-store' and path_parts[1] == 'secrets':
     #     # Check if we're dealing with a specific key or the whole secrets map
@@ -119,11 +119,11 @@ def save_to_yaml(data, output_file, environment):
             # Intermediate path part
             current[part] = {}
             current = current[part]
-    
+
     # Write to file
     with open(output_file, 'w') as f:
         yaml.dump(nested_data, f, default_flow_style=False)
-    
+
     print(f"Saved secrets to {output_file}")
 
 def determine_environment(path):
@@ -141,48 +141,48 @@ def determine_environment(path):
 
 def main():
     args = parse_args()
-    
+
     if not args.vault_token:
         print("Error: No Vault token provided. Set VAULT_TOKEN env var or use --vault-token")
         sys.exit(1)
-    
+
     client = setup_vault_client(args.vault_addr, args.vault_token)
-    
+
     # Get all secret paths
     print("Listing secret paths from Vault...")
     paths = get_secrets_paths(client)
-    
+
     if not paths:
         print("No secrets found or error occurred")
         sys.exit(1)
-    
+
     print(f"Found {len(paths)} secret paths")
-    
+
     # Process each path
     for path in paths:
         # Determine which environment this secret belongs to
         env = determine_environment(path)
-        
+
         # Skip if not requested environment
         if args.environment != 'all' and env != args.environment:
             continue
-        
+
         print(f"Processing {path} (environment: {env})")
-        
+
         if args.dryrun:
             print(f"  Would extract to {args.output_dir}/{env}/{path}.yaml")
             continue
-        
+
         # Get the secret
         secret_data = get_secret(client, path)
         if not secret_data:
             print(f"  No data found or error occurred for {path}")
             continue
-        
+
         # Save to YAML
         output_file = f"{args.output_dir}/{env}/{path}.yaml"
         save_to_yaml(secret_data, output_file, env)
-    
+
     print("Done!")
 
 if __name__ == "__main__":

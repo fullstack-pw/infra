@@ -4,7 +4,7 @@
   become: true
   vars:
     haproxy_clusters: []  # Will be populated dynamically
-  
+
   tasks:
     - name: Install HAProxy
       apt:

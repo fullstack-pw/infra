@@ -4,10 +4,10 @@
 nats:
   # NATS Server name
   name: ${cluster_name}
-  
+
   # Number of NATS server replicas
   replicas: ${replicas}
-  
+
   # Authentication configuration
   %{if auth_enabled || auth_token_enabled}
   # --- NATS Security ---
@@ -25,7 +25,7 @@ nats:
             k8sClusterDomain: fullstack.pw
   %{endif}
   %{endif}
-  
+
   # Server resource limits
   resources:
     requests:
@@ -34,7 +34,7 @@ nats:
     limits:
       cpu: ${cpu_limit}
       memory: ${memory_limit}
-  
+
   # Monitoring
   %{if monitoring_enabled}
   # Enable the HTTP monitoring endpoints
@@ -42,7 +42,7 @@ nats:
     enabled: true
     port: 8222
   %{endif}
-  
+
 
   # Prometheus metrics
   %{if prometheus_enabled}
@@ -53,7 +53,7 @@ nats:
     serviceMonitor:
       enabled: false  # Set to true if you have Prometheus Operator
   %{endif}
-  
+
   # WebSocket support
   %{if websocket_enabled}
   websocket:
@@ -65,7 +65,7 @@ nats:
 %{if jetstream_enabled}
 jetstream:
   enabled: true
-  
+
   # File storage
   fileStorage:
     enabled: ${persistence_enabled}
@@ -73,7 +73,7 @@ jetstream:
     storageClassName: ${storage_class}
     size: ${storage_size}
     %{endif}
-  
+
   # Memory storage
   memStorage:
     enabled: false
@@ -84,7 +84,7 @@ jetstream:
 natsBox:
   enabled: true
   image: natsio/nats-box:latest
-  
+
 %{if prometheus_enabled}
 # Prometheus configuration
 prometheus:

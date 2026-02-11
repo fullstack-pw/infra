@@ -138,7 +138,7 @@ if [ "$OPERATION" == "upsert" ]; then
   NEW_KUBECONFIG=$(echo "$KUBECONFIG_B64" | base64 -d)
 
   TMP_SOPS_JSON=$(mktemp)
-  
+
   sops -d --output-type=json "$SOPS_FILE" > "$TMP_SOPS_JSON"
 
   EXISTING_KUBECONFIG=$(jq -r '.vault.kv."cluster-secret-store".secrets.KUBECONFIG.KUBECONFIG' "$TMP_SOPS_JSON")

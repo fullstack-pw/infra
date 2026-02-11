@@ -1,6 +1,6 @@
 /**
  * MinIO Module
- * 
+ *
  * This module deploys MinIO S3-compatible object storage using our base modules.
  */
 

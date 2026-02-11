@@ -82,13 +82,13 @@
       register: k3s_status
       changed_when: false
       failed_when: false
-      
+
     - name: Start K3s service using systemctl
       command: systemctl start k3s
       when: k3s_status.rc != 0
       changed_when: true
       failed_when: false
-      
+
     - name: Enable K3s service using systemctl
       command: systemctl enable k3s
       changed_when: true
@@ -109,7 +109,7 @@
 
     - name: Debug cluster name and inventory hostname
       debug:
-        msg: 
+        msg:
           - "Inventory hostname: {{ inventory_hostname }}"
           - "Using cluster name: {{ cluster_name }}"
 

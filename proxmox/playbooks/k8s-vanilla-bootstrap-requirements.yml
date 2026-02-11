@@ -148,7 +148,7 @@
         deb: "/tmp/kube-bench_{{ kube_bench_version }}_linux_amd64.deb"
         state: present
         force: yes
-      
+
     # Check components are installed correctly
     - name: Verify kube-bench installation
       command: kube-bench version
@@ -159,12 +159,12 @@
       command: kubelet --version
       register: kubelet_version
       changed_when: false
-      
+
     - name: Verify kubeadm is installed
       command: kubeadm version
       register: kubeadm_version
       changed_when: false
-      
+
     - name: Verify kubectl is installed
       command: kubectl version --client
       register: kubectl_version
@@ -172,7 +172,7 @@
 
     - name: Print installation results
       debug:
-        msg: 
+        msg:
           - "Kubelet version: {{ kubelet_version.stdout }}"
           - "Kubeadm version: {{ kubeadm_version.stdout }}"
           - "Kubectl client version: {{ kubectl_version.stdout }}"

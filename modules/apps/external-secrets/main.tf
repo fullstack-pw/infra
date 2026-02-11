@@ -1,6 +1,6 @@
 /**
  * External Secrets Module
- * 
+ *
  * This module deploys the External Secrets operator with Vault integration
  * for managing Kubernetes secrets from external secret stores.
  */

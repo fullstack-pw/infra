@@ -12,7 +12,7 @@
     minio_bucket: "teleport-recordings"
     authentik_domain: "auth.fullstack.pw"
     teleport_saml_enabled: false
-    
+
   tasks:
     - name: Update system packages
       apt:
@@ -69,7 +69,7 @@
     - name: Verify installation success
       fail:
         msg: "Teleport installation timed out after 5 minutes"
-      when: 
+      when:
         - not teleport_installed.stat.exists
         - not job_result.finished
 
@@ -99,7 +99,7 @@
 
     - name: Install certbot and dependencies
       apt:
-        name: 
+        name:
           - certbot
           - python3-certbot-dns-cloudflare
           - python3-pip
@@ -185,7 +185,7 @@
         enabled: true
         state: started
         daemon_reload: true
-        
+
     - name: Wait for Teleport to be ready
       wait_for:
         port: 3080
@@ -212,7 +212,7 @@
             - "*"
         EOF
       register: create_role_result
-      failed_when: 
+      failed_when:
         - create_role_result.rc != 0
         - "'already exists' not in create_role_result.stderr"
       changed_when: "'already exists' not in create_role_result.stderr"
@@ -221,19 +221,19 @@
       shell: |
         # Get current user config
         /usr/local/bin/tctl get user/admin > /tmp/admin-user.yaml
-        
+
         # Check if db-access role is already present
         if ! grep -q "db-access" /tmp/admin-user.yaml; then
           # Add db-access to roles list
           sed -i '/^  roles:/a\  - db-access' /tmp/admin-user.yaml
-          
+
           # Apply updated config
           /usr/local/bin/tctl create -f /tmp/admin-user.yaml --force
           echo "Added db-access role to admin user"
         else
           echo "db-access role already present for admin user"
         fi
-        
+
         # Cleanup
         rm -f /tmp/admin-user.yaml
       register: update_user_result
@@ -260,21 +260,21 @@
       debug:
         msg: |
           ✅ Teleport has been installed and configured successfully!
-          
+
           🌐 Access URL: https://{{ teleport_domain }}
           🔧 Config file: /etc/teleport.yaml
           📋 Service: systemctl status teleport
-          
+
           📝 Next steps:
           1. Create the first user:
              sudo tctl users add admin --roles=access,auditor,editor --logins=root,ubuntu
-          
+
           2. Get the join token for Kubernetes agents:
              sudo tctl tokens add --type=kube --ttl=8760h
-          
+
           3. Check service status:
              sudo systemctl status teleport
-          
+
           4. View logs:
              sudo journalctl -u teleport -f
 

@@ -1,6 +1,6 @@
 /**
  * Base persistence module
- * 
+ *
  * This module creates a standard Kubernetes PVC with common configurations.
  */
 

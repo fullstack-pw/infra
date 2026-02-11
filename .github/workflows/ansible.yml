@@ -98,7 +98,7 @@ jobs:
             if [[ $PLAYBOOK =~ ^k8s-(.+)$ ]]; then
               TARGET_ENV="${BASH_REMATCH[1]}"
               echo "Checking for existing hosts in environment: $TARGET_ENV"
-              
+
               if grep -q "^\[${TARGET_ENV}\]" proxmox/k8s.ini && \
                  grep -A 10 "^\[${TARGET_ENV}\]" proxmox/k8s.ini | grep -q "^[a-zA-Z0-9-]"; then
                 echo "Found existing hosts in $TARGET_ENV environment"
@@ -127,7 +127,7 @@ jobs:
           # Check if we have new hosts to limit execution to
           if [ -f "proxmox/new_hosts.txt" ] && [ -s "proxmox/new_hosts.txt" ]; then
             echo "Found new hosts, adding them to known_hosts:"
-            
+
             # Loop through new hosts file
             while IFS=, read -r IP ENV; do
               if [ -n "$IP" ] && [[ $IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+ ]]; then
@@ -155,13 +155,13 @@ jobs:
             CLUSTER_NAME="${{ env.CLUSTER_NAME }}"
             echo "Setting up K3s cluster: $CLUSTER_NAME"
             ansible-playbook $PLAYBOOK_PATH -i proxmox/k8s.ini -e "target_hosts=${{ needs.detect-ansible-command.outputs.playbook }}" -e "vault_token=${VAULT_TOKEN}" -e "vault_addr=https://vault.fullstack.pw"
-            
+
           else
             # Direct playbook - check if we should limit to new hosts
             if [ -f "proxmox/new_hosts.txt" ] && [ -s "proxmox/new_hosts.txt" ]; then
               echo "Found new hosts, running playbook only on them:"
               cat proxmox/new_hosts.txt
-              
+
               # Run the playbook for each new host individually
               while IFS=, read -r IP ENV; do
                 if [ -n "$IP" ] && [ -n "$ENV" ]; then
@@ -170,13 +170,13 @@ jobs:
                   TEMP_INVENTORY=$(mktemp)
                   echo "[all]" > $TEMP_INVENTORY
                   echo "$ENV ansible_host=$IP ansible_user=suporte" >> $TEMP_INVENTORY
-                  
+
                   ansible-playbook -i "$TEMP_INVENTORY" $PLAYBOOK_PATH \
                     -e "ansible_user=suporte" \
                     -e "target_hosts=all" \
                     -e "vault_token=${VAULT_TOKEN}" \
                     -e "vault_addr=https://vault.fullstack.pw"
-                  
+
                   rm $TEMP_INVENTORY
                 fi
               done < proxmox/new_hosts.txt
@@ -203,9 +203,9 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `## Ansible Provisioning Failed
-              
+
               Failed to run ansible playbook: \`${{ needs.detect-ansible-command.outputs.playbook }}\`
-              
+
               Please check the workflow logs for more details.
               `
             })

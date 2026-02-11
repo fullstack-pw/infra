@@ -1,6 +1,6 @@
 /**
  * Base Helm module
- * 
+ *
  * This module standardizes Helm chart deployments.
  */
 

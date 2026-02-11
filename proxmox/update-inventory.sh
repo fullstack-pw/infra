@@ -40,7 +40,7 @@ else
     echo "No standard format found, searching for any VM-related data..."
     VM_KEYS=$(jq 'keys | map(select(. | contains("ip") or contains("vm") or contains("k8s")))' tf_output.json)
     echo "Potential VM keys found: $VM_KEYS"
-    
+
     if [ -n "$VM_KEYS" ] && [ "$VM_KEYS" != "[]" ]; then
         FIRST_KEY=$(echo "$VM_KEYS" | jq -r '.[0]')
         echo "Using $FIRST_KEY for VM data extraction"
@@ -95,13 +95,13 @@ fi
 remove_vm_from_inventory() {
     local vm_name=$1
     echo "Removing $vm_name from inventory..."
-    
+
     # Remove the host line
     sed -i "/^${vm_name} ansible_host=/d" "$INVENTORY_FILE"
-    
+
     # Remove from group sections (but not group headers)
     sed -i "/^\[.*\]$/!s/^${vm_name}$//g" "$INVENTORY_FILE"
-    
+
     # Remove empty lines that might have been created
     sed -i '/^$/N;/^\n$/d' "$INVENTORY_FILE"
 }
@@ -110,14 +110,14 @@ remove_vm_from_inventory() {
 add_haproxy_entry() {
     local vm_name=$1
     local ip=$2
-    
+
     echo "Adding HAProxy: $vm_name"
-    
+
     # Add to individual hosts section if not exists
     if ! grep -q "^$vm_name " "$INVENTORY_FILE"; then
         sed -i "/^# Individual hosts/a $vm_name ansible_host=$ip ansible_user=suporte" "$INVENTORY_FILE"
     fi
-    
+
     # Add to haproxy group
     if ! grep -q "^\[haproxy\]" "$INVENTORY_FILE"; then
         echo "" >> "$INVENTORY_FILE"
@@ -135,27 +135,27 @@ add_haproxy_entry() {
 add_talos_cluster_groups() {
     local vm_name=$1
     local ip=$2
-    
+
     # Handle new talos naming convention: talos-CLUSTERNAME-CLUSTERFUNCTION-number
     if [[ $vm_name =~ ^talos-([^-]+)-(cp|w)([0-9]+)$ ]]; then
         local cluster_name="${BASH_REMATCH[1]}"
         local node_type="${BASH_REMATCH[2]}"
         local node_number="${BASH_REMATCH[3]}"
-        
+
         echo "Adding Talos node $vm_name to Talos group"
-        
+
         local group_name
         if [[ $node_type == "cp" ]]; then
             group_name="talos_control_plane"
         else
             group_name="talos_workers"
         fi
-        
+
         # Add to individual hosts section if not exists
         if ! grep -q "^$vm_name " "$INVENTORY_FILE"; then
             sed -i "/^# Individual hosts/a $vm_name ansible_host=$ip ansible_user=suporte" "$INVENTORY_FILE"
         fi
-        
+
         # Create group if not exists
         if ! grep -q "^\[${group_name}\]" "$INVENTORY_FILE"; then
             echo "" >> "$INVENTORY_FILE"
@@ -174,16 +174,16 @@ add_talos_cluster_groups() {
 add_k3s_single_machine_groups() {
     local vm_name=$1
     local ip=$2
-    
+
     # Handle VMs starting with k8s that are NOT talos clusters
     if [[ $vm_name =~ ^k8s-([^-]+)$ ]] || [[ $vm_name =~ ^k8s-([^-]+)-[0-9]+$ ]]; then
         echo "Adding K3s single-machine cluster: $vm_name"
-        
+
         # Add to individual hosts section if not exists
         if ! grep -q "^$vm_name " "$INVENTORY_FILE"; then
             sed -i "/^# Individual hosts/a $vm_name ansible_host=$ip ansible_user=suporte" "$INVENTORY_FILE"
         fi
-        
+
         # Add to k3s group
         if ! grep -q "^\[k3s\]" "$INVENTORY_FILE"; then
             echo "" >> "$INVENTORY_FILE"
@@ -214,13 +214,13 @@ result = []
 i = 0
 while i < len(lines):
     line = lines[i].strip()
-    
+
     # If this is a group header
     if re.match(r'^\[.*\]$', line):
         # Look ahead to see if this group is empty
         j = i + 1
         has_members = False
-        
+
         # Check following lines until next group or end
         while j < len(lines):
             next_line = lines[j].strip()
@@ -230,7 +230,7 @@ while i < len(lines):
                 has_members = True
                 break
             j += 1
-        
+
         # Only add group if it has members or is [all:vars]
         if has_members or '[all:vars]' in line:
             result.append(lines[i])
@@ -272,28 +272,28 @@ fi
 # Add new VMs and update existing ones
 if [ ${#NAMES[@]} -gt 0 ]; then
     echo "Processing VMs from OpenTofu output..."
-    
+
     for i in "${!NAMES[@]}"; do
         name="${NAMES[i]}"
         ip="${IPS[i]}"
-        
+
         # Clean up IP (remove any extra formatting)
         ip=$(echo $ip | sed 's/ip=//g' | cut -d',' -f1 | cut -d'/' -f1)
-        
+
         echo "Processing VM: $name with IP: $ip"
-        
+
         # Skip if IP is malformed
         if [[ ! $ip =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Warning: Skipping $name - invalid IP format: $ip"
             continue
         fi
-        
+
         # Check if this is a new VM
         if ! grep -q "^$name " "$INVENTORY_FILE"; then
             echo "New VM detected: $name"
             echo "$ip,$name" >> "$NEW_HOSTS_FILE"
         fi
-        
+
 # Handle different VM types
         if [[ $name =~ haproxy ]]; then
             add_haproxy_entry "$name" "$ip"

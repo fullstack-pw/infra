@@ -1,6 +1,6 @@
 /**
  * Monitoring configuration for NATS
- * 
+ *
  * This file adds monitoring resources when metrics are enabled.
  */
 

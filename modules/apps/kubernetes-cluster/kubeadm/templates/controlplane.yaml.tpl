@@ -152,7 +152,7 @@ spec:
           - name: rotate-server-certificates
             value: "true"
           - name: rotate-certificates
-            value: "true"            
+            value: "true"
     joinConfiguration:
       nodeRegistration:
         criSocket: unix:///var/run/containerd/containerd.sock
@@ -162,7 +162,7 @@ spec:
           - name: rotate-server-certificates
             value: "true"
           - name: rotate-certificates
-            value: "true"            
+            value: "true"
     postKubeadmCommands:
       - kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f ${cni_manifest_url}
       - |

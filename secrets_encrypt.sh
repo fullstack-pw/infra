@@ -26,7 +26,7 @@ fi
 encrypt_directory() {
   local dir=$1
   echo "Processing directory: $dir"
-  
+
   # Find all YAML files that are not already encrypted
   # (encrypted files have a 'sops:' key)
   find "$dir" -type f \( -name "*.yaml" -o -name "*.yml" -o -name "*.json" \) | while read -r file; do

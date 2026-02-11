@@ -1,6 +1,6 @@
 /**
  * NGINX Ingress Controller Module
- * 
+ *
  * This module deploys the NGINX ingress controller using our base modules for standardization.
  */
 

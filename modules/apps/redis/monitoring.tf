@@ -1,6 +1,6 @@
 /**
  * Monitoring configuration for Redis
- * 
+ *
  * This file adds monitoring resources when metrics are enabled.
  */
 

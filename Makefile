@@ -57,6 +57,11 @@ Environment Management:
 Module Management:
   make module-test MODULE=<name> - Test a specific OpenTofu module
 
+Pre-commit Hooks:
+  make pre-commit-install        - Install pre-commit framework and hooks
+  make pre-commit-run            - Run all pre-commit hooks on all files
+  make pre-commit-update         - Update pre-commit hook versions
+
 Utilities:
   make clean                    - Clean up temporary files
   make help                     - Show this help message
@@ -420,3 +425,21 @@ ephemeral-destroy: ephemeral-init
 ephemeral-workspace:
 	@echo -e "${CYAN}Listing ephemeral OpenTofu workspaces...${NC}"
 	@cd $(EPHEMERAL_DIR) && tofu workspace list
+
+
+.PHONY: pre-commit-install
+pre-commit-install:
+	@echo -e "${CYAN}Installing pre-commit framework...${NC}"
+	@pip3 install pre-commit
+	@pre-commit install
+	@echo -e "${GREEN}Pre-commit hooks installed successfully.${NC}"
+
+.PHONY: pre-commit-run
+pre-commit-run:
+	@echo -e "${CYAN}Running pre-commit hooks on all files...${NC}"
+	@pre-commit run --all-files
+
+.PHONY: pre-commit-update
+pre-commit-update:
+	@echo -e "${CYAN}Updating pre-commit hook versions...${NC}"
+	@pre-commit autoupdate

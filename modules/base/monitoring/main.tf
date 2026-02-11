@@ -1,7 +1,7 @@
 /**
  * Base Monitoring Module
- * 
- * This module provides standard monitoring configurations such as 
+ *
+ * This module provides standard monitoring configurations such as
  * ServiceMonitor, PodMonitor, and PrometheusRule resources.
  */
 

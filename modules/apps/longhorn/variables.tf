@@ -210,7 +210,7 @@ variable "default_settings" {
     # guaranteedInstanceManagerCPU = null
     # # -- Setting that notifies Longhorn that the cluster is using the Kubernetes Cluster Autoscaler.
     # kubernetesClusterAutoscalerEnabled = null
-    # # -- Enables Longhorn to automatically delete orphaned resources and their associated data or processes (e.g., stale replicas). Orphaned resources on failed or unknown nodes are not automatically cleaned up. 
+    # # -- Enables Longhorn to automatically delete orphaned resources and their associated data or processes (e.g., stale replicas). Orphaned resources on failed or unknown nodes are not automatically cleaned up.
     # # You need to specify the resource types to be deleted using a semicolon-separated list (e.g., `replica-data;instance`). Available items are = `replica-data`, `instance`.
     # orphanResourceAutoDeletion = null
     # # -- Specifies the wait time, in seconds, before Longhorn automatically deletes an orphaned Custom Resource (CR) and its associated resources.

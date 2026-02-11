@@ -1,6 +1,6 @@
 /**
  * NATS Module
- * 
+ *
  * This module deploys NATS using our base modules for standardization.
  */
 

@@ -13,7 +13,7 @@ master:
     storageClass: "${storage_class}"
 %{endif}
     size: "${persistence_size}"
-  
+
   resources:
     requests:
       memory: "${memory_request}"
@@ -21,7 +21,7 @@ master:
     limits:
       memory: "${memory_limit}"
       cpu: "${cpu_limit}"
-  
+
   service:
     type: ${service_type}
     port: ${service_port}
@@ -36,7 +36,7 @@ replica:
     storageClass: "${storage_class}"
 %{endif}
     size: "${persistence_size}"
-  
+
   resources:
     requests:
       memory: "${memory_request}"
@@ -44,7 +44,7 @@ replica:
     limits:
       memory: "${memory_limit}"
       cpu: "${cpu_limit}"
-  
+
   service:
     type: ClusterIP
     port: ${service_port}
@@ -54,7 +54,7 @@ replica:
 sentinel:
   enabled: true
   quorum: ${sentinel_quorum}
-  
+
   resources:
     requests:
       memory: "128Mi"

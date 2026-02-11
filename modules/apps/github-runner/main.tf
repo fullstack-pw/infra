@@ -1,6 +1,6 @@
 /**
  * GitHub Runner Module
- * 
+ *
  * This module deploys self-hosted GitHub Actions runners using the latest Actions Runner Controller (ARC).
  * It supports a custom runner image defined in the included Dockerfile, which adds
  * necessary tools like kubectl, Terraform, SOPS, and more.

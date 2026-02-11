@@ -1,6 +1,6 @@
 /**
  * Registry Module
- * 
+ *
  * This module deploys a Docker registry on Kubernetes with persistent storage and ingress.
  */
 

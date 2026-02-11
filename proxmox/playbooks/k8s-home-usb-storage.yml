@@ -20,7 +20,7 @@
       stat:
         path: "{{ usb_device }}"
       register: device_stat
-      
+
     - name: Fail if USB drive not found
       fail:
         msg: "USB drive {{ usb_device }} not found. Please connect the drive and verify the device path."

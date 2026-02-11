@@ -29,7 +29,7 @@ Production-grade infrastructure-as-code repository demonstrating enterprise DevO
 
 **Automated CI/CD Pipelines**
 
-7 GitHub Actions workflows provide comprehensive automation:
+7 GitHub Actions workflows provide comprehensive automation, complemented by local pre-commit hooks for shift-left security:
 
 | Workflow | Purpose | Trigger |
 |----------|---------|---------|
@@ -406,6 +406,16 @@ Git (SOPS encrypted) → CI/CD (decrypt) → Vault (runtime) → External Secret
 
 ### Security Scanning
 
+**Pre-Commit Hooks** ([.pre-commit-config.yaml](.pre-commit-config.yaml)):
+- SOPS encryption guard preventing unencrypted secrets from being committed
+- `detect-secrets` for credential leak detection across all file types
+- `detect-private-key` for SSH/PGP key detection
+- OpenTofu formatting enforcement via `terraform_fmt`
+- Shell script validation via `shellcheck`
+- File hygiene checks (trailing whitespace, merge conflicts, large files, YAML/JSON validation)
+
+Setup: `make pre-commit-install` | Run manually: `make pre-commit-run`
+
 **Continuous Vulnerability Assessment**
 - Trivy scanning for containers and IaC on every pull request
 - TruffleHog secret leak detection in commit history
@@ -519,6 +529,7 @@ infra/
 
 **Security**
 - SOPS with age encryption
+- Pre-commit hooks (SOPS guard, detect-secrets, detect-private-key, shellcheck)
 - Trivy (vulnerability scanning)
 - TruffleHog (secret leak detection)
 - Falco (runtime security monitoring via eBPF)

@@ -1,6 +1,6 @@
 /**
  * Harbor Module
- * 
+ *
  * This module deploys Harbor container registry using our base modules for standardization.
  * It supports connecting to external PostgreSQL and Redis instances, such as those in the tools cluster.
  */
