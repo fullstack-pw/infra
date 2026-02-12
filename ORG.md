@@ -8,8 +8,8 @@ The fullstack.pw organization encompasses a complete infrastructure and applicat
 
 - **Multi-environment Kubernetes clusters** with Cluster API-based automated provisioning and lifecycle management
 - **Ephemeral PR-based test environments** with automatic cluster provisioning, deployment, testing, and cleanup per pull request
-- **Infrastructure as Code** with OpenTofu modular architecture (10 base + 32 application modules)
-- **GitOps-driven continuous deployment** with ArgoCD app-of-apps pattern and progressive delivery via Argo Rollouts
+- **Infrastructure as Code** with OpenTofu modular architecture
+- **GitOps-driven continuous deployment** with ArgoCD ApplicationSets, cluster generator, and progressive delivery via Argo Rollouts
 - **Comprehensive observability** using Prometheus, Grafana, Jaeger, Loki, and OpenTelemetry with hub-and-spoke architecture
 - **Self-hosted CI/CD infrastructure** with GitHub Actions Runner Controller (ARC) and GitLab runners
 - **Defense-in-depth security** with Vault, cert-manager, Istio service mesh, SOPS encryption, and External Secrets Operator
@@ -19,7 +19,7 @@ The fullstack.pw organization encompasses a complete infrastructure and applicat
 
 ## Architecture
 
-![fullstack.pw Architecture](/fullstack.drawio.svg)
+TBD
 
 ### Physical Infrastructure
 
@@ -28,7 +28,7 @@ The fullstack.pw organization encompasses a complete infrastructure and applicat
 - NODE02: HP ED800 G3 Mini (i7-7700T, 32GB RAM) with USB-attached storage
 - NODE03: X99 dual Xeon E5-2699-V3 18-Core, 128GB RAM
 
-**Virtualization**: Proxmox VE managing 10+ VMs across physical hosts with YAML-driven declarative provisioning
+**Virtualization**: Proxmox VE managing VMs across physical hosts with YAML-driven declarative provisioning
 
 ### Network Architecture
 
@@ -43,10 +43,10 @@ The fullstack.pw organization encompasses a complete infrastructure and applicat
 |---------|--------------|--------------|---------|----------------|-------------------------|
 | dev | Talos Linux | Cluster API | Development environment | 1 CP + 2 workers (dynamic) | Istio service mesh, ArgoCD, development workloads |
 | prod | kubeadm | Cluster API | Production services | 1 CP + 2 workers (dynamic) | Istio service mesh, ArgoCD, production applications |
-| tools | K3s | Legacy Ansible | Platform infrastructure & Cluster API management cluster | k8s-tools (single node) | Cluster API operator, CloudNativePG, Redis, NATS, Vault, Harbor, MinIO, CI/CD runners (GitHub/GitLab) |
+| tools | K3s | Legacy Ansible | Platform infrastructure & Cluster API management cluster | k8s-tools (single node) | Cluster API operator, CloudNativePG, Redis, NATS, Vault, Harbor, MinIO, CI/CD runners (GitHub/GitLab), ArgoCD, Falco |
 | home | K3s | Legacy Ansible | Home automation | k8s-home (single node) | Immich photo management, External Secrets |
 | observability | K3s | Legacy Ansible | Central telemetry hub | k8s-observability (single node) | Prometheus, Grafana, Jaeger, Loki, OpenTelemetry Collector |
-| sandboxy | K3s | Legacy Ansible | CKS training platform | k8s-sandbox (single node) | KubeVirt for VM virtualization, Longhorn for snapshot-based storage, pool of standby VMs for instant CKS scenario provisioning |
+| sandboxy | K3s | Legacy Ansible | CKS training platform | k8s-sandbox (single node) | KubeVirt for VM virtualization, Longhorn for snapshot-based storage, cks-terminal-mgmt for browser-based terminal access, pool of standby VMs for instant CKS scenario provisioning |
 | pr-* (ephemeral) | K3s | Cluster API | Temporary PR test environments | Single node per PR (dynamic, 5 max concurrent) | cert-manager, external-dns, external-secrets, CloudNativePG, application under test |
 
 **Note**: dev and prod clusters are managed by Cluster API operator running on tools cluster. Talos provides immutable infrastructure, while kubeadm offers standard Kubernetes. Legacy clusters (tools, home, observability, sandboxy) provisioned via Proxmox/Ansible workflow. Ephemeral clusters are automatically created per PR in application repositories and destroyed when PR closes.
@@ -56,7 +56,7 @@ The fullstack.pw organization encompasses a complete infrastructure and applicat
 ### Infrastructure & Platform
 
 **[infra](https://github.com/fullstack-pw/infra)**: Complete infrastructure-as-code repository
-- OpenTofu modules (10 base + 32 application) for Kubernetes workload deployment
+- OpenTofu modules for Kubernetes workload deployment
 - Cluster API integration for automated cluster provisioning (Talos Linux, kubeadm)
 - Ansible playbooks for legacy cluster bootstrapping (K3s clusters)
 - GitHub Actions workflows for automated infrastructure lifecycle with kubeconfig management
@@ -70,13 +70,6 @@ The fullstack.pw organization encompasses a complete infrastructure and applicat
 
 ### Application Repositories
 
-**[demo-apps](https://github.com/fullstack-pw/demo-apps)**: Cloud-native microservices portfolio
-- Go-based microservices with OpenTelemetry instrumentation
-- Multi-environment Kustomize overlays (dev, stg, prod)
-- Full observability stack integration (metrics, logs, traces)
-- ArgoCD GitOps deployment manifests
-- Examples: writer, enqueuer, memorizer microservices
-
 **[cks-backend](https://github.com/fullstack-pw/cks-backend)**: CKS training platform backend
 - Go-based backend implementing cluster pool management for Kubernetes security training
 - KubeVirt integration for VM-based Kubernetes cluster provisioning
@@ -89,6 +82,11 @@ The fullstack.pw organization encompasses a complete infrastructure and applicat
 - SWR-based state management with optimistic updates
 - Multi-stage Docker build achieving 70% image size reduction via standalone output
 - Admin dashboard for cluster pool and session management
+
+**[cks-terminal-mgmt](https://github.com/fullstack-pw/cks-terminal-mgmt)**: Terminal management microservice
+- Go-based service running on sandboxy cluster alongside KubeVirt VMs
+- Spawns ttyd processes on-demand for SSH connections to VMs
+- Browser-based terminal access via iframe with multi-tab support
 
 ## Platform Components
 
@@ -229,7 +227,7 @@ Edge Prometheus → Remote Write → Central Prometheus → Grafana
 ## DevOps Practices Demonstrated
 
 **Infrastructure as Code**
-- Two-tier OpenTofu module architecture (10 base + 32 application modules)
+- Two-tier OpenTofu module architecture
 - Cluster API-based cluster provisioning with automated kubeconfig management
 - YAML-driven VM provisioning with dynamic resource creation (legacy)
 - Automated state backup to Oracle Cloud Object Storage
@@ -237,7 +235,7 @@ Edge Prometheus → Remote Write → Central Prometheus → Grafana
 
 **GitOps Methodology**
 - Git as single source of truth for all infrastructure
-- ArgoCD with app-of-apps pattern and sync waves
+- ArgoCD with ApplicationSets, cluster generator, and sync waves
 - Automated drift detection and remediation
 - Pull request-based change management with automated validation
 
@@ -285,7 +283,7 @@ Edge Prometheus → Remote Write → Central Prometheus → Grafana
 - istio-virtualservice: Istio VirtualService routing
 - cnpg-database: CloudNativePG database management
 
-**Application Modules (32 complete solutions)**
+**Application Modules (33 complete solutions)**
 
 Cluster Provisioning:
 - kubernetes-cluster (Talos, kubeadm, K3s, K0s, RKE2), clusterapi-operator
@@ -307,7 +305,7 @@ Data Services:
 - cloudnative-postgres, cloudnative-postgres-operator, redis, nats
 
 Security:
-- vault, teleport-agent, authentik
+- vault, teleport-agent, authentik, falco
 
 Virtualization:
 - kubevirt, kubevirt-operator
@@ -333,6 +331,8 @@ Other:
 **Security & Compliance**
 - HashiCorp Vault, SOPS with age encryption, cert-manager
 - Istio service mesh, External Secrets Operator
+- Falco (runtime security monitoring via eBPF)
+- Pre-commit hooks (SOPS guard, detect-secrets, detect-private-key, shellcheck)
 - Trivy, TruffleHog, RBAC, Vault policies
 
 **Networking & Service Mesh**
@@ -368,12 +368,5 @@ Other:
 
 **Application Documentation**
 - [Pipelines Documentation](https://github.com/fullstack-pw/pipelines): Reusable workflow specifications
-- [Demo Apps](https://github.com/fullstack-pw/demo-apps): Cloud-native application examples
 - [CKS Backend](https://github.com/fullstack-pw/cks-backend): CKS training platform backend implementation
 - [CKS Frontend](https://github.com/fullstack-pw/cks-frontend): CKS training platform web interface
-
-**Architecture Diagrams**
-- Network topology and cluster layout
-- Observability data flow architecture
-- CI/CD pipeline workflows
-- Secret management lifecycle

@@ -286,7 +286,7 @@ module "immich" {
   redis         = "redis.fullstack.pw"
   redis_pass    = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
   db_hostname   = "tools.postgres.fullstack.pw"
-  db_user       = "admin"
+  db_user       = "app"
   db_name       = "immich"
   db_pass       = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
   immich_domain = "immich.fullstack.pw"

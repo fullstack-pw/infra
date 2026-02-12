@@ -1,10 +1,14 @@
 * fix makefile to remove plan after applying
-* make claude CRUD secrets, test effectiveness with terraform apply, annotate to CLAUDE.md
-* argo slow to update workload after commit (15min and nothing)
 * build remote images to harbor to not loose like bitnami event
-* migrate dev to ephemeral clusters using lightweight distributions
 * support k3s via cluster-api
 * support k0s via cluster-api
 * format node02 with ubuntu (probably a challenge without monitor)
 * install OpenStack Sunbeam (also known as MicroStack) on node02
 * create pipeline and playbook to CRUD proxmox vm templates to cluster-api using image builder
+* centralize and move all pipelines to specific repo
+* migrate teleport, observability and sandboxy to cluster-api
+* minimize runners images
+* enable pod to pod encryption
+* prevent pods escalation
+* replace privileged DinD sidecar with a rootless alternative (Kaniko or buildah). The current docker:dind with privileged: true bypasses all AppArmor/seccomp protections and is the single biggest remaining security gap in the runner setup
+* rootless k3s on tools
