@@ -107,6 +107,7 @@ resource "kubernetes_manifest" "postgres_cluster" {
       enableSuperuserAccess = var.enable_superuser_access
 
       postgresql = {
+        shared_preload_libraries = ["vectors.so"]
         parameters = {
           max_connections = "200"
           shared_buffers  = "256MB"

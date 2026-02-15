@@ -21,7 +21,7 @@ variable "repository" {
   default = "https://immich-app.github.io/immich-charts"
 }
 variable "chart_version" {
-  default = "0.9.2"
+  default = "0.10.3"
 }
 variable "timeout" {
   default = "300"

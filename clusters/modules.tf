@@ -119,8 +119,10 @@ module "github_runner" {
   count  = contains(local.workload, "github_runner") ? 1 : 0
   source = "../modules/apps/github-runner"
 
-  github_token = local.secrets_json["kv/cluster-secret-store/secrets/github_token"]["github_token"]
-  install_crd  = var.config[terraform.workspace].crds_installed
+  github_token           = local.secrets_json["kv/cluster-secret-store/secrets/github_token"]["github_token"]
+  install_crd            = var.config[terraform.workspace].crds_installed
+  enable_kaniko_runners  = true
+  enable_buildah_runners = true
 }
 
 module "gitlab_runner" {
@@ -286,9 +288,9 @@ module "immich" {
   redis         = "redis.fullstack.pw"
   redis_pass    = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
   db_hostname   = "tools.postgres.fullstack.pw"
-  db_user       = "app"
+  db_user       = "postgres"
   db_name       = "immich"
-  db_pass       = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
+  db_pass       = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_ROOTPASSWORD"]
   immich_domain = "immich.fullstack.pw"
 
 }
@@ -411,8 +413,8 @@ module "postgres_cnpg" {
   create_cluster   = try(var.config[terraform.workspace].postgres_cnpg.crds_installed, false)
 
   registry   = "registry.fullstack.pw"
-  repository = "library/postgresql"
-  pg_version = "15-wal2json"
+  repository = "library/cloudnative-postgres"
+  pg_version = "15-latest"
 
   postgres_generate_password = true
   postgres_password          = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]

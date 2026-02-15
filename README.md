@@ -134,7 +134,8 @@ Key components:
 
 **Self-Hosted Runner Infrastructure**
 - Actions Runner Controller (ARC) deployed on tools cluster
-- Custom runner image with kubectl, Helm, Terraform, SOPS, Docker CLI, and cloud provider tools
+- Three runner scale sets: `self-hosted` (DinD), `self-hosted-kaniko` (rootless), `self-hosted-buildah` (rootless)
+- Custom runner image with kubectl, Helm, Terraform, SOPS, Docker CLI, Kaniko executor, Buildah, and cloud provider tools
 - GitLab CI runners for multi-platform pipeline support
 - Centralized reusable workflows in dedicated pipelines repository
 

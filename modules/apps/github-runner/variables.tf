@@ -79,6 +79,30 @@ variable "controller_additional_set_values" {
   default = []
 }
 
+variable "enable_kaniko_runners" {
+  description = "Whether to deploy a rootless kaniko runner scale set"
+  type        = bool
+  default     = false
+}
+
+variable "kaniko_runner_name" {
+  description = "Name for the kaniko runner scale set (used as runs-on label)"
+  type        = string
+  default     = "self-hosted-kaniko"
+}
+
+variable "enable_buildah_runners" {
+  description = "Whether to deploy a rootless buildah runner scale set"
+  type        = bool
+  default     = false
+}
+
+variable "buildah_runner_name" {
+  description = "Name for the buildah runner scale set (used as runs-on label)"
+  type        = string
+  default     = "self-hosted-buildah"
+}
+
 # Legacy variables kept for backward compatibility
 variable "install_crd" {
   description = "[DEPRECATED] Whether to install CRDs - not used with new runner architecture"

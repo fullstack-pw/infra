@@ -1,14 +1,19 @@
-env:
-  REDIS_HOSTNAME: ${redis}
-  REDIS_PASSWORD: ${redis_pass}
-  DB_HOSTNAME: ${db_hostname}
-  DB_USERNAME: ${db_user}
-  DB_DATABASE_NAME: ${db_name}
-  DB_PASSWORD: ${db_pass}
-  IMMICH_MACHINE_LEARNING_URL: "http://immich-machine-learning.immich.svc.cluster.local:3003"
+controllers:
+  main:
+    containers:
+      main:
+        image:
+          repository: ghcr.io/immich-app/immich-server
+          pullPolicy: IfNotPresent
+        env:
+          REDIS_HOSTNAME: ${redis}
+          REDIS_PASSWORD: ${redis_pass}
+          DB_HOSTNAME: ${db_hostname}
+          DB_USERNAME: ${db_user}
+          DB_DATABASE_NAME: ${db_name}
+          DB_PASSWORD: ${db_pass}
+          IMMICH_MACHINE_LEARNING_URL: "http://immich-machine-learning.immich.svc.cluster.local:3003"
 
-image:
-  tag: v1.119.0
 
 immich:
   persistence:
@@ -17,10 +22,16 @@ immich:
   configuration: {}
 
 server:
-  enabled: true
-  image:
-    repository: ghcr.io/immich-app/immich-server
-    pullPolicy: IfNotPresent
+  persistence:
+    previous-lib:
+      enabled: true
+      type: hostPath
+      hostPath: /mnt/home/previous-lib
+      hostPathType: Directory
+#      globalMounts:
+#        - path: /mnt/home/previous-lib
+#          readOnly: true
+#          mountPropagation: HostToContainer
   ingress:
     main:
       enabled: true
@@ -32,6 +43,8 @@ server:
         - host: ${immich_domain}
           paths:
             - path: "/"
+              service:
+                identifier: main
       tls:
         - secretName: "${ingress_tls_secret_name}"
           hosts:

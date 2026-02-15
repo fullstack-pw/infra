@@ -78,3 +78,55 @@ module "runner_helm" {
 
   depends_on = [module.controller_helm]
 }
+
+module "runner_helm_kaniko" {
+  count  = var.enable_kaniko_runners ? 1 : 0
+  source = "../../base/helm"
+
+  release_name     = var.kaniko_runner_name
+  namespace        = module.namespace.name
+  chart            = "gha-runner-scale-set"
+  repository       = "oci://ghcr.io/actions/actions-runner-controller-charts"
+  chart_version    = var.runner_chart_version
+  timeout          = 300
+  create_namespace = false
+
+  values_files = [templatefile("${path.module}/templates/runner-values-kaniko.yaml.tpl", {
+    namespace         = module.namespace.name
+    github_owner      = var.github_owner
+    runner_name       = var.kaniko_runner_name
+    min_runners       = var.min_runners
+    max_runners       = var.max_runners
+    runner_image      = var.runner_image
+    runner_labels     = var.runner_labels
+    working_directory = var.working_directory
+  })]
+
+  depends_on = [module.controller_helm]
+}
+
+module "runner_helm_buildah" {
+  count  = var.enable_buildah_runners ? 1 : 0
+  source = "../../base/helm"
+
+  release_name     = var.buildah_runner_name
+  namespace        = module.namespace.name
+  chart            = "gha-runner-scale-set"
+  repository       = "oci://ghcr.io/actions/actions-runner-controller-charts"
+  chart_version    = var.runner_chart_version
+  timeout          = 300
+  create_namespace = false
+
+  values_files = [templatefile("${path.module}/templates/runner-values-buildah.yaml.tpl", {
+    namespace         = module.namespace.name
+    github_owner      = var.github_owner
+    runner_name       = var.buildah_runner_name
+    min_runners       = var.min_runners
+    max_runners       = var.max_runners
+    runner_image      = var.runner_image
+    runner_labels     = var.runner_labels
+    working_directory = var.working_directory
+  })]
+
+  depends_on = [module.controller_helm]
+}

@@ -146,8 +146,8 @@ module "postgres_cnpg" {
   create_cluster   = try(var.config[terraform.workspace].postgres_cnpg.crds_installed, false)
 
   registry   = "registry.fullstack.pw"
-  repository = "library/postgresql"
-  pg_version = "15-wal2json"
+  repository = "library/cloudnative-postgres"
+  pg_version = "latest"
 
   postgres_generate_password = true
   postgres_password          = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
