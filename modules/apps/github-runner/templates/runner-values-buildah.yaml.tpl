@@ -16,6 +16,7 @@ template:
 %{endif}
         securityContext:
           runAsNonRoot: true
+          runAsUser: 1001
           allowPrivilegeEscalation: false
           capabilities:
             add:
@@ -29,6 +30,8 @@ template:
             subPath: "SOPS"
           - name: work
             mountPath: /home/runner/_work
+          - name: dev-fuse
+            mountPath: /dev/fuse
         envFrom:
           - secretRef:
               name: cluster-secrets
@@ -58,6 +61,10 @@ template:
               path: SOPS
       - name: work
         emptyDir: {}
+      - name: dev-fuse
+        hostPath:
+          path: /dev/fuse
+          type: CharDevice
 %{if runner_labels != ""}
 # Runner labels
 runnerLabels:
