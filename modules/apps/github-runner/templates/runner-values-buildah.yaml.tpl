@@ -16,6 +16,7 @@ template:
 %{endif}
         securityContext:
           runAsNonRoot: true
+          runAsUser: 1001
           allowPrivilegeEscalation: false
           capabilities:
             add:
