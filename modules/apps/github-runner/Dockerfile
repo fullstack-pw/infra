@@ -1,5 +1,4 @@
 FROM gcr.io/kaniko-project/executor:latest AS kaniko
-FROM quay.io/buildah/stable:latest AS buildah-src
 FROM ghcr.io/actions/actions-runner:latest
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -64,18 +63,29 @@ RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/s
     vault \
     tofu \
     docker-ce-cli \
+    buildah \
+    fuse-overlayfs \
+    uidmap \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
 
+&& chmod u+s /usr/bin/newuidmap /usr/bin/newgidmap \
+
 && mkdir -p /home/runner/.kube /home/runner/.sops/keys /home/runner/.aws /home/runner/.config/gcloud \
-    && mkdir -p /kaniko/.docker \
-    && chown -R runner:runner /home/runner /kaniko \
+    && mkdir -p /home/runner/.config/containers \
+    && chown -R runner:runner /home/runner \
     && setcap -r /usr/bin/vault
 
 COPY --from=kaniko /kaniko/executor /usr/local/bin/kaniko
-COPY --from=buildah-src /usr/bin/buildah /usr/local/bin/buildah
+
+RUN echo "runner:100000:65536" >> /etc/subuid \
+    && echo "runner:100000:65536" >> /etc/subgid
 
 USER runner
+
+RUN mkdir -p /home/runner/.config/containers \
+    && printf '[storage]\ndriver = "overlay"\n[storage.options]\nignore_chown_errors = "true"\n[storage.options.overlay]\nmount_program = "/usr/bin/fuse-overlayfs"\n' \
+       > /home/runner/.config/containers/storage.conf
 
 RUN echo 'source <(kubectl completion bash)' >> /home/runner/.bashrc \
     && echo 'source <(helm completion bash)' >> /home/runner/.bashrc \
