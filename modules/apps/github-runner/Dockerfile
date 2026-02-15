@@ -1,4 +1,5 @@
 FROM gcr.io/kaniko-project/executor:latest AS kaniko
+FROM quay.io/buildah/stable:latest AS buildah-src
 FROM ghcr.io/actions/actions-runner:latest
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -40,11 +41,6 @@ RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/s
 && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \
     && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null \
 
-&& curl -fsSL "https://download.opensuse.org/repositories/devel:kubic:libcontainers:unstable/xUbuntu_$(lsb_release -rs)/Release.key" \
-    | gpg --dearmor -o /usr/share/keyrings/kubic-libcontainers-keyring.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/kubic-libcontainers-keyring.gpg] https://download.opensuse.org/repositories/devel:kubic:libcontainers:unstable/xUbuntu_$(lsb_release -rs)/ /" \
-    | tee /etc/apt/sources.list.d/kubic-libcontainers.list > /dev/null \
-
 && apt-get update \
     && apt-get install -y \
     apt-transport-https \
@@ -68,7 +64,6 @@ RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/s
     vault \
     tofu \
     docker-ce-cli \
-    buildah \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
 
@@ -77,6 +72,7 @@ RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/s
     && setcap -r /usr/bin/vault
 
 COPY --from=kaniko /kaniko/executor /usr/local/bin/kaniko
+COPY --from=buildah-src /usr/bin/buildah /usr/local/bin/buildah
 
 USER runner
 
