@@ -68,7 +68,8 @@ RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/s
     && rm -rf /var/lib/apt/lists/* \
 
 && mkdir -p /home/runner/.kube /home/runner/.sops/keys /home/runner/.aws /home/runner/.config/gcloud \
-    && chown -R runner:runner /home/runner \
+    && mkdir -p /kaniko/.docker \
+    && chown -R runner:runner /home/runner /kaniko \
     && setcap -r /usr/bin/vault
 
 COPY --from=kaniko /kaniko/executor /usr/local/bin/kaniko
