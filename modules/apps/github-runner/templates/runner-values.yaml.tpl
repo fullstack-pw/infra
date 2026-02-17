@@ -7,13 +7,6 @@ maxRunners: ${max_runners}
 
 template:
   spec:
-    initContainers:
-    - name: init-dind-externals
-      image: ghcr.io/actions/actions-runner:latest
-      command: ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
-      volumeMounts:
-        - name: dind-externals
-          mountPath: /home/runner/tmpDir
     containers:
       - name: runner
         image: ${runner_image}
@@ -21,6 +14,10 @@ template:
 %{if working_directory != ""}
         workingDir: ${working_directory}
 %{endif}
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1001
+          allowPrivilegeEscalation: false
         volumeMounts:
           - name: kubeconfig-volume
             mountPath: "/home/runner/.kube/config"
@@ -30,11 +27,6 @@ template:
             subPath: "SOPS"
           - name: work
             mountPath: /home/runner/_work
-          - name: dind-sock
-            mountPath: /var/run
-        env:
-          - name: DOCKER_HOST
-            value: unix:///var/run/docker.sock
         envFrom:
           - secretRef:
               name: cluster-secrets
@@ -46,24 +38,6 @@ template:
           requests:
             cpu: "500m"
             memory: "512Mi"
-      - name: dind
-        image: docker:dind
-        args:
-          - dockerd
-          - --host=unix:///var/run/docker.sock
-          - --group=$(DOCKER_GROUP_GID)
-        env:
-          - name: DOCKER_GROUP_GID
-            value: "123"
-        securityContext:
-          privileged: true
-        volumeMounts:
-          - name: work
-            mountPath: /home/runner/_work
-          - name: dind-sock
-            mountPath: /var/run
-          - name: dind-externals
-            mountPath: /home/runner/externals
 
     volumes:
       - name: kubeconfig-volume
@@ -81,10 +55,6 @@ template:
             - key: SOPS
               path: SOPS
       - name: work
-        emptyDir: {}
-      - name: dind-sock
-        emptyDir: {}
-      - name: dind-externals
         emptyDir: {}
 %{if runner_labels != ""}
 # Runner labels

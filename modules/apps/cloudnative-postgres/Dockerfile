@@ -4,7 +4,7 @@ FROM ghcr.io/cloudnative-pg/postgresql:15
 
 USER root
 
-# Reminder: Verify right folders when using  ghcr.io/cloudnative-pg/postgresql:15
+## Reminder: Verify right folders when using  ghcr.io/cloudnative-pg/postgresql:15
 COPY --from=builder /usr/lib/postgresql/15/lib/vectors.so /usr/lib/postgresql/15/lib/
 COPY --from=builder /usr/share/postgresql/15/extension/vectors* /usr/share/postgresql/15/extension/
 

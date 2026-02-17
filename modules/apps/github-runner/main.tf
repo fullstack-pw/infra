@@ -65,36 +65,9 @@ module "runner_helm" {
   create_namespace = false
 
   values_files = [templatefile("${path.module}/templates/runner-values.yaml.tpl", {
-    namespace            = module.namespace.name
-    github_owner         = var.github_owner
-    runner_name          = var.runner_name
-    service_account_name = kubernetes_service_account.github_runner.metadata[0].name
-    min_runners          = var.min_runners
-    max_runners          = var.max_runners
-    runner_image         = var.runner_image
-    runner_labels        = var.runner_labels
-    working_directory    = var.working_directory
-  })]
-
-  depends_on = [module.controller_helm]
-}
-
-module "runner_helm_kaniko" {
-  count  = var.enable_kaniko_runners ? 1 : 0
-  source = "../../base/helm"
-
-  release_name     = var.kaniko_runner_name
-  namespace        = module.namespace.name
-  chart            = "gha-runner-scale-set"
-  repository       = "oci://ghcr.io/actions/actions-runner-controller-charts"
-  chart_version    = var.runner_chart_version
-  timeout          = 300
-  create_namespace = false
-
-  values_files = [templatefile("${path.module}/templates/runner-values-kaniko.yaml.tpl", {
     namespace         = module.namespace.name
     github_owner      = var.github_owner
-    runner_name       = var.kaniko_runner_name
+    runner_name       = var.runner_name
     min_runners       = var.min_runners
     max_runners       = var.max_runners
     runner_image      = var.runner_image
@@ -105,11 +78,111 @@ module "runner_helm_kaniko" {
   depends_on = [module.controller_helm]
 }
 
-module "runner_helm_buildah" {
-  count  = var.enable_buildah_runners ? 1 : 0
+resource "kubernetes_deployment" "buildkitd" {
+  count = var.enable_buildkit_runners ? 1 : 0
+
+  metadata {
+    name      = "buildkitd"
+    namespace = module.namespace.name
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = "buildkitd"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "buildkitd"
+        }
+      }
+
+      spec {
+        container {
+          name  = "buildkitd"
+          image = var.buildkit_image
+
+          args = [
+            "--addr", "tcp://0.0.0.0:1234",
+          ]
+
+          security_context {
+            privileged = true
+            seccomp_profile {
+              type = "Unconfined"
+            }
+          }
+
+          port {
+            container_port = 1234
+            name           = "buildkit"
+          }
+
+          volume_mount {
+            name       = "buildkit-storage"
+            mount_path = "/var/lib/buildkit"
+          }
+
+          readiness_probe {
+            exec {
+              command = ["buildctl", "--addr", "tcp://localhost:1234", "debug", "workers"]
+            }
+            initial_delay_seconds = 5
+            period_seconds        = 10
+          }
+
+          resources {
+            limits = {
+              cpu    = "2"
+              memory = "4Gi"
+            }
+            requests = {
+              cpu    = "500m"
+              memory = "512Mi"
+            }
+          }
+        }
+
+        volume {
+          name = "buildkit-storage"
+          empty_dir {}
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_service" "buildkitd" {
+  count = var.enable_buildkit_runners ? 1 : 0
+
+  metadata {
+    name      = "buildkitd"
+    namespace = module.namespace.name
+  }
+
+  spec {
+    selector = {
+      app = "buildkitd"
+    }
+
+    port {
+      port        = 1234
+      target_port = 1234
+      name        = "buildkit"
+    }
+  }
+}
+
+module "runner_helm_buildkit" {
+  count  = var.enable_buildkit_runners ? 1 : 0
   source = "../../base/helm"
 
-  release_name     = var.buildah_runner_name
+  release_name     = var.buildkit_runner_name
   namespace        = module.namespace.name
   chart            = "gha-runner-scale-set"
   repository       = "oci://ghcr.io/actions/actions-runner-controller-charts"
@@ -117,10 +190,10 @@ module "runner_helm_buildah" {
   timeout          = 300
   create_namespace = false
 
-  values_files = [templatefile("${path.module}/templates/runner-values-buildah.yaml.tpl", {
+  values_files = [templatefile("${path.module}/templates/runner-values-buildkit.yaml.tpl", {
     namespace         = module.namespace.name
     github_owner      = var.github_owner
-    runner_name       = var.buildah_runner_name
+    runner_name       = var.buildkit_runner_name
     min_runners       = var.min_runners
     max_runners       = var.max_runners
     runner_image      = var.runner_image
