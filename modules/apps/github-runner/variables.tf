@@ -79,28 +79,22 @@ variable "controller_additional_set_values" {
   default = []
 }
 
-variable "enable_kaniko_runners" {
-  description = "Whether to deploy a rootless kaniko runner scale set"
+variable "enable_buildkit_runners" {
+  description = "Whether to deploy a rootless BuildKit runner scale set"
   type        = bool
   default     = false
 }
 
-variable "kaniko_runner_name" {
-  description = "Name for the kaniko runner scale set (used as runs-on label)"
+variable "buildkit_runner_name" {
+  description = "Name for the BuildKit runner scale set (used as runs-on label)"
   type        = string
-  default     = "self-hosted-kaniko"
+  default     = "self-hosted-buildkit"
 }
 
-variable "enable_buildah_runners" {
-  description = "Whether to deploy a rootless buildah runner scale set"
-  type        = bool
-  default     = false
-}
-
-variable "buildah_runner_name" {
-  description = "Name for the buildah runner scale set (used as runs-on label)"
+variable "buildkit_image" {
+  description = "BuildKit daemon image"
   type        = string
-  default     = "self-hosted-buildah"
+  default     = "moby/buildkit:latest"
 }
 
 # Legacy variables kept for backward compatibility

@@ -1,5 +1,4 @@
-FROM gcr.io/kaniko-project/executor:latest AS kaniko
-FROM quay.io/buildah/stable:latest AS buildah-src
+FROM moby/buildkit:latest AS buildkit
 FROM ghcr.io/actions/actions-runner:latest
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -71,8 +70,7 @@ RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/s
     && chown -R runner:runner /home/runner \
     && setcap -r /usr/bin/vault
 
-COPY --from=kaniko /kaniko/executor /usr/local/bin/kaniko
-COPY --from=buildah-src /usr/bin/buildah /usr/local/bin/buildah
+COPY --from=buildkit /usr/bin/buildctl /usr/local/bin/buildctl
 
 USER runner
 

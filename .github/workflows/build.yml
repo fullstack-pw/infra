@@ -11,29 +11,25 @@ on:
 
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on: self-hosted-buildkit
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Get version tag
         id: get_version
         run: |
-          # Get the latest tag
           VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          # Strip 'v' prefix if it exists
           VERSION=${VERSION#v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
 
-          #docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }} .
-          #echo "${HARBOR_KEY}" | docker login registry.fullstack.pw -u admin --password-stdin
-          #docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}
+      - name: Login to Harbor
+        run: |
+          mkdir -p ~/.docker
+          echo "{\"auths\":{\"registry.fullstack.pw\":{\"auth\":\"$(echo -n "admin:${HARBOR_KEY}" | base64)\"}}}" > ~/.docker/config.json
 
       - name: Find and Build Modified Dockerfiles
         run: |
@@ -63,12 +59,11 @@ jobs:
 
               echo "Building $DOCKERFILE as registry.fullstack.pw/library/$IMAGE_NAME:latest"
 
-              docker build \
-                -t registry.fullstack.pw/library/$IMAGE_NAME:latest \
-                -t registry.fullstack.pw/library/$IMAGE_NAME:${{ steps.get_version.outputs.version }} \
-                -f "$DOCKERFILE" "$DIR"
-              echo "${HARBOR_KEY}" | docker login registry.fullstack.pw -u admin --password-stdin
-              docker push registry.fullstack.pw/library/$IMAGE_NAME:latest
-              docker push registry.fullstack.pw/library/$IMAGE_NAME:${{ steps.get_version.outputs.version }}
+              buildctl build \
+                --frontend dockerfile.v0 \
+                --local context="$DIR" \
+                --local dockerfile="$DIR" \
+                --opt filename=$(basename "$DOCKERFILE") \
+                --output type=image,\"name=registry.fullstack.pw/library/$IMAGE_NAME:latest,registry.fullstack.pw/library/$IMAGE_NAME:${{ steps.get_version.outputs.version }}\",push=true,registry.insecure=true
             fi
           done

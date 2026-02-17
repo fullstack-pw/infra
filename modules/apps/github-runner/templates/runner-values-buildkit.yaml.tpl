@@ -14,6 +14,13 @@ template:
 %{if working_directory != ""}
         workingDir: ${working_directory}
 %{endif}
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1001
+          allowPrivilegeEscalation: false
+        env:
+          - name: BUILDKIT_HOST
+            value: tcp://buildkitd.${namespace}.svc.cluster.local:1234
         volumeMounts:
           - name: kubeconfig-volume
             mountPath: "/home/runner/.kube/config"
