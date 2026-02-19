@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
 
+permissions: {}
+
 jobs:
   ansible:
     uses: fullstack-pw/pipelines/.github/workflows/ansible.yml@main

@@ -9,6 +9,8 @@ on:
     paths: ["**/Dockerfile"]
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
   build:
     uses: fullstack-pw/pipelines/.github/workflows/build-changed-dockerfiles.yml@main
