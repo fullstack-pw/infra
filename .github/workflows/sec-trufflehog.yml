@@ -1,15 +1,8 @@
 name: TruffleHog
+
 on: [pull_request]
 
 jobs:
-  security-scan:
-    runs-on: self-hosted
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Secret Scanning
-        uses: trufflesecurity/trufflehog@main
-        with:
-          extra_args: --results=verified,unknown
+  scan:
+    uses: fullstack-pw/pipelines/.github/workflows/sec-trufflehog.yml@main
+    secrets: inherit # pragma: allowlist secret

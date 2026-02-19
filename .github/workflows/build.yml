@@ -4,66 +4,12 @@ on:
   push:
     branches: [main]
     paths: ["**/Dockerfile"]
-  workflow_dispatch:
   pull_request:
     branches: [main]
     paths: ["**/Dockerfile"]
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: self-hosted-buildkit
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Get version tag
-        id: get_version
-        run: |
-          VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          VERSION=${VERSION#v}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION"
-
-      - name: Login to Harbor
-        run: |
-          mkdir -p ~/.docker
-          echo "{\"auths\":{\"registry.fullstack.pw\":{\"auth\":\"$(echo -n "admin:${HARBOR_KEY}" | base64)\"}}}" > ~/.docker/config.json
-
-      - name: Find and Build Modified Dockerfiles
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.sha }})
-          else
-            CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD)
-          fi
-
-          echo "Changed files:"
-          echo "$CHANGED_FILES"
-
-          MODIFIED_DOCKERFILES=$(echo "$CHANGED_FILES" | grep -E "(^|/)Dockerfile$" | grep -v "/\." | grep -v "/node_modules/")
-
-          if [ -z "$MODIFIED_DOCKERFILES" ]; then
-            echo "No Dockerfiles were modified. Skipping build."
-            exit 0
-          fi
-
-          echo "Modified Dockerfiles:"
-          echo "$MODIFIED_DOCKERFILES"
-
-          echo "$MODIFIED_DOCKERFILES" | while read -r DOCKERFILE; do
-            if [ -n "$DOCKERFILE" ]; then
-              DIR=$(dirname "$DOCKERFILE")
-              IMAGE_NAME=$(basename "$DIR")
-
-              echo "Building $DOCKERFILE as registry.fullstack.pw/library/$IMAGE_NAME:latest"
-
-              buildctl build \
-                --frontend dockerfile.v0 \
-                --local context="$DIR" \
-                --local dockerfile="$DIR" \
-                --opt filename=$(basename "$DOCKERFILE") \
-                --output type=image,\"name=registry.fullstack.pw/library/$IMAGE_NAME:latest,registry.fullstack.pw/library/$IMAGE_NAME:${{ steps.get_version.outputs.version }}\",push=true,registry.insecure=true
-            fi
-          done
+    uses: fullstack-pw/pipelines/.github/workflows/build-changed-dockerfiles.yml@main
+    secrets: inherit # pragma: allowlist secret

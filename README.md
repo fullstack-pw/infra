@@ -134,8 +134,10 @@ Key components:
 
 **Self-Hosted Runner Infrastructure**
 - Actions Runner Controller (ARC) deployed on tools cluster
-- Three runner scale sets: `self-hosted` (DinD), `self-hosted-kaniko` (rootless), `self-hosted-buildah` (rootless)
-- Custom runner image with kubectl, Helm, Terraform, SOPS, Docker CLI, Kaniko executor, Buildah, and cloud provider tools
+- Two runner scale sets: `self-hosted` (general-purpose, unprivileged) and `self-hosted-buildkit` (container builds via remote BuildKit daemon)
+- Dedicated BuildKit daemon (single privileged pod) serving all build runners over TCP — eliminates per-runner DinD sidecars
+- Runner pods run fully unprivileged (`runAsNonRoot`, `allowPrivilegeEscalation: false`)
+- Custom runner image with kubectl, Helm, Terraform, SOPS, buildctl, and cloud provider tools
 - GitLab CI runners for multi-platform pipeline support
 - Centralized reusable workflows in dedicated pipelines repository
 
@@ -526,7 +528,7 @@ infra/
 - GitLab CI runners
 - Argo Rollouts (Blue-Green deployments with automated E2E testing via Cypress)
 - Harbor (container registry)
-- Custom runner images with kubectl, Helm, OpenTofu, SOPS, Docker CLI
+- Custom runner images with kubectl, Helm, OpenTofu, SOPS, buildctl
 
 **Security**
 - SOPS with age encryption

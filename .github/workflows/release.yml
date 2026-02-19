@@ -12,25 +12,5 @@ permissions:
 
 jobs:
   release:
-    name: Release
-    runs-on: self-hosted
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "lts/*"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm install -g semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/github@11.0.3 conventional-changelog-conventionalcommits
-
-      - name: Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.RUNNER }}
-        run: npx semantic-release
+    uses: fullstack-pw/pipelines/.github/workflows/release.yml@main
+    secrets: inherit # pragma: allowlist secret
