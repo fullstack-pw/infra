@@ -5,33 +5,9 @@ on:
     branches: [main]
     types: [opened, synchronize, reopened, edited]
 
+permissions: {}
+
 jobs:
-  check-commit-message:
-    runs-on: self-hosted
-    steps:
-      - name: Check Commit Message Format
-        uses: amannn/action-semantic-pull-request@v5
-        env:
-          GITHUB_TOKEN: ${{ secrets.RUNNER }}
-        with:
-          types: |
-            feat
-            fix
-            docs
-            style
-            refactor
-            perf
-            test
-            build
-            ci
-            chore
-            revert
-          requireScope: false
-          subjectPattern: ^(?![A-Z]).+$
-          subjectPatternError: |
-            The subject "{subject}" found in the pull request title "{title}"
-            didn't match the configured pattern. Please ensure that the subject
-            starts with a lowercase letter.
-          wip: true
-          validateSingleCommit: true
-          validateSingleCommitMatchesPrTitle: true
+  check:
+    uses: fullstack-pw/pipelines/.github/workflows/conventional-commits.yml@main
+    secrets: inherit # pragma: allowlist secret
