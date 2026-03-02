@@ -167,10 +167,11 @@ variable "config" {
       github_runner = {
         registry_server = "registry.toolz.fullstack.pw"
       }
-      vault_ingress_host     = "vault.toolz.fullstack.pw"
-      argocd_ingress_class   = "nginx"
-      argocd_ingress_enabled = true
-      argocd_domain          = "argocd.toolz.fullstack.pw"
+      vault_ingress_host       = "vault.toolz.fullstack.pw"
+      argocd_ingress_class     = "nginx"
+      argocd_ingress_enabled   = true
+      argocd_domain            = "argocd.toolz.fullstack.pw"
+      argocd_install_bootstrap = true
       teleport = {
         apps = {
           "harbor"   = "http://harbor-portal.harbor.svc.cluster.local"
