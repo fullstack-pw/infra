@@ -401,6 +401,7 @@ module "kubevirt" {
 
   enable_cdi_uploadproxy_ingress = true
   cdi_uploadproxy_host           = "cdi-uploadproxy.fullstack.pw"
+  ingress_class_name             = try(var.config[terraform.workspace].kubevirt.ingress_class_name, "traefik")
 
   depends_on = [module.kubevirt_operator]
 }
@@ -409,8 +410,13 @@ module "longhorn" {
   count  = contains(local.workload, "longhorn") ? 1 : 0
   source = "../modules/apps/longhorn"
 
-  replica_count = 1
-  ingress_host  = "longhorn.fullstack.pw"
+  replica_count      = 1
+  ingress_host       = "longhorn.fullstack.pw"
+  ingress_class_name = try(var.config[terraform.workspace].longhorn.ingress_class_name, "traefik")
+  ingress_annotations = try(var.config[terraform.workspace].longhorn.ingress_annotations, {
+    "external-dns.alpha.kubernetes.io/hostname" = "longhorn.fullstack.pw"
+    "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
+  })
 }
 
 module "clusterapi_operator" {

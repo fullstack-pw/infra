@@ -23,6 +23,8 @@ variable "workload" {
       "postgres-cnpg",
       "oracle_backup",
       "falco",
+      "kubevirt",
+      "longhorn",
     ]
     home = [
       "externaldns",
@@ -171,9 +173,10 @@ variable "config" {
       argocd_domain          = "argocd.toolz.fullstack.pw"
       teleport = {
         apps = {
-          "harbor" = "http://harbor-portal.harbor.svc.cluster.local"
-          "vault"  = "http://vault.vault.svc.cluster.local:8200"
-          "minio"  = "http://minio-console.default.svc.cluster.local:9001"
+          "harbor"   = "http://harbor-portal.harbor.svc.cluster.local"
+          "vault"    = "http://vault.vault.svc.cluster.local:8200"
+          "minio"    = "http://minio-console.default.svc.cluster.local:9001"
+          "longhorn" = "http://longhorn-frontend.longhorn-system.svc.cluster.local"
         }
         databases = {
           "toolz-postgres" = {
@@ -183,6 +186,32 @@ variable "config" {
         }
         roles = "kube,app,db"
       }
+      longhorn = {
+        ingress_class_name = "nginx"
+        ingress_annotations = {
+          "external-dns.alpha.kubernetes.io/hostname" = "longhorn.toolz.fullstack.pw"
+          "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
+        }
+      }
+      kubevirt = {
+        ingress_class_name = "nginx"
+      }
+      prometheus_namespaces = [
+        # "cluster1",
+        # "cluster2",
+        # "cluster3",
+        "kubevirt",
+        "teleport-agent",
+        "observability",
+        "external-dns",
+        "external-secrets",
+        "kube-system",
+        # "cabpt-system",
+        # "cacppt-system",
+        # "capi-ipam-in-cluster-system",
+        # "capi-system",
+        # "capmox-system"
+      ]
       metallb_create_ip_pool    = true
       metallb_ip_pool_addresses = ["192.168.1.40-192.168.1.49"]
 
