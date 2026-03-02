@@ -46,9 +46,11 @@ variable "clusters" {
     provider_id_injection  = optional(bool, true)
 
     # RKE2-specific fields
-    agent_config        = optional(map(string), {})
-    server_config       = optional(map(string), {})
-    registration_method = optional(string, "internal-first")
+    agent_config         = optional(map(string), {})
+    server_config        = optional(map(string), {})
+    registration_method  = optional(string, "address")
+    registration_address = optional(string, "")
+    kube_vip_interface   = optional(string, "ens18")
   }))
 }
 

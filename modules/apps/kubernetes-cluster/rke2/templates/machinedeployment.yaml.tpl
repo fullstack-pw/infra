@@ -30,4 +30,4 @@ spec:
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
         kind: ProxmoxMachineTemplate
         name: ${worker_template_name}
-      version: ${kubernetes_version}
+      version: ${rke2_version}

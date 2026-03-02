@@ -53,6 +53,7 @@ module "externaldns" {
     ] : [
     "--pihole-tls-skip-verify",
     "--source=ingress",
+    "--source=service",
     "--registry=noop",
     "--policy=upsert-only",
     "--provider=pihole",
@@ -105,7 +106,8 @@ module "external_secrets" {
 
   install_crd = var.config[terraform.workspace].crds_installed
   secret_data = local.secret_data
-  vault_token = local.secrets_json["kv/cluster-secret-store/secrets/VAULT_TOKEN"]["VAULT_TOKEN"]
+  vault_addr  = try(var.config[terraform.workspace].vault_addr, "https://vault.toolz.fullstack.pw")
+  vault_token = var.VAULT_TOKEN
 
   namespace_selector_type = "label"
   namespace_selector_label = {
@@ -122,6 +124,9 @@ module "github_runner" {
   github_token            = local.secrets_json["kv/cluster-secret-store/secrets/github_token"]["github_token"]
   install_crd             = var.config[terraform.workspace].crds_installed
   enable_buildkit_runners = true
+  registry_server         = try(var.config[terraform.workspace].github_runner.registry_server, "")
+  registry_username       = try(data.kubernetes_secret.harbor_credentials[0].data["admin_username"], "")
+  registry_password       = try(data.kubernetes_secret.harbor_credentials[0].data["admin_password"], "")
 }
 
 module "gitlab_runner" {
@@ -129,6 +134,49 @@ module "gitlab_runner" {
   source = "../modules/apps/gitlab-runner"
 
   gitlab_token = local.secrets_json["kv/cluster-secret-store/secrets/GITLAB_TOKEN"]["GITLAB_TOKEN"]
+}
+
+module "gitea" {
+  count  = contains(local.workload, "gitea") ? 1 : 0
+  source = "../modules/git/gitea"
+
+  domain     = try(var.config[terraform.workspace].gitea.domain, "git.fullstack.pw")
+  ssh_domain = try(var.config[terraform.workspace].gitea.ssh_domain, "git.fullstack.pw")
+  ssh_port   = try(var.config[terraform.workspace].gitea.ssh_port, 2222)
+
+  admin_username = "gitea-admin"
+  admin_password = try(local.secrets_json["kv/cluster-secret-store/secrets/GITEA"]["ADMIN_PASSWORD"], "")
+  secret_key     = try(local.secrets_json["kv/cluster-secret-store/secrets/GITEA"]["SECRET_KEY"], "")
+  internal_token = try(local.secrets_json["kv/cluster-secret-store/secrets/GITEA"]["INTERNAL_TOKEN"], "")
+
+  external_database_host     = "postgres-rw.default.svc.cluster.local"
+  external_database_name     = "gitea"
+  external_database_username = "postgres"
+  external_database_password = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
+
+  external_redis_host     = "redis-master.default.svc.cluster.local"
+  external_redis_password = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
+
+  ingress_class_name = try(var.config[terraform.workspace].gitea.ingress_class, "traefik")
+  ingress_annotations = {
+    "external-dns.alpha.kubernetes.io/hostname" = try(var.config[terraform.workspace].gitea.domain, "git.fullstack.pw")
+    "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
+  }
+
+  default_actions_url = try(var.config[terraform.workspace].gitea.default_actions_url, "https://git.fullstack.pw")
+
+  depends_on = [module.postgres_cnpg, module.redis]
+}
+
+module "gitea_runner" {
+  count  = contains(local.workload, "gitea_runner") ? 1 : 0
+  source = "../modules/cicd/gitea-runner"
+
+  gitea_url    = try(var.config[terraform.workspace].gitea.url, "https://git.fullstack.pw")
+  runner_token = try(local.secrets_json["kv/cluster-secret-store/secrets/GITEA"]["RUNNER_TOKEN"], "")
+  runner_name  = "k8s-runner-${terraform.workspace}"
+
+  depends_on = [module.gitea]
 }
 
 module "ingress_nginx" {
@@ -163,7 +211,8 @@ module "argocd" {
   source = "../modules/apps/argocd"
 
   namespace              = "argocd"
-  install_argocd         = terraform.workspace == "tools"
+  install_argocd         = terraform.workspace == "toolz"
+  install_bootstrap      = try(var.config[terraform.workspace].argocd_install_bootstrap, false)
   argocd_version         = "7.7.12"
   argocd_domain          = var.config[terraform.workspace].argocd_domain
   ingress_enabled        = var.config[terraform.workspace].argocd_ingress_enabled
@@ -178,10 +227,21 @@ module "argocd" {
 }
 
 module "minio" {
-  count  = contains(local.workload, "minio") ? 1 : 0
-  source = "../modules/apps/minio"
+  count                       = contains(local.workload, "minio") ? 1 : 0
+  source                      = "../modules/apps/minio"
+  ingress_annotations         = var.config[terraform.workspace].minio.ingress_annotations
+  ingress_class_name          = var.config[terraform.workspace].minio.ingress_class_name
+  ingress_host                = var.config[terraform.workspace].minio.ingress_host
+  console_ingress_annotations = var.config[terraform.workspace].minio.console_ingress_annotations
+  console_ingress_class_name  = var.config[terraform.workspace].minio.console_ingress_class_name
+  console_ingress_host        = var.config[terraform.workspace].minio.console_ingress_host
 
-  root_password = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootPassword"]
+
+  root_password  = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootPassword"]
+  memory_request = try(var.config[terraform.workspace].minio_memory_request, "256Mi")
+  cpu_request    = try(var.config[terraform.workspace].minio_cpu_request, "50m")
+  memory_limit   = try(var.config[terraform.workspace].minio_memory_limit, "512Mi")
+  cpu_limit      = try(var.config[terraform.workspace].minio_cpu_limit, "200m")
 }
 
 module "oracle_backup" {
@@ -196,7 +256,7 @@ module "oracle_backup" {
 
   s3_backup_name    = "terraform-state-backup"
   s3_schedule       = "0 2 * * *"
-  minio_endpoint    = "https://s3.fullstack.pw"
+  minio_endpoint    = "https://s3.toolz.fullstack.pw"
   minio_bucket_path = "terraform"
   s3_backup_path    = "terraform-state-backup"
 
@@ -233,9 +293,20 @@ module "registry" {
 }
 
 module "vault" {
-  count           = contains(local.workload, "vault") ? 1 : 0
-  source          = "../modules/apps/vault"
-  initial_secrets = local.vault_secrets
+  count                      = contains(local.workload, "vault") ? 1 : 0
+  source                     = "../modules/apps/vault"
+  initial_secrets            = local.vault_secrets
+  ingress_class_name         = try(var.config[terraform.workspace].argocd_ingress_class, "traefik")
+  data_storage_storage_class = try(var.config[terraform.workspace].vault_storage_class, "local-path")
+  ingress_annotations = try(var.config[terraform.workspace].vault_ingress_annotations, {
+    "external-dns.alpha.kubernetes.io/hostname" = "vault.toolz.fullstack.pw"
+    "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
+  })
+  ingress_host   = try(var.config[terraform.workspace].vault_ingress_host, "vault.toolz.fullstack.pw")
+  memory_request = try(var.config[terraform.workspace].vault_memory_request, "256Mi")
+  cpu_request    = try(var.config[terraform.workspace].vault_cpu_request, "100m")
+  memory_limit   = try(var.config[terraform.workspace].vault_memory_limit, "512Mi")
+  cpu_limit      = try(var.config[terraform.workspace].vault_cpu_limit, "300m")
 }
 
 module "observability" {
@@ -257,9 +328,18 @@ module "observability-box" {
 }
 
 module "redis" {
-  count  = contains(local.workload, "redis") ? 1 : 0
-  source = "../modules/apps/redis"
-
+  count               = contains(local.workload, "redis") ? 1 : 0
+  source              = "../modules/apps/redis"
+  ingress_enabled     = try(var.config[terraform.workspace].redis.ingress_enabled, true)
+  ingress_class_name  = var.config[terraform.workspace].redis.ingress_class_name
+  ingress_annotations = var.config[terraform.workspace].redis.ingress_annotations
+  ingress_host        = var.config[terraform.workspace].redis.ingress_host
+  service_type        = try(var.config[terraform.workspace].redis.service_type, "ClusterIP")
+  service_annotations = try(var.config[terraform.workspace].redis.service_annotations, {})
+  memory_request      = try(var.config[terraform.workspace].redis_memory_request, "512Mi")
+  cpu_request         = try(var.config[terraform.workspace].redis_cpu_request, "200m")
+  memory_limit        = try(var.config[terraform.workspace].redis_memory_limit, "1Gi")
+  cpu_limit           = try(var.config[terraform.workspace].redis_cpu_limit, "500m")
 }
 
 
@@ -274,19 +354,27 @@ module "harbor" {
   source = "../modules/apps/harbor"
 
   external_database_host     = "postgres-rw.default.svc.cluster.local"
-  external_database_password = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
-  external_redis_password    = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
-  #ingress_annotations        = var.config[terraform.workspace].harbor.ingress
-  ingress_enabled = true
+  external_database_username = "postgres"
+  external_database_password = data.kubernetes_secret.postgres_superuser[0].data["password"]
+  external_redis_host        = data.kubernetes_secret.redis_credentials[0].data["redis_host"]
+  external_redis_password    = data.kubernetes_secret.redis_credentials[0].data["redis_password"]
+  harbor_domain              = var.config[terraform.workspace].harbor.harbor_domain
+  ingress_class_name         = var.config[terraform.workspace].harbor.ingress_class_name
+  ingress_annotations        = var.config[terraform.workspace].harbor.ingress_annotations
+  ingress_enabled            = true
+  admin_password             = local.secrets_json["kv/cluster-secret-store/secrets/HARBOR_KEY"]["HARBOR_KEY"]
+  generate_admin_password    = false
+  registry_existing_claim    = try(var.config[terraform.workspace].harbor.registry_existing_claim, "")
+  registry_storage_size      = try(var.config[terraform.workspace].harbor.registry_storage_size, "5Gi")
 }
 
 module "immich" {
   count  = contains(local.workload, "immich") ? 1 : 0
   source = "../modules/apps/immich"
 
-  redis         = "redis.fullstack.pw"
+  redis         = "redis.toolz.fullstack.pw"
   redis_pass    = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
-  db_hostname   = "tools.postgres.fullstack.pw"
+  db_hostname   = "postgres.toolz.fullstack.pw"
   db_user       = "postgres"
   db_name       = "immich"
   db_pass       = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_ROOTPASSWORD"]
@@ -336,17 +424,11 @@ module "clusterapi_operator" {
   enable_k0smotron_provider = false
   enable_rke2_provider      = true
 
-  # Downgrade to CAPI v1.9 for compatibility with CAPMOX v0.7.x
-  # core_provider_version        = "v1.9.4"
-  # kubeadm_bootstrap_version    = "v1.9.4"
-  # kubeadm_controlplane_version = "v1.9.4"
-
   proxmox_secret_name = "proxmox-credentials"
   proxmox_url         = element(split("/api2", local.secrets_json["kv/cluster-secret-store/secrets/PROXMOX_URL"]["PROXMOX_URL"]), 0)
   proxmox_secret      = local.secrets_json["kv/cluster-secret-store/secrets/PROXMOX_SECRET"]["PROXMOX_SECRET"]
   proxmox_token       = local.secrets_json["kv/cluster-secret-store/secrets/PROXMOX_TOKEN_ID"]["PROXMOX_TOKEN_ID"]
 
-  depends_on = [module.vault]
 }
 
 module "kubernetes_clusters" {
@@ -366,11 +448,39 @@ module "kubernetes_clusters" {
   ]
 }
 
+data "kubernetes_secret" "redis_credentials" {
+  count = contains(local.workload, "harbor") ? 1 : 0
+
+  metadata {
+    name      = "redis-credentials"
+    namespace = "default"
+  }
+}
+
+data "kubernetes_secret" "postgres_superuser" {
+  count = contains(local.workload, "harbor") ? 1 : 0
+
+  metadata {
+    name      = "postgres-superuser"
+    namespace = "default"
+  }
+}
+
+data "kubernetes_secret" "harbor_credentials" {
+  count = contains(local.workload, "github_runner") ? 1 : 0
+
+  metadata {
+    name      = "harbor-credentials"
+    namespace = "harbor"
+  }
+}
+
 data "vault_kv_secret_v2" "postgres_ca" {
   for_each = local.postgres_ca_secrets
   mount    = "kv"
   name     = "cluster-secret-store/secrets/${each.key}"
 }
+
 
 module "teleport-agent" {
   count  = contains(local.workload, "teleport-agent") ? 1 : 0
@@ -402,6 +512,19 @@ module "cloudnative_pg_operator" {
   chart_version    = "0.27.0"
 }
 
+resource "kubernetes_secret" "teleport_postgres_password" {
+  count = contains(local.workload, "postgres-cnpg") ? 1 : 0
+
+  metadata {
+    name      = "teleport-postgres-password"
+    namespace = "default"
+  }
+
+  data = {
+    password = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
+  }
+}
+
 module "postgres_cnpg" {
   count  = contains(local.workload, "postgres-cnpg") ? 1 : 0
   source = "../modules/apps/cloudnative-postgres"
@@ -415,16 +538,16 @@ module "postgres_cnpg" {
   repository = "library/cloudnative-postgres"
   pg_version = "15-latest"
 
-  postgres_generate_password = true
+  postgres_generate_password = try(var.config[terraform.workspace].postgres_cnpg.generate_password, true)
   postgres_password          = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
 
   persistence_size = try(var.config[terraform.workspace].postgres_cnpg.persistence_size, "10Gi")
   storage_class    = ""
 
-  memory_request = "512Mi"
-  cpu_request    = "250m"
-  memory_limit   = "1Gi"
-  cpu_limit      = "500m"
+  memory_request = try(var.config[terraform.workspace].postgres_memory_request, "512Mi")
+  cpu_request    = try(var.config[terraform.workspace].postgres_cpu_request, "250m")
+  memory_limit   = try(var.config[terraform.workspace].postgres_memory_limit, "1Gi")
+  cpu_limit      = try(var.config[terraform.workspace].postgres_cpu_limit, "500m")
 
   enable_ssl                  = true
   require_cert_auth_for_admin = true
@@ -442,11 +565,12 @@ module "postgres_cnpg" {
   vault_ca_secret_path = try(var.config[terraform.workspace].postgres_cnpg.vault_ca_secret_path, "cluster-secret-store/secrets/POSTGRES_CA")
   vault_ca_secret_key  = try(var.config[terraform.workspace].postgres_cnpg.vault_ca_secret_key, "POSTGRES_CA")
 
-  ingress_enabled    = true
+  ingress_enabled    = try(var.config[terraform.workspace].postgres_cnpg.ingress_enabled, true)
   ingress_host       = try(var.config[terraform.workspace].postgres_cnpg.ingress_host, "")
   ingress_class_name = try(var.config[terraform.workspace].postgres_cnpg.ingress_class_name, "traefik")
   use_istio          = try(var.config[terraform.workspace].postgres_cnpg.use_istio, false)
   istio_CRDs         = try(var.config[terraform.workspace].istio_CRDs, false)
+  create_lb_service  = try(var.config[terraform.workspace].postgres_cnpg.create_lb_service, false)
 
   enable_superuser_access = try(var.config[terraform.workspace].postgres_cnpg.enable_superuser_access, true)
   managed_roles           = try(var.config[terraform.workspace].postgres_cnpg.managed_roles, [])

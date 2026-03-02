@@ -37,7 +37,11 @@ bootstrap:
 %{ endif ~}
 %{ if enable_k0smotron_provider ~}
   k0sproject-k0smotron:
+    enabled: true
     version: "${k0smotron_bootstrap_version}"
+%{ else ~}
+  k0sproject-k0smotron:
+    enabled: false
 %{ endif ~}
 %{ if enable_rke2_provider ~}
   rke2:
@@ -66,6 +70,11 @@ controlPlane:
 %{ endif ~}
 %{ if enable_k0smotron_provider ~}
   k0sproject-k0smotron:
+    enabled: true
+    version: "${k0smotron_controlplane_version}"
+%{ else ~}
+  k0sproject-k0smotron:
+    enabled: false
     version: "${k0smotron_controlplane_version}"
 %{ endif ~}
 %{ if enable_rke2_provider ~}

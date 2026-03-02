@@ -22,9 +22,9 @@ module "credentials" {
   create_secret     = var.create_credentials_secret
 
   data = {
-    redis_host        = "${var.release_name}-redis-master.${module.namespace.name}.svc.cluster.local"
+    redis_host        = "${var.release_name}-master.${module.namespace.name}.svc.cluster.local"
     redis_port        = tostring(var.service_port)
-    connection_string = "redis://:${var.generate_password ? module.credentials.password : var.redis_password}@${var.release_name}-redis-master.${module.namespace.name}.svc.cluster.local:${var.service_port}"
+    connection_string = "redis://:${var.generate_password ? module.credentials.password : var.redis_password}@${var.release_name}-master.${module.namespace.name}.svc.cluster.local:${var.service_port}"
   }
 }
 
@@ -50,8 +50,8 @@ module "values" {
         cpu_limit           = var.cpu_limit
         enable_metrics      = var.enable_metrics
         service_type        = var.service_type
+        service_annotations = var.service_annotations
         service_port        = var.service_port
-        release_name        = var.release_name
       }
     }
   ]

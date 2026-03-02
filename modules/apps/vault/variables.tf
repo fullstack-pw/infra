@@ -68,7 +68,7 @@ variable "ingress_annotations" {
   description = "Annotations for Vault ingress"
   type        = map(string)
   default = {
-    "external-dns.alpha.kubernetes.io/hostname" = "vault.fullstack.pw"
+    "external-dns.alpha.kubernetes.io/hostname" = "vault.toolz.fullstack.pw"
     "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
   }
 }
@@ -76,13 +76,37 @@ variable "ingress_annotations" {
 variable "ingress_host" {
   description = "Host for Vault ingress"
   type        = string
-  default     = "vault.fullstack.pw"
+  default     = "vault.toolz.fullstack.pw"
 }
 
 variable "tls_secret_name" {
   description = "TLS secret name for Vault ingress"
   type        = string
   default     = "vault-tls"
+}
+
+variable "memory_request" {
+  description = "Memory request for Vault pods"
+  type        = string
+  default     = "256Mi"
+}
+
+variable "cpu_request" {
+  description = "CPU request for Vault pods"
+  type        = string
+  default     = "100m"
+}
+
+variable "memory_limit" {
+  description = "Memory limit for Vault pods"
+  type        = string
+  default     = "512Mi"
+}
+
+variable "cpu_limit" {
+  description = "CPU limit for Vault pods"
+  type        = string
+  default     = "300m"
 }
 
 variable "additional_set_values" {

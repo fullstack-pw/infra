@@ -14,7 +14,7 @@ from pathlib import Path
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Extract secrets from Vault to YAML files')
-    parser.add_argument('--vault-addr', default=os.environ.get('VAULT_ADDR', 'https://vault.fullstack.pw'),
+    parser.add_argument('--vault-addr', default=os.environ.get('VAULT_ADDR', 'https://vault.toolz.fullstack.pw'),
                       help='Vault server address')
     parser.add_argument('--vault-token', default=os.environ.get('VAULT_TOKEN'),
                       help='Vault token (or set VAULT_TOKEN env var)')

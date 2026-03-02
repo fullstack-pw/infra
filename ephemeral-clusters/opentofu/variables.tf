@@ -47,7 +47,7 @@ variable "kubeconfig_path" {
   default = "~/.kube/config"
 }
 variable "vault_addr" {
-  default = "https://vault.fullstack.pw"
+  default = "https://vault.toolz.fullstack.pw"
 }
 variable "VAULT_TOKEN" {}
 

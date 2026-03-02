@@ -85,8 +85,10 @@ module "values" {
         tls_cert_secret_name = var.tls_cert_secret_name
 
         # Persistence
-        persistence_enabled = var.persistence_enabled
-        storage_class       = var.storage_class
+        persistence_enabled     = var.persistence_enabled
+        storage_class           = var.storage_class
+        registry_existing_claim = var.registry_existing_claim
+        registry_storage_size   = var.registry_storage_size
 
         # External database
         external_database_host     = var.external_database_host

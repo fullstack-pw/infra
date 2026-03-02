@@ -41,7 +41,7 @@ provider "helm" {
 }
 
 provider "vault" {
-  address = var.vault_addr
+  address = try(var.config[terraform.workspace].vault_addr, var.vault_addr)
   token   = var.VAULT_TOKEN
 }
 

@@ -61,14 +61,18 @@ variable "clusters" {
     node_taints              = optional(list(string), [])
 
     # RKE2-specific fields
-    rke2_version             = optional(string, "v1.33.1+rke2r1")
-    rke2_cni                 = optional(string, "cilium")
-    rke2_registration_method = optional(string, "internal-first")
-    disable_rke2_components  = optional(list(string), [])
-    rke2_server_args         = optional(list(string), [])
-    rke2_agent_args          = optional(list(string), [])
-    rke2_node_labels         = optional(map(string), {})
-    rke2_node_taints         = optional(list(string), [])
+    rke2_version              = optional(string, "v1.33.1+rke2r1")
+    rke2_cni                  = optional(string, "cilium")
+    rke2_registration_method  = optional(string, "address")
+    rke2_registration_address = optional(string, "")
+    registration_method       = optional(string, "address")
+    registration_address      = optional(string, "")
+    kube_vip_interface        = optional(string, "ens18")
+    disable_rke2_components   = optional(list(string), [])
+    rke2_server_args          = optional(list(string), [])
+    rke2_agent_args           = optional(list(string), [])
+    rke2_node_labels          = optional(map(string), {})
+    rke2_node_taints          = optional(list(string), [])
   }))
 
   validation {

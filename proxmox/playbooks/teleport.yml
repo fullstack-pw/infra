@@ -8,7 +8,7 @@
     teleport_domain: "teleport.fullstack.pw"
     teleport_cluster_name: "fullstack-pw"
     github_org: "fullstack-pw"
-    minio_endpoint: "s3.fullstack.pw"
+    minio_endpoint: "s3.toolz.fullstack.pw"
     minio_bucket: "teleport-recordings"
     authentik_domain: "auth.fullstack.pw"
     teleport_saml_enabled: false

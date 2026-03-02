@@ -168,9 +168,9 @@ resource "kubernetes_manifest" "postgres_cluster" {
       } : null
 
       # Managed section: services for external access and declarative roles
-      managed = (var.ingress_enabled && !var.use_istio) || length(var.managed_roles) > 0 ? merge(
+      managed = var.create_lb_service || length(var.managed_roles) > 0 ? merge(
         # Services for LoadBalancer access
-        var.ingress_enabled && !var.use_istio ? {
+        var.create_lb_service ? {
           services = {
             additional = [
               {

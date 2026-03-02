@@ -44,6 +44,33 @@ module "controller_helm" {
   set_values = concat([], var.controller_additional_set_values)
 }
 
+resource "kubernetes_secret" "registry_pull_secret" {
+  count = var.registry_server != "" ? 1 : 0
+
+  metadata {
+    name      = "harbor-pull-secret"
+    namespace = module.namespace.name
+  }
+
+  type = "kubernetes.io/dockerconfigjson"
+
+  data = {
+    ".dockerconfigjson" = jsonencode({
+      auths = {
+        (var.registry_server) = {
+          username = var.registry_username
+          password = var.registry_password
+          auth     = base64encode("${var.registry_username}:${var.registry_password}")
+        }
+      }
+    })
+  }
+}
+
+locals {
+  image_pull_secret = var.registry_server != "" ? "harbor-pull-secret" : ""
+}
+
 # Create service account for runners
 resource "kubernetes_service_account" "github_runner" {
   metadata {
@@ -73,6 +100,7 @@ module "runner_helm" {
     runner_image      = var.runner_image
     runner_labels     = var.runner_labels
     working_directory = var.working_directory
+    image_pull_secret = local.image_pull_secret
   })]
 
   depends_on = [module.controller_helm]
@@ -199,6 +227,7 @@ module "runner_helm_buildkit" {
     runner_image      = var.runner_image
     runner_labels     = var.runner_labels
     working_directory = var.working_directory
+    image_pull_secret = local.image_pull_secret
   })]
 
   depends_on = [module.controller_helm]

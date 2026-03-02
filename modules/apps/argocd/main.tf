@@ -91,7 +91,7 @@ module "argo_rollouts_helm" {
 }
 
 resource "kubernetes_manifest" "argocd_bootstrap" {
-  count = var.install_argocd ? 1 : 0
+  count = var.install_argocd && var.install_bootstrap ? 1 : 0
 
   manifest = {
     apiVersion = "argoproj.io/v1alpha1"

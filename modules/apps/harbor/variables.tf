@@ -54,6 +54,18 @@ variable "storage_class" {
   default     = "local-path"
 }
 
+variable "registry_existing_claim" {
+  description = "Existing PVC claim name to use for registry blob storage (leave empty to create new)"
+  type        = string
+  default     = ""
+}
+
+variable "registry_storage_size" {
+  description = "Size of the registry PVC when creating a new one"
+  type        = string
+  default     = "5Gi"
+}
+
 # External database
 variable "use_external_database" {
   description = "Use external PostgreSQL database"

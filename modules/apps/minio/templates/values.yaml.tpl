@@ -10,6 +10,10 @@ persistence:
 resources:
   requests:
     memory: "${memory_request}"
+    cpu: "${cpu_request}"
+  limits:
+    memory: "${memory_limit}"
+    cpu: "${cpu_limit}"
 ingress:
   enabled: ${ingress_enabled}
 %{if ingress_class_name != ""}

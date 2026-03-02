@@ -12,7 +12,7 @@ echo "Cluster Name: $CLUSTER_NAME"
 echo ""
 
 # Setup Vault credentials
-export VAULT_ADDR=https://vault.fullstack.pw
+export VAULT_ADDR=https://vault.toolz.fullstack.pw
 if [ -z "${VAULT_TOKEN:-}" ]; then
     echo "Reading VAULT_TOKEN from clusters/tmp/common_secrets.json..."
     export VAULT_TOKEN=$(jq -r '."kv/cluster-secret-store/secrets/VAULT_TOKEN".VAULT_TOKEN' clusters/tmp/common_secrets.json)

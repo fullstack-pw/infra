@@ -6,6 +6,7 @@ auth:
   password: "${redis_password}"
   usePasswordFiles: false
 
+
 master:
   persistence:
     enabled: ${persistence_enabled}
@@ -25,7 +26,10 @@ master:
   service:
     type: ${service_type}
     port: ${service_port}
-    annotations: {}
+    annotations:
+%{for key, value in service_annotations}
+      ${key}: "${value}"
+%{endfor}
 
 %{if architecture == "replication"}
 replica:

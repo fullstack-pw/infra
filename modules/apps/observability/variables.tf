@@ -260,5 +260,5 @@ variable "minio_rootPassword" {
 }
 variable "minio_address" {
   type    = string
-  default = "s3.fullstack.pw"
+  default = "s3.toolz.fullstack.pw"
 }

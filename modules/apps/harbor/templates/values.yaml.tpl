@@ -25,10 +25,15 @@ harborAdminPassword: "${admin_password}"
 persistence:
   enabled: ${persistence_enabled}
   resourcePolicy: "keep"
-%{if persistence_enabled && storage_class != ""}
+%{if persistence_enabled && (storage_class != "" || registry_existing_claim != "")}
   persistentVolumeClaim:
     registry:
+%{if registry_existing_claim != ""}
+      existingClaim: ${registry_existing_claim}
+%{else}
       storageClass: ${storage_class}
+      size: ${registry_storage_size}
+%{endif}
     chartmuseum:
       storageClass: ${storage_class}
     jobservice:

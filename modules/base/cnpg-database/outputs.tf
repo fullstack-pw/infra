@@ -1,6 +1,6 @@
 output "name" {
   description = "Kubernetes object name of the Database resource"
-  value       = var.create ? kubernetes_manifest.database[0].manifest.metadata.name : null
+  value       = var.create ? try(kubernetes_manifest.database[0].manifest.metadata.name, var.name) : null
 }
 
 output "database_name" {
