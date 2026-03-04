@@ -84,6 +84,7 @@ module "external_secrets" {
   install_crd = var.config[terraform.workspace].crds_installed
   secret_data = local.secret_data
   vault_token = local.secrets_json["kv/cluster-secret-store/secrets/VAULT_TOKEN"]["VAULT_TOKEN"]
+  vault_addr  = "https://vault.toolz.fullstack.pw"
 
   namespace_selector_type = "label"
   namespace_selector_label = {
