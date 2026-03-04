@@ -400,7 +400,8 @@ module "kubevirt" {
   cdi_feature_gates      = ["HonorWaitForFirstConsumer"]
 
   enable_cdi_uploadproxy_ingress = true
-  cdi_uploadproxy_host           = "cdi-uploadproxy.fullstack.pw"
+  cdi_uploadproxy_host           = try(var.config[terraform.workspace].kubevirt.cdi_uploadproxy_host, "cdi-uploadproxy.fullstack.pw")
+  virt_exportproxy_host          = try(var.config[terraform.workspace].kubevirt.virt_exportproxy_host, "kubevirt-exportproxy.fullstack.pw")
   ingress_class_name             = try(var.config[terraform.workspace].kubevirt.ingress_class_name, "traefik")
 
   depends_on = [module.kubevirt_operator]
@@ -411,7 +412,7 @@ module "longhorn" {
   source = "../modules/apps/longhorn"
 
   replica_count      = 1
-  ingress_host       = "longhorn.fullstack.pw"
+  ingress_host       = try(var.config[terraform.workspace].longhorn.ingress_host, "longhorn.fullstack.pw")
   ingress_class_name = try(var.config[terraform.workspace].longhorn.ingress_class_name, "traefik")
   ingress_annotations = try(var.config[terraform.workspace].longhorn.ingress_annotations, {
     "external-dns.alpha.kubernetes.io/hostname" = "longhorn.fullstack.pw"

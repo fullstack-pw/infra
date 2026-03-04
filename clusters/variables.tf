@@ -188,6 +188,7 @@ variable "config" {
         roles = "kube,app,db"
       }
       longhorn = {
+        ingress_host       = "longhorn.toolz.fullstack.pw"
         ingress_class_name = "nginx"
         ingress_annotations = {
           "external-dns.alpha.kubernetes.io/hostname" = "longhorn.toolz.fullstack.pw"
@@ -195,7 +196,9 @@ variable "config" {
         }
       }
       kubevirt = {
-        ingress_class_name = "nginx"
+        ingress_class_name    = "nginx"
+        cdi_uploadproxy_host  = "cdi-uploadproxy.toolz.fullstack.pw"
+        virt_exportproxy_host = "kubevirt-exportproxy.toolz.fullstack.pw"
       }
       prometheus_namespaces = [
         # "cluster1",
@@ -673,6 +676,8 @@ variable "config" {
           wk_cores     = 8
 
           autoscaler_enabled = true
+          autoscaler_min     = 1
+          autoscaler_max     = 5
         },
         # {
         #   cluster_type              = "talos"
