@@ -26,7 +26,9 @@ fi
 
 # Function to get current allocations from Vault
 get_allocations() {
-    vault kv get -format=json "$VAULT_PATH" 2>/dev/null | jq -r '.data.data // {}' || echo '{}'
+    local result
+    result=$(vault kv get -format=json "$VAULT_PATH" 2>/dev/null) || { echo '{}'; return 0; }
+    echo "$result" | jq -r '.data.data // {}'
 }
 
 # Function to save allocations to Vault using CAS (Check-And-Set)
@@ -34,25 +36,28 @@ save_allocations() {
     local allocations="$1"
     local version="${2:-0}"
 
-    # Convert JSON object to key=value format for vault kv put
-    # vault kv put expects: vault kv put path key1=value1 key2=value2
     local kv_args=""
     while IFS="=" read -r key value; do
         kv_args="$kv_args $key=$value"
     done < <(echo "$allocations" | jq -r 'to_entries[] | "\(.key)=\(.value)"')
 
+    if [[ -z "$kv_args" ]]; then
+        vault kv put "$VAULT_PATH" _empty=true > /dev/null
+        return 0
+    fi
+
     if [[ "$version" -eq 0 ]]; then
-        # First write (no version check)
         vault kv put "$VAULT_PATH" $kv_args > /dev/null
     else
-        # CAS write with version check
         vault kv put -cas="$version" "$VAULT_PATH" $kv_args > /dev/null
     fi
 }
 
 # Function to get current version from Vault
 get_version() {
-    vault kv get -format=json "$VAULT_PATH" 2>/dev/null | jq -r '.data.metadata.version // 0'
+    local result
+    result=$(vault kv get -format=json "$VAULT_PATH" 2>/dev/null) || { echo 0; return 0; }
+    echo "$result" | jq -r '.data.metadata.version // 0'
 }
 
 # Function to allocate an IP for a cluster
