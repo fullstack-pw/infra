@@ -131,6 +131,17 @@ resource "kubernetes_deployment" "buildkitd" {
       }
 
       spec {
+        init_container {
+          name    = "cleanup-lock"
+          image   = "busybox:1.36"
+          command = ["sh", "-c", "rm -f /var/lib/buildkit/buildkitd.lock"]
+
+          volume_mount {
+            name       = "buildkit-storage"
+            mount_path = "/var/lib/buildkit"
+          }
+        }
+
         container {
           name  = "buildkitd"
           image = var.buildkit_image
