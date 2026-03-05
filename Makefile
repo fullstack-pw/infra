@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-ENVIRONMENTS := dev prod sandboxy tools observability
+ENVIRONMENTS := dev prod clustermgmt toolz home observability
 DEFAULT_ENV := tools
 TOFU_DIR := clusters
 EPHEMERAL_TOFU_DIR := ephemeral-clusters/opentofu
