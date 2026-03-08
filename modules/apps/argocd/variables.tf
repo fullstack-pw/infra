@@ -10,6 +10,12 @@ variable "install_argocd" {
   default     = false
 }
 
+variable "install_bootstrap" {
+  description = "Create the argocd-bootstrap Application (requires ArgoCD CRDs to be installed first)"
+  type        = bool
+  default     = false
+}
+
 variable "argocd_version" {
   description = "Argo CD Helm chart version"
   type        = string

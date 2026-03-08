@@ -37,7 +37,7 @@ spec:
               echo ""
 
               echo "Installing MinIO Client..."
-              wget -q https://dl.min.io/client/mc/release/linux-amd64/mc -O /usr/local/bin/mc
+              wget -q --no-check-certificate https://dl.min.io/client/mc/release/linux-amd64/mc -O /usr/local/bin/mc
               chmod +x /usr/local/bin/mc
 
               echo "Installing Oracle Cloud CLI..."

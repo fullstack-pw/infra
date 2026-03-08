@@ -41,7 +41,7 @@ The automation uses a special commit message tag `[ansible PLAYBOOK_NAME]` that 
 
 - `PROXMOX_*` - Proxmox API credentials
 - `VAULT_TOKEN` - Vault authentication token
-- `VAULT_ADDR` - Vault server URL (e.g., `https://vault.fullstack.pw`)
+- `VAULT_ADDR` - Vault server URL (e.g., `https://vault.toolz.fullstack.pw`)
 - `SSH_PRIVATE_KEY` - SSH key for Ansible connections
 
 ### Required Infrastructure
@@ -255,7 +255,7 @@ After your PR is merged to main, the following automated sequence occurs:
      -i proxmox/k8s.ini \
      -e "target_hosts=k8s-observability" \
      -e "vault_token=${VAULT_TOKEN}" \
-     -e "vault_addr=https://vault.fullstack.pw"
+     -e "vault_addr=https://vault.toolz.fullstack.pw"
    ```
 
    **For other playbooks:**
@@ -785,7 +785,7 @@ ansible-playbook playbooks/k8s.yml \
   -i k8s.ini \
   -e "target_hosts=k8s-observability" \
   -e "vault_token=$VAULT_TOKEN" \
-  -e "vault_addr=https://vault.fullstack.pw" \
+  -e "vault_addr=https://vault.toolz.fullstack.pw" \
   -vvv  # Verbose output
 ```
 
@@ -849,7 +849,7 @@ python3 scripts/update_kubeconfig.py \
   --cluster-name k8s-observability \
   --inventory-name k8s-observability \
   --vault-token $VAULT_TOKEN \
-  --vault-addr https://vault.fullstack.pw
+  --vault-addr https://vault.toolz.fullstack.pw
 ```
 
 ### Workload Deployment Failed

@@ -109,7 +109,13 @@ variable "enable_metrics" {
 variable "service_type" {
   description = "Kubernetes service type"
   type        = string
-  default     = "LoadBalancer"
+  default     = "ClusterIP"
+}
+
+variable "service_annotations" {
+  description = "Annotations for the Redis master service"
+  type        = map(string)
+  default     = {}
 }
 
 variable "service_port" {

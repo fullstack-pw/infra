@@ -34,8 +34,20 @@ variable "install_crd" {
   default     = true
 }
 
+variable "issuer_type" {
+  description = "Type of ClusterIssuer to create: acme or selfsigned"
+  type        = string
+  default     = "selfsigned"
+
+  validation {
+    condition     = contains(["acme", "selfsigned"], var.issuer_type)
+    error_message = "issuer_type must be 'acme' or 'selfsigned'"
+  }
+}
+
 variable "cloudflare_secret" {
   description = "CloudFlare secret"
   type        = string
   sensitive   = true
+  default     = ""
 }

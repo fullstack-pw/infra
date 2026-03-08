@@ -25,8 +25,9 @@ resource "kubectl_manifest" "cdi_cr" {
   count = var.create_cdi_cr ? 1 : 0
 
   yaml_body = templatefile("${path.module}/templates/cdi-cr.yaml.tpl", {
-    namespace     = var.namespace
-    feature_gates = var.cdi_feature_gates
+    namespace            = var.namespace
+    feature_gates        = var.cdi_feature_gates
+    cdi_uploadproxy_host = var.cdi_uploadproxy_host
   })
 
   wait              = true

@@ -1,6 +1,8 @@
 locals {
   clusters = {
-    for cluster in var.clusters : cluster.name => cluster
+    for cluster in var.clusters : cluster.name => merge(cluster, {
+      registration_address = coalesce(cluster.registration_address, cluster.control_plane_endpoint_ip)
+    })
   }
 }
 
@@ -48,7 +50,9 @@ module "cluster_templates" {
         cp_replicas                 = each.value.cp_replicas
         control_plane_template_name = "${each.value.name}-control-plane-template"
         registration_method         = each.value.registration_method
-        ssh_authorized_keys         = jsonencode(var.ssh_authorized_keys)
+        registration_address        = each.value.registration_address
+        kube_vip_configmap_name     = "${each.value.name}-kube-vip"
+        ssh_authorized_keys         = join("\n", formatlist("    - %s", var.ssh_authorized_keys))
       }
     },
     {
@@ -97,7 +101,8 @@ module "cluster_templates" {
         cluster_name            = each.value.name
         namespace               = each.value.name
         worker_rke2_config_name = "${each.value.name}-worker-config"
-        ssh_authorized_keys     = jsonencode(var.ssh_authorized_keys)
+        ssh_authorized_keys     = join("\n", formatlist("    - %s", var.ssh_authorized_keys))
+        kubernetes_version      = each.value.kubernetes_version
       }
     },
     {
@@ -110,6 +115,7 @@ module "cluster_templates" {
         worker_template_name    = "${each.value.name}-worker-template"
         wk_replicas             = each.value.wk_replicas
         kubernetes_version      = each.value.kubernetes_version
+        rke2_version            = each.value.rke2_version
         autoscaler_enabled      = each.value.autoscaler_enabled
         autoscaler_min          = each.value.autoscaler_min
         autoscaler_max          = each.value.autoscaler_max
@@ -172,6 +178,27 @@ resource "kubernetes_manifest" "machine_deployment" {
 
   manifest = local.cluster_manifests[each.key]["MachineDeployment-${each.value.name}-workers"]
 
+  field_manager {
+    force_conflicts = true
+  }
+  depends_on = [var.core_module_namespaces]
+}
+
+resource "kubernetes_config_map" "kube_vip" {
+  for_each = local.clusters
+
+  metadata {
+    name      = "${each.value.name}-kube-vip"
+    namespace = each.value.name
+  }
+
+  data = {
+    "kube-vip.yaml" = templatefile("${path.module}/templates/kube-vip.yaml.tpl", {
+      vip_address   = each.value.control_plane_endpoint_ip
+      vip_interface = each.value.kube_vip_interface
+    })
+  }
+
   depends_on = [var.core_module_namespaces]
 }
 
@@ -187,6 +214,7 @@ resource "kubernetes_manifest" "cluster" {
     kubernetes_manifest.control_plane_machine_template,
     kubernetes_manifest.machine_deployment,
     kubernetes_manifest.worker_config_template,
-    kubernetes_manifest.worker_machine_template
+    kubernetes_manifest.worker_machine_template,
+    kubernetes_config_map.kube_vip
   ]
 }

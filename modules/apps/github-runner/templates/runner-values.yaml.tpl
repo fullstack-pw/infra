@@ -7,6 +7,10 @@ maxRunners: ${max_runners}
 
 template:
   spec:
+%{if image_pull_secret != ""}
+    imagePullSecrets:
+      - name: ${image_pull_secret}
+%{endif}
     containers:
       - name: runner
         image: ${runner_image}

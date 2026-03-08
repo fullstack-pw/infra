@@ -98,6 +98,8 @@ variable "postgres_backups" {
     memory_limit   = optional(string, "1Gi")
     cpu_request    = optional(string, "200m")
     cpu_limit      = optional(string, "1000m")
+    secret_name    = optional(string, "")
+    secret_key     = optional(string, "password")
   }))
   default = {}
 }

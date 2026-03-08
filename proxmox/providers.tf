@@ -9,7 +9,7 @@ terraform {
     bucket = "terraform"
     key    = "proxmox.tfstate"
     endpoints = {
-      s3 = "https://s3.fullstack.pw"
+      s3 = "https://s3.toolz.fullstack.pw"
     }
     region                      = "main"
     skip_credentials_validation = true

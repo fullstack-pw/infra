@@ -32,7 +32,7 @@ variable "timeout" {
 variable "harbor_domain" {
   description = "Domain for Harbor"
   type        = string
-  default     = "registry.fullstack.pw"
+  default     = "registry.toolz.fullstack.pw"
 }
 
 variable "notary_domain" {
@@ -52,6 +52,18 @@ variable "storage_class" {
   description = "Storage class to use for persistent volumes"
   type        = string
   default     = "local-path"
+}
+
+variable "registry_existing_claim" {
+  description = "Existing PVC claim name to use for registry blob storage (leave empty to create new)"
+  type        = string
+  default     = ""
+}
+
+variable "registry_storage_size" {
+  description = "Size of the registry PVC when creating a new one"
+  type        = string
+  default     = "5Gi"
 }
 
 # External database
@@ -161,7 +173,7 @@ variable "ingress_annotations" {
   description = "Annotations for Harbor ingress"
   type        = map(string)
   default = {
-    "external-dns.alpha.kubernetes.io/hostname"   = "registry.fullstack.pw"
+    "external-dns.alpha.kubernetes.io/hostname"   = "registry.toolz.fullstack.pw"
     "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
     "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
     "nginx.org/client-max-body-size"              = "0"

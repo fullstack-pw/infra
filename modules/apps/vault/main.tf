@@ -48,7 +48,12 @@ module "helm" {
   timeout          = var.timeout
   values_files     = module.values.rendered_values
 
-  set_values = var.additional_set_values
+  set_values = concat([
+    { name = "server.resources.requests.memory", value = var.memory_request },
+    { name = "server.resources.requests.cpu", value = var.cpu_request },
+    { name = "server.resources.limits.memory", value = var.memory_limit },
+    { name = "server.resources.limits.cpu", value = var.cpu_limit },
+  ], var.additional_set_values)
 }
 
 resource "vault_mount" "kv" {

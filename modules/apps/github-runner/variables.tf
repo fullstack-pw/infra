@@ -43,7 +43,26 @@ variable "runner_name" {
 variable "runner_image" {
   description = "Docker image for GitHub runner"
   type        = string
-  default     = "registry.fullstack.pw/library/github-runner:latest"
+  default     = "registry.toolz.fullstack.pw/library/github-runner:latest"
+}
+
+variable "registry_server" {
+  description = "Registry server hostname for imagePullSecret (empty = no pull secret created)"
+  type        = string
+  default     = ""
+}
+
+variable "registry_username" {
+  description = "Registry username for imagePullSecret"
+  type        = string
+  default     = ""
+}
+
+variable "registry_password" {
+  description = "Registry password for imagePullSecret"
+  type        = string
+  default     = ""
+  sensitive   = true
 }
 
 variable "runner_labels" {

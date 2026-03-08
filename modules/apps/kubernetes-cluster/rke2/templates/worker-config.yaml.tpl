@@ -6,5 +6,9 @@ metadata:
 spec:
   template:
     spec:
+      preRKE2Commands:
+      - 'INSTANCE_ID=$(cloud-init query instance-id) && mkdir -p /etc/rancher/rke2/config.yaml.d && echo "kubelet-arg:" > /etc/rancher/rke2/config.yaml.d/provider-id.yaml && echo "- provider-id=proxmox://$INSTANCE_ID" >> /etc/rancher/rke2/config.yaml.d/provider-id.yaml'
       agentConfig:
-        version: ${kubernetes_version}
+        additionalUserData:
+          data:
+            users: "\n- name: suporte\n  ssh_authorized_keys:\n${ssh_authorized_keys}\n  sudo: ALL=(ALL) NOPASSWD:ALL\n"

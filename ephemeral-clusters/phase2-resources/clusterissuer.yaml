@@ -3,12 +3,4 @@ kind: ClusterIssuer
 metadata:
   name: letsencrypt-staging
 spec:
-  acme:
-    server: https://acme-staging-v02.api.letsencrypt.org/directory
-    email: admin@fullstack.pw
-    privateKeySecretRef:
-      name: letsencrypt-staging-key
-    solvers:
-      - http01:
-          ingress:
-            class: traefik
+  selfSigned: {}

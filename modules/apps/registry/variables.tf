@@ -127,7 +127,7 @@ variable "ingress_name" {
 variable "ingress_host" {
   description = "Host for the registry ingress"
   type        = string
-  default     = "registry.fullstack.pw"
+  default     = "registry.toolz.fullstack.pw"
 }
 
 variable "ingress_class_name" {

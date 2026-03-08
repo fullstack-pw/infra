@@ -38,8 +38,8 @@ module "helm" {
   ]
 }
 
-// Create Kubernetes secret for Cloudflare API token
 module "cloudflare_secret" {
+  count  = var.issuer_type == "acme" ? 1 : 0
   source = "../../base/credentials"
 
   name              = "cloudflare-api-token"
@@ -52,9 +52,8 @@ module "cloudflare_secret" {
   }
 }
 
-// Create cluster issuer for Let's Encrypt production
 resource "kubernetes_manifest" "letsencrypt_issuer" {
-  count      = var.install_crd == true ? 1 : 0
+  count      = var.install_crd && var.issuer_type == "acme" ? 1 : 0
   depends_on = [module.helm]
 
   manifest = {
@@ -76,7 +75,7 @@ resource "kubernetes_manifest" "letsencrypt_issuer" {
               "cloudflare" = {
                 "email" = var.email
                 "apiTokenSecretRef" = {
-                  "name" = module.cloudflare_secret.name
+                  "name" = module.cloudflare_secret[0].name
                   "key"  = "api-token"
                 }
               }
@@ -84,6 +83,22 @@ resource "kubernetes_manifest" "letsencrypt_issuer" {
           }
         ]
       }
+    }
+  }
+}
+
+resource "kubernetes_manifest" "selfsigned_issuer" {
+  count      = var.install_crd && var.issuer_type == "selfsigned" ? 1 : 0
+  depends_on = [module.helm]
+
+  manifest = {
+    "apiVersion" = "cert-manager.io/v1"
+    "kind"       = "ClusterIssuer"
+    "metadata" = {
+      "name" = var.cluster_issuer
+    }
+    "spec" = {
+      "selfSigned" = {}
     }
   }
 }

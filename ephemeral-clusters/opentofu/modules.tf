@@ -146,7 +146,7 @@ module "postgres_cnpg" {
   create_namespace = false
   create_cluster   = try(var.config[terraform.workspace].postgres_cnpg.crds_installed, false)
 
-  registry   = "registry.fullstack.pw"
+  registry   = "registry.toolz.fullstack.pw"
   repository = "library/cloudnative-postgres"
   pg_version = "latest"
 

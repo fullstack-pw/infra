@@ -17,7 +17,7 @@ spec:
       global: "0.055"
       storageClass:
         longhorn: "0.055"
-    uploadProxyURLOverride: "https://cdi-uploadproxy.fullstack.pw"
+    uploadProxyURLOverride: "https://${cdi_uploadproxy_host}"
   imagePullPolicy: IfNotPresent
   infra:
     nodeSelector:

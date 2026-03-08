@@ -90,6 +90,24 @@ variable "memory_request" {
   default     = "256Mi"
 }
 
+variable "cpu_request" {
+  description = "CPU request for MinIO pods"
+  type        = string
+  default     = "50m"
+}
+
+variable "memory_limit" {
+  description = "Memory limit for MinIO pods"
+  type        = string
+  default     = "512Mi"
+}
+
+variable "cpu_limit" {
+  description = "CPU limit for MinIO pods"
+  type        = string
+  default     = "200m"
+}
+
 # Ingress
 variable "ingress_enabled" {
   description = "Enable ingress for MinIO API"
@@ -101,7 +119,7 @@ variable "ingress_annotations" {
   description = "Annotations for the MinIO API ingress"
   type        = map(string)
   default = {
-    "external-dns.alpha.kubernetes.io/hostname"   = "s3.fullstack.pw"
+    "external-dns.alpha.kubernetes.io/hostname"   = "s3.toolz.fullstack.pw"
     "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
     "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
     "nginx.org/client-max-body-size"              = "0"
@@ -117,7 +135,7 @@ variable "ingress_class_name" {
 variable "ingress_host" {
   description = "Hostname for MinIO API ingress"
   type        = string
-  default     = "s3.fullstack.pw"
+  default     = "s3.toolz.fullstack.pw"
 }
 
 variable "ingress_tls_enabled" {
@@ -143,7 +161,7 @@ variable "console_ingress_annotations" {
   description = "Annotations for the MinIO Console ingress"
   type        = map(string)
   default = {
-    "external-dns.alpha.kubernetes.io/hostname" = "minio.fullstack.pw"
+    "external-dns.alpha.kubernetes.io/hostname" = "minio.toolz.fullstack.pw"
     "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
   }
 }
@@ -157,7 +175,7 @@ variable "console_ingress_class_name" {
 variable "console_ingress_host" {
   description = "Hostname for MinIO Console ingress"
   type        = string
-  default     = "minio.fullstack.pw"
+  default     = "minio.toolz.fullstack.pw"
 }
 
 variable "console_ingress_tls_enabled" {

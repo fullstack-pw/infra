@@ -4,7 +4,7 @@
   become: true
   gather_facts: yes
   vars:
-    vault_addr: "{{ vault_addr | default('https://vault.fullstack.pw') }}"
+    vault_addr: "{{ vault_addr | default('https://vault.toolz.fullstack.pw') }}"
     adjectives:
       - "swift"
       - "bold"

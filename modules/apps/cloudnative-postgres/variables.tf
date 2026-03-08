@@ -218,6 +218,12 @@ variable "ingress_enabled" {
   default     = false
 }
 
+variable "create_lb_service" {
+  description = "Create an additional LoadBalancer service for direct TCP access (only needed without ingress/istio)"
+  type        = bool
+  default     = false
+}
+
 variable "ingress_host" {
   description = "Hostname for ingress (e.g., tools.postgres.fullstack.pw)"
   type        = string

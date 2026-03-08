@@ -53,6 +53,9 @@ module "values" {
         persistence_storage_class       = var.persistence_storage_class
         persistence_size                = var.persistence_size
         memory_request                  = var.memory_request
+        cpu_request                     = var.cpu_request
+        memory_limit                    = var.memory_limit
+        cpu_limit                       = var.cpu_limit
         ingress_enabled                 = var.ingress_enabled
         ingress_annotations             = var.ingress_annotations
         ingress_class_name              = var.ingress_class_name

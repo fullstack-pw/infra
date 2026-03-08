@@ -56,10 +56,7 @@ variable "cloud_init_credentials" {
     username = string
     password = string
   })
-  default = {
-    username = "suporte"
-    password = "sistema"
-  }
+  sensitive = true
 }
 
 variable "proxmox_isos" {
