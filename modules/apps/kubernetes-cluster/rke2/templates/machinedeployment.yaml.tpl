@@ -12,7 +12,9 @@ metadata:
     cluster.x-k8s.io/cluster-name: ${cluster_name}
 spec:
   clusterName: ${cluster_name}
+%{ if !autoscaler_enabled ~}
   replicas: ${wk_replicas}
+%{ endif ~}
   selector:
     matchLabels:
       cluster.x-k8s.io/cluster-name: ${cluster_name}

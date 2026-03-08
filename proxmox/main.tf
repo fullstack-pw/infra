@@ -36,7 +36,7 @@ resource "proxmox_vm_qemu" "vm" {
   automatic_reboot       = lookup(each.value, "automatic_reboot", true)
 
   ciuser     = lookup(each.value, "ciuser", null)
-  cipassword = lookup(each.value, "cipassword", null)
+  cipassword = lookup(each.value, "ciuser", null) != null ? var.cloud_init_credentials.password : null
   sshkeys    = lookup(each.value, "sshkeys", null)
   nameserver = lookup(each.value, "nameserver", null)
   ipconfig0  = lookup(each.value, "ipconfig0", null)

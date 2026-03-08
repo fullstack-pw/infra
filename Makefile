@@ -24,6 +24,7 @@ OpenTofu Environment Commands:
   make apply                    - Apply changes for all environments
   make apply ENV=<environment>  - Apply changes for a specific environment
   make destroy ENV=<environment>- Destroy resources in a specific environment (requires confirmation)
+  make state-clean ENV=<env>    - Remove all resources from a specific environment state (no infra destroy)
 
 Proxmox VM Management (legacy):
   make proxmox-init             - Initialize OpenTofu for Proxmox
@@ -142,7 +143,7 @@ apply:
 			echo -e "##\n## Applying changes to $${env} environment..."; \
 			echo -e "##\n#########################################################"; \
 			if [ -f "$${env}.tfplan" ]; then \
-				tofu apply $${env}.tfplan && cd .. || cd ..; \
+				tofu apply $${env}.tfplan && rm -f $(TOFU_DIR)/$${env}.tfplan && cd .. || cd ..; \
 			else \
 				tofu apply $$TARGET_FLAG $(EXTRA_ARGS) -auto-approve && cd .. || cd ..; \
 			fi; \
@@ -151,7 +152,7 @@ apply:
 		echo -e "${CYAN}Applying changes to $(ENV) environment...${NC}"; \
 		cd $(TOFU_DIR) && tofu workspace select $(ENV); \
 		if [ -f "$(ENV).tfplan" ]; then \
-			tofu apply $(ENV).tfplan; \
+			tofu apply $(ENV).tfplan && rm -f $(ENV).tfplan; \
 		else \
 			tofu apply $$TARGET_FLAG $(EXTRA_ARGS) -auto-approve; \
 		fi; \
@@ -171,6 +172,26 @@ destroy:
 		cd $(TOFU_DIR) && tofu workspace select $(ENV) && tofu destroy -var="vault_token=${VAULT_TOKEN}"; \
 	else \
 		echo -e "${YELLOW}Destroy operation cancelled.${NC}"; \
+	fi
+
+.PHONY: state-clean
+state-clean:
+	@if [ -z "$(ENV)" ]; then \
+		echo -e "${RED}ERROR: ENV is required. Example: make state-clean ENV=dev${NC}"; \
+		exit 1; \
+	fi
+	@echo -e "${CYAN}Listing resources in state for $(ENV) environment...${NC}"
+	@cd $(TOFU_DIR) && tofu workspace select $(ENV) && tofu state list
+	@echo -e "${RED}WARNING: This will remove ALL resources from the $(ENV) state (infrastructure will NOT be destroyed).${NC}"
+	@echo -e "${RED}Are you sure? Type '$(ENV)' to confirm: ${NC}"
+	@read confirmation; \
+	if [ "$$confirmation" = "$(ENV)" ]; then \
+		echo -e "${YELLOW}Removing all resources from $(ENV) state...${NC}"; \
+		cd $(TOFU_DIR) && tofu workspace select $(ENV) && \
+		tofu state list | xargs -I{} tofu state rm "{}"; \
+		echo -e "${GREEN}All resources removed from $(ENV) state.${NC}"; \
+	else \
+		echo -e "${YELLOW}Operation cancelled.${NC}"; \
 	fi
 
 .PHONY: fmt

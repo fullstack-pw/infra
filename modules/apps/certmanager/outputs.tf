@@ -20,5 +20,5 @@ output "acme_server" {
 
 output "cloudflare_secret_name" {
   description = "Name of the Cloudflare API token secret"
-  value       = module.cloudflare_secret.name
+  value       = var.issuer_type == "acme" ? module.cloudflare_secret[0].name : ""
 }

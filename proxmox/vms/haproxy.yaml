@@ -1,5 +1,6 @@
 name: haproxy
 target_node: node01
+vm_state: stopped
 cores: 1
 sockets: 1
 memory: 512

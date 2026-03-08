@@ -116,15 +116,15 @@ TBD
 
 | Service | Technology | Purpose | URL |
 |---------|-----------|---------|-----|
-| MinIO | S3-compatible object storage | Terraform state backend, backups | [s3.fullstack.pw](https://s3.fullstack.pw) |
-| Harbor | Enterprise container registry | Multi-tenant registry with security scanning, image replication | [registry.fullstack.pw](https://registry.fullstack.pw) |
+| MinIO | S3-compatible object storage | Terraform state backend, backups | [s3.toolz.fullstack.pw](https://s3.toolz.fullstack.pw) |
+| Harbor | Enterprise container registry | Multi-tenant registry with security scanning, image replication | [registry.toolz.fullstack.pw](https://registry.toolz.fullstack.pw) |
 | Longhorn | Distributed block storage | Persistent volumes for KubeVirt VMs on sandboxy cluster | [longhorn.fullstack.pw](https://longhorn.fullstack.pw) |
 
 ### Secrets & Security
 
 | Component | Implementation | Purpose | Location |
 |-----------|---------------|---------|----------|
-| HashiCorp Vault | KV v2 engine with K8s auth | Runtime secret storage and distribution | [vault.fullstack.pw](https://vault.fullstack.pw) |
+| HashiCorp Vault | KV v2 engine with K8s auth | Runtime secret storage and distribution | [vault.toolz.fullstack.pw](https://vault.toolz.fullstack.pw) |
 | External Secrets Operator | ClusterSecretStore | Vault to Kubernetes secret synchronization | All clusters |
 | SOPS + age | Encrypted YAML in Git | Secrets at rest in version control | infra repository |
 | cert-manager | Let's Encrypt automation | TLS certificate lifecycle management | All clusters |

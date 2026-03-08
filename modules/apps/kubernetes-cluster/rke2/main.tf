@@ -178,6 +178,9 @@ resource "kubernetes_manifest" "machine_deployment" {
 
   manifest = local.cluster_manifests[each.key]["MachineDeployment-${each.value.name}-workers"]
 
+  field_manager {
+    force_conflicts = true
+  }
   depends_on = [var.core_module_namespaces]
 }
 

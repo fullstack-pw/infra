@@ -32,7 +32,7 @@ variable "timeout" {
 variable "harbor_domain" {
   description = "Domain for Harbor"
   type        = string
-  default     = "registry.fullstack.pw"
+  default     = "registry.toolz.fullstack.pw"
 }
 
 variable "notary_domain" {
@@ -173,7 +173,7 @@ variable "ingress_annotations" {
   description = "Annotations for Harbor ingress"
   type        = map(string)
   default = {
-    "external-dns.alpha.kubernetes.io/hostname"   = "registry.fullstack.pw"
+    "external-dns.alpha.kubernetes.io/hostname"   = "registry.toolz.fullstack.pw"
     "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
     "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
     "nginx.org/client-max-body-size"              = "0"

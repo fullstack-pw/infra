@@ -149,7 +149,7 @@ module "gitea" {
   secret_key     = try(local.secrets_json["kv/cluster-secret-store/secrets/GITEA"]["SECRET_KEY"], "")
   internal_token = try(local.secrets_json["kv/cluster-secret-store/secrets/GITEA"]["INTERNAL_TOKEN"], "")
 
-  external_database_host     = "postgres-rw.default.svc.cluster.local"
+  external_database_host     = "postgres.fullstack.pw"
   external_database_name     = "gitea"
   external_database_username = "postgres"
   external_database_password = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
@@ -165,7 +165,7 @@ module "gitea" {
 
   default_actions_url = try(var.config[terraform.workspace].gitea.default_actions_url, "https://git.fullstack.pw")
 
-  depends_on = [module.postgres_cnpg, module.redis]
+  depends_on = [module.redis]
 }
 
 module "gitea_runner" {
@@ -275,6 +275,8 @@ module "oracle_backup" {
       memory_limit   = try(config.memory_limit, "1Gi")
       cpu_request    = try(config.cpu_request, "200m")
       cpu_limit      = try(config.cpu_limit, "1000m")
+      secret_name    = try(config.secret_name, "")
+      secret_key     = try(config.secret_key, "password")
     }
   }
 
@@ -353,9 +355,9 @@ module "harbor" {
   count  = contains(local.workload, "harbor") ? 1 : 0
   source = "../modules/apps/harbor"
 
-  external_database_host     = "postgres-rw.default.svc.cluster.local"
+  external_database_host     = "postgres.fullstack.pw"
   external_database_username = "postgres"
-  external_database_password = data.kubernetes_secret.postgres_superuser[0].data["password"]
+  external_database_password = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
   external_redis_host        = data.kubernetes_secret.redis_credentials[0].data["redis_host"]
   external_redis_password    = data.kubernetes_secret.redis_credentials[0].data["redis_password"]
   harbor_domain              = var.config[terraform.workspace].harbor.harbor_domain
@@ -374,10 +376,10 @@ module "immich" {
 
   redis         = "redis.toolz.fullstack.pw"
   redis_pass    = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
-  db_hostname   = "postgres.toolz.fullstack.pw"
+  db_hostname   = "192.168.1.100"
   db_user       = "postgres"
   db_name       = "immich"
-  db_pass       = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_ROOTPASSWORD"]
+  db_pass       = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
   immich_domain = "immich.fullstack.pw"
 
 }
@@ -464,14 +466,6 @@ data "kubernetes_secret" "redis_credentials" {
   }
 }
 
-data "kubernetes_secret" "postgres_superuser" {
-  count = contains(local.workload, "harbor") ? 1 : 0
-
-  metadata {
-    name      = "postgres-superuser"
-    namespace = "default"
-  }
-}
 
 data "kubernetes_secret" "harbor_credentials" {
   count = contains(local.workload, "github_runner") ? 1 : 0
@@ -541,7 +535,7 @@ module "postgres_cnpg" {
   create_namespace = false
   create_cluster   = try(var.config[terraform.workspace].postgres_cnpg.crds_installed, false)
 
-  registry   = "registry.fullstack.pw"
+  registry   = "registry.toolz.fullstack.pw"
   repository = "library/cloudnative-postgres"
   pg_version = "15-latest"
 
@@ -656,7 +650,7 @@ module "authentik" {
 
   domain = var.config[terraform.workspace].authentik.domain
 
-  postgres_host        = "postgres-rw.default.svc.cluster.local"
+  postgres_host        = "postgres.fullstack.pw"
   postgres_name        = "authentik"
   postgres_user        = "postgres"
   postgres_secret_name = "postgres-superuser"
@@ -668,5 +662,5 @@ module "authentik" {
   authentik_secret_key = local.secrets_json["kv/cluster-secret-store/secrets/AUTHENTIK"]["AUTHENTIK_SECRET_KEY"]
   admin_password       = local.secrets_json["kv/cluster-secret-store/secrets/AUTHENTIK"]["AUTHENTIK_ADMIN_PASSWORD"]
 
-  depends_on = [module.postgres_cnpg, module.redis]
+  depends_on = [module.redis]
 }

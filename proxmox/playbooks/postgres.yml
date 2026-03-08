@@ -1,0 +1,334 @@
+---
+- name: PostgreSQL VM Management
+  hosts: postgres
+  become: true
+  gather_facts: yes
+  vars:
+    vault_addr: "https://vault.toolz.fullstack.pw"
+    pgvecto_rs_version: "0.3.0"
+    pg_version: "17"
+    pg_data_dir: "/var/lib/postgresql/{{ pg_version }}/main"
+    pg_conf_dir: "/etc/postgresql/{{ pg_version }}/main"
+    backup_dir: "/var/backups/postgres"
+    backup_keep_days: 7
+    databases:
+      - harbor
+      - gitea
+      - authentik
+      - immich
+      - registry
+      - teleport-backend
+      - teleport-audit
+
+  handlers:
+    - name: restart postgresql
+      systemd:
+        name: postgresql
+        state: restarted
+
+  tasks:
+    - name: Update apt cache and upgrade packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+        cache_valid_time: 3600
+      tags: [install]
+
+    - name: Install dependencies
+      apt:
+        name:
+          - curl
+          - ca-certificates
+          - gnupg
+          - software-properties-common
+          - acl
+        state: present
+      tags: [install]
+
+    - name: Add PostgreSQL apt signing key
+      get_url:
+        url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+        dest: /etc/apt/keyrings/postgresql.asc
+        mode: '0644'
+      tags: [install]
+
+    - name: Add PostgreSQL apt repository
+      apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/postgresql.asc] https://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main"
+        state: present
+        filename: pgdg
+      tags: [install]
+
+    - name: Install PostgreSQL {{ pg_version }} packages
+      apt:
+        name:
+          - "postgresql-{{ pg_version }}"
+          - "postgresql-client-{{ pg_version }}"
+          - "postgresql-{{ pg_version }}-wal2json"
+        state: present
+        update_cache: yes
+      tags: [install]
+
+    - name: Check if pgvecto-rs is already installed
+      command: dpkg-query -W -f='${Version}' "postgresql-{{ pg_version }}-pgvecto-rs"
+      register: pgvecto_installed
+      changed_when: false
+      failed_when: false
+      tags: [install, upgrade]
+
+    - name: Download pgvecto-rs deb packages
+      get_url:
+        url: "https://github.com/tensorchord/pgvecto.rs/releases/download/v{{ pgvecto_rs_version }}/vectors-pg{{ pg_version }}_{{ pgvecto_rs_version }}_amd64_{{ item }}.deb"
+        dest: "/tmp/vectors-pg{{ pg_version }}_{{ pgvecto_rs_version }}_amd64_{{ item }}.deb"
+        mode: '0644'
+      loop: [public, extensions, vectors]
+      when: pgvecto_installed.rc != 0 or pgvecto_rs_version not in pgvecto_installed.stdout
+      tags: [install, upgrade]
+
+    - name: Install pgvecto-rs
+      shell: "dpkg --install --force-downgrade /tmp/vectors-pg{{ pg_version }}_{{ pgvecto_rs_version }}_amd64_{{ item }}.deb"
+      loop: [public, extensions, vectors]
+      when: pgvecto_installed.rc != 0 or pgvecto_rs_version not in pgvecto_installed.stdout
+      notify: restart postgresql
+      tags: [install, upgrade]
+
+    - name: Create postgresql conf.d directory
+      file:
+        path: "{{ pg_conf_dir }}/conf.d"
+        state: directory
+        owner: postgres
+        group: postgres
+        mode: '0750'
+      tags: [install, config]
+
+    - name: Deploy custom postgresql configuration
+      copy:
+        content: |
+          shared_preload_libraries = 'vectors.so'
+          max_connections = 200
+          shared_buffers = 256MB
+          listen_addresses = '*'
+          wal_level = logical
+        dest: "{{ pg_conf_dir }}/conf.d/custom.conf"
+        owner: postgres
+        group: postgres
+        mode: '0640'
+      notify: restart postgresql
+      tags: [install, config]
+
+    - name: Ensure conf.d is included in postgresql.conf
+      lineinfile:
+        path: "{{ pg_conf_dir }}/postgresql.conf"
+        line: "include_dir = 'conf.d'"
+        state: present
+      notify: restart postgresql
+      tags: [install, config]
+
+    - name: Deploy pg_hba.conf
+      copy:
+        content: |
+          local   all             postgres                                peer
+          local   all             all                                     scram-sha-256
+          host    all             all             127.0.0.1/32            scram-sha-256
+          host    all             all             ::1/128                 scram-sha-256
+          host    all             all             192.168.0.0/16          scram-sha-256
+        dest: "{{ pg_conf_dir }}/pg_hba.conf"
+        owner: postgres
+        group: postgres
+        mode: '0640'
+      notify: restart postgresql
+      tags: [install, config]
+
+    - name: Flush handlers to apply config before service check
+      meta: flush_handlers
+      tags: [install, config]
+
+    - name: Enable and start postgresql service
+      systemd:
+        name: postgresql
+        enabled: true
+        state: started
+        daemon_reload: true
+      tags: [install, service]
+
+    - name: Wait for postgresql to be ready
+      wait_for:
+        port: 5432
+        host: localhost
+        delay: 2
+        timeout: 30
+      tags: [install, service]
+
+    - name: Set postgres superuser password
+      become_user: postgres
+      shell: |
+        psql -c "ALTER USER postgres WITH PASSWORD '{{ postgres_password }}';"
+      args:
+        executable: /bin/bash
+      tags: [install, databases]
+      when: postgres_password is defined and postgres_password != ""
+
+    - name: Create appuser
+      become_user: postgres
+      shell: |
+        psql -c "SELECT 1 FROM pg_roles WHERE rolname='appuser'" | grep -q 1 || \
+        psql -c "CREATE USER appuser WITH PASSWORD '{{ postgres_password }}';"
+      args:
+        executable: /bin/bash
+      tags: [install, databases]
+      when: postgres_password is defined and postgres_password != ""
+
+    - name: Create databases
+      become_user: postgres
+      shell: |
+        psql -lqt | cut -d \| -f 1 | grep -qw "{{ item }}" || \
+        psql -c "CREATE DATABASE \"{{ item }}\" OWNER postgres ENCODING 'UTF8' LC_COLLATE 'en_US.UTF-8' LC_CTYPE 'en_US.UTF-8' TEMPLATE template0;"
+      args:
+        executable: /bin/bash
+      loop: "{{ databases }}"
+      tags: [install, databases]
+
+    - name: Set search_path on databases to include vectors schema
+      become_user: postgres
+      shell: |
+        psql -c "ALTER DATABASE \"{{ item }}\" SET search_path TO \"\$user\", public, vectors;"
+      args:
+        executable: /bin/bash
+      loop: "{{ databases }}"
+      tags: [install, databases]
+
+    - name: Grant appuser privileges on databases
+      become_user: postgres
+      shell: |
+        psql -c "GRANT ALL PRIVILEGES ON DATABASE \"{{ item }}\" TO appuser;"
+      args:
+        executable: /bin/bash
+      loop: "{{ databases }}"
+      tags: [install, databases]
+
+    - name: Write connection info to Vault
+      uri:
+        url: "{{ vault_addr }}/v1/kv/data/cluster-secret-store/secrets/POSTGRES_VM"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+          Content-Type: application/json
+        body_format: json
+        body:
+          data:
+            POSTGRES_HOST: "{{ ansible_host | default('192.168.1.100') }}"
+            POSTGRES_PORT: "5432"
+            POSTGRES_USER: "postgres"
+            POSTGRES_PASSWORD: "{{ postgres_password }}"
+        status_code: [200, 204]
+      delegate_to: localhost
+      become: false
+      vars:
+        ansible_become: false
+      run_once: true
+      when: vault_token is defined and vault_token != "" and postgres_password is defined
+      tags: [install, vault]
+
+    - name: Upgrade postgresql packages
+      apt:
+        name:
+          - "postgresql-{{ pg_version }}"
+          - "postgresql-client-{{ pg_version }}"
+          - "postgresql-{{ pg_version }}-wal2json"
+        state: latest
+        update_cache: yes
+      notify: restart postgresql
+      tags: [upgrade]
+
+    - name: Create backup directory
+      file:
+        path: "{{ backup_dir }}"
+        state: directory
+        owner: postgres
+        group: postgres
+        mode: '0750'
+      tags: [install, backup]
+
+    - name: Run pg_dumpall backup
+      become_user: postgres
+      shell: |
+        pg_dumpall | gzip > {{ backup_dir }}/pgdumpall_$(date +%Y-%m-%d).sql.gz
+      args:
+        executable: /bin/bash
+      register: backup_result
+      tags: [backup]
+
+    - name: Remove backups older than {{ backup_keep_days }} days
+      find:
+        paths: "{{ backup_dir }}"
+        patterns: "pgdumpall_*.sql.gz"
+        age: "{{ backup_keep_days }}d"
+        age_stamp: mtime
+      register: old_backups
+      tags: [backup]
+
+    - name: Delete old backups
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ old_backups.files }}"
+      tags: [backup]
+
+    - name: Report backup location and size
+      become_user: postgres
+      shell: "ls -lh {{ backup_dir }}/pgdumpall_$(date +%Y-%m-%d).sql.gz"
+      register: backup_info
+      changed_when: false
+      tags: [backup]
+
+    - name: Show backup info
+      debug:
+        msg: "{{ backup_info.stdout }}"
+      tags: [backup]
+
+    - name: Check postgresql service status
+      command: systemctl status postgresql
+      register: pg_service_status
+      changed_when: false
+      failed_when: false
+      tags: [status]
+
+    - name: Report service status
+      debug:
+        msg: "{{ pg_service_status.stdout_lines }}"
+      tags: [status]
+
+    - name: Report PostgreSQL version
+      become_user: postgres
+      command: psql -c "SELECT version();"
+      register: pg_version_output
+      changed_when: false
+      tags: [status]
+
+    - name: Show version
+      debug:
+        msg: "{{ pg_version_output.stdout_lines }}"
+      tags: [status]
+
+    - name: Report database sizes
+      become_user: postgres
+      command: psql -c "SELECT datname, pg_size_pretty(pg_database_size(datname)) AS size FROM pg_database ORDER BY pg_database_size(datname) DESC;"
+      register: pg_db_sizes
+      changed_when: false
+      tags: [status]
+
+    - name: Show database sizes
+      debug:
+        msg: "{{ pg_db_sizes.stdout_lines }}"
+      tags: [status]
+
+    - name: Report data directory disk usage
+      command: "du -sh {{ pg_data_dir }}"
+      register: pg_disk_usage
+      changed_when: false
+      tags: [status]
+
+    - name: Show disk usage
+      debug:
+        msg: "{{ pg_disk_usage.stdout }}"
+      tags: [status]

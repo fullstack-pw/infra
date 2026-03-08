@@ -81,7 +81,7 @@ Production-grade infrastructure-as-code repository demonstrating enterprise DevO
 
 Blue-Green deployment strategy with automated E2E testing and production promotion:
 
-1. **Build Phase**: GitHub Actions ([build.yml](.github/workflows/build.yml)) builds and pushes container image to Harbor registry (`registry.fullstack.pw`)
+1. **Build Phase**: GitHub Actions ([build.yml](.github/workflows/build.yml)) builds and pushes container image to Harbor registry (`registry.toolz.fullstack.pw`)
 2. **Dev Deployment**: Pipeline updates dev kustomization with new image tag, ArgoCD syncs to dev cluster
 3. **E2E Testing**: Argo Rollouts triggers prePromotionAnalysis running Cypress tests against dev environment
 4. **Auto-Promotion**: On test success, postPromotionAnalysis job automatically promotes to prod by updating prod kustomization
@@ -224,7 +224,7 @@ Edge collectors on all workload clusters:
      - Phase 2: Base operators with CRDs (ClusterIssuer, DNSEndpoint, ExternalSecret)
      - Phase 3: Apps without postgres CRDs
      - Phase 4: Apps with postgres CRDs
-   - Build and push Docker image (`registry.fullstack.pw/library/<app>:pr-<number>`)
+   - Build and push Docker image (`registry.toolz.fullstack.pw/library/<app>:pr-<number>`)
    - Deploy app with `kubectl apply -k kustomize/overlays/ephemeral/`
    - Run Cypress E2E tests in container
    - Post PR comment with environment URL
@@ -279,7 +279,7 @@ This method provisioned all current clusters but is being phased out in favor of
 OpenTofu automatically deploys platform services to clusters based on workspace configuration in [clusters/variables.tf](clusters/variables.tf):
 
 **Core Infrastructure** (most clusters):
-- cert-manager for automated TLS with Let's Encrypt
+- cert-manager for automated TLS (self-signed or Let's Encrypt via ACME)
 - External-DNS for dynamic DNS record management (Cloudflare)
 - External Secrets for Vault → Kubernetes secret synchronization
 - Metrics Server for resource metrics
@@ -372,9 +372,9 @@ Git (SOPS encrypted) → CI/CD (decrypt) → Vault (runtime) → External Secret
 ### Certificate Management
 
 **Automated TLS**
-- cert-manager with Let's Encrypt ClusterIssuer (`letsencrypt-prod`)
-- Cloudflare DNS-01 challenge for wildcard certificate support
-- Automatic renewal before expiration
+- cert-manager with configurable ClusterIssuer (`letsencrypt-prod`)
+- Supports self-signed mode (`issuer_type = "selfsigned"`) or ACME/Let's Encrypt (`issuer_type = "acme"`)
+- ACME mode uses Cloudflare DNS-01 challenge for wildcard certificate support
 - Istio Gateway integration for TLS termination
 - Certificate validation monitoring
 - Environment-specific gateway DNS names configured via OpenTofu variables:
@@ -541,7 +541,7 @@ infra/
 - TruffleHog (secret leak detection)
 - Falco (runtime security monitoring via eBPF)
 - Istio mTLS (service mesh security)
-- cert-manager with Let's Encrypt
+- cert-manager (self-signed/Let's Encrypt)
 - Teleport agent (secure access)
 - Authentik (identity provider)
 

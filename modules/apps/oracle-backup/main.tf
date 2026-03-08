@@ -86,7 +86,8 @@ resource "kubectl_manifest" "postgres_backup_cronjob" {
     memory_limit                  = each.value.memory_limit
     cpu_request                   = each.value.cpu_request
     cpu_limit                     = each.value.cpu_limit
-    postgres_secret_name          = "${each.key}-superuser"
+    postgres_secret_name          = each.value.secret_name != "" ? each.value.secret_name : "${each.key}-superuser"
+    postgres_secret_key           = each.value.secret_key
   })
 
   wait              = true

@@ -158,7 +158,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: ${postgres_secret_name}
-                  key: password
+                  key: ${postgres_secret_key}
 %{ if pg_ssl_enabled }
             - name: PG_SSL_CA
               valueFrom:

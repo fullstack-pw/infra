@@ -43,7 +43,7 @@ variable "runner_name" {
 variable "runner_labels" {
   description = "Labels (tags) for the runner"
   type        = string
-  default     = "ubuntu-latest:docker://registry.fullstack.pw/library/runner-base:latest,self-hosted:docker://registry.fullstack.pw/library/runner-base:latest"
+  default     = "ubuntu-latest:docker://registry.toolz.fullstack.pw/library/runner-base:latest,self-hosted:docker://registry.toolz.fullstack.pw/library/runner-base:latest"
 }
 
 variable "replicas" {

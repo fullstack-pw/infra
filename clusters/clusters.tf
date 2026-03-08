@@ -27,9 +27,6 @@ variable "workload" {
       "vault",
       "argocd",
       "teleport-agent",
-      "cloudnative-pg-operator",
-      "postgres-cnpg",
-      "oracle_backup",
       "falco",
       "kubevirt",
       "longhorn",
@@ -57,10 +54,7 @@ variable "workload" {
       "istio",
       "argocd",
       "teleport-agent",
-      "cloudnative-pg-operator",
-      "postgres-cnpg",
       "observability-box",
-      "oracle_backup",
       #"freqtrade"
     ]
     prod = [
@@ -73,10 +67,7 @@ variable "workload" {
       "istio",
       "argocd",
       "teleport-agent",
-      "cloudnative-pg-operator",
-      "postgres-cnpg",
       "observability-box",
-      "oracle_backup"
     ]
   }
 }
@@ -96,19 +87,13 @@ variable "config" {
           "harbor" = "http://harbor-portal.harbor.svc.cluster.local"
           "vault"  = "http://vault.vault.svc.cluster.local:8200"
         }
-        databases = {
-          "tools-postgres" = {
-            uri     = "postgres-rw.default.svc.cluster.local:5432"
-            ca_cert = "TOOLS_POSTGRES_CA"
-          }
-        }
-        roles = "kube,app,db"
+        roles = "kube,app"
       }
       harbor = {
-        harbor_domain      = "registry.fullstack.pw"
+        harbor_domain      = "registry.toolz.fullstack.pw"
         ingress_class_name = "traefik"
         ingress_annotations = {
-          "external-dns.alpha.kubernetes.io/hostname"   = "registry.fullstack.pw"
+          "external-dns.alpha.kubernetes.io/hostname"   = "registry.toolz.fullstack.pw"
           "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
           "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
           "nginx.org/client-max-body-size"              = "0"
@@ -117,30 +102,6 @@ variable "config" {
       prometheus_namespaces     = []
       prometheus_memory_limit   = "2048Mi"
       prometheus_memory_request = "512Mi"
-      postgres_cnpg = {
-        enable_superuser_access = true
-        crds_installed          = true
-        managed_roles = [
-          { name = "teleport", login = true, replication = true, password_secret_name = "teleport-postgres-password" }, # pragma: allowlist secret
-          { name = "root", login = true, replication = true }
-
-        ]
-        databases = [
-          { name = "registry", owner = "app" },
-          { name = "teleport-backend", owner = "app", locale_collate = "C", locale_ctype = "C" },
-          { name = "teleport-audit", owner = "app", locale_collate = "C", locale_ctype = "C" },
-          { name = "authentik", owner = "app" },
-          { name = "gitea", owner = "app" },
-        ]
-
-        persistence_size               = "10Gi"
-        ingress_host                   = "tools.postgres.fullstack.pw"
-        ingress_class_name             = "traefik"
-        use_istio                      = false
-        export_credentials_secret_name = "tools-postgres-credentials"                     # pragma: allowlist secret
-        vault_ca_secret_path           = "cluster-secret-store/secrets/TOOLS_POSTGRES_CA" # pragma: allowlist secret
-        vault_ca_secret_key            = "TOOLS_POSTGRES_CA"                              # pragma: allowlist secret
-      }
       redis = {
         ingress_annotations = {
           "external-dns.alpha.kubernetes.io/hostname"         = "redis.fullstack.pw"
@@ -159,13 +120,15 @@ variable "config" {
         postgres_backups = {
           "postgres" = {
             namespace   = "default"
-            host        = "postgres-rw.default.svc.cluster.local"
+            host        = "postgres.fullstack.pw"
             port        = 5432
             database    = "postgres"
             username    = "postgres"
             ssl_enabled = false
             schedule    = "0 3 * * *"
             backup_path = "postgres-backup/tools"
+            secret_name = "cluster-secrets"       #pragma: allowlist secret
+            secret_key  = "POSTGRES_ROOTPASSWORD" #pragma: allowlist secret
           }
         }
       }
@@ -473,13 +436,8 @@ variable "config" {
           "minio"    = "http://minio-console.default.svc.cluster.local:9001"
           "longhorn" = "http://longhorn-frontend.longhorn-system.svc.cluster.local"
         }
-        databases = {
-          "toolz-postgres" = {
-            uri     = "postgres-rw.default.svc.cluster.local:5432"
-            ca_cert = "TOOLZ_POSTGRES_CA"
-          }
-        }
-        roles = "kube,app,db"
+        databases = {}
+        roles     = "kube,app"
       }
       longhorn = {
         ingress_host       = "longhorn.toolz.fullstack.pw"
@@ -523,11 +481,6 @@ variable "config" {
       redis_memory_limit   = "128Mi"
       redis_cpu_limit      = "200m"
 
-      postgres_memory_request = "512Mi"
-      postgres_cpu_request    = "250m"
-      postgres_memory_limit   = "1Gi"
-      postgres_cpu_limit      = "500m"
-
       minio_memory_request = "128Mi"
       minio_cpu_request    = "50m"
       minio_memory_limit   = "256Mi"
@@ -535,48 +488,6 @@ variable "config" {
 
       prometheus_memory_request = "256Mi"
       prometheus_memory_limit   = "512Mi"
-      postgres_cnpg = {
-        enable_superuser_access = true
-        crds_installed          = true
-        managed_roles = [
-          { name = "teleport", login = true, replication = true, password_secret_name = "teleport-postgres-password" }, # pragma: allowlist secret
-          { name = "root", login = true, replication = true }
-        ]
-        databases = [
-          { name = "registry", owner = "app" },
-          { name = "teleport-backend", owner = "app", locale_collate = "C", locale_ctype = "C" },
-          { name = "teleport-audit", owner = "app", locale_collate = "C", locale_ctype = "C" },
-          { name = "immich", owner = "app" },
-        ]
-
-        persistence_size               = "10Gi"
-        ingress_enabled                = false
-        ingress_host                   = "postgres.toolz.fullstack.pw"
-        ingress_class_name             = "nginx"
-        use_istio                      = false
-        create_lb_service              = true
-        generate_password              = false
-        export_credentials_secret_name = "toolz-postgres-credentials"                     # pragma: allowlist secret
-        vault_ca_secret_path           = "cluster-secret-store/secrets/TOOLZ_POSTGRES_CA" # pragma: allowlist secret
-        vault_ca_secret_key            = "TOOLZ_POSTGRES_CA"                              # pragma: allowlist secret
-      }
-
-      oracle_backup = {
-        enable_s3_backup       = false
-        enable_postgres_backup = false
-        postgres_backups = {
-          "postgres" = {
-            namespace   = "default"
-            host        = "postgres-rw.default.svc.cluster.local"
-            port        = 5432
-            database    = "postgres"
-            username    = "postgres"
-            ssl_enabled = false
-            schedule    = "0 3 * * *"
-            backup_path = "postgres-backup/tools"
-          }
-        }
-      }
     }
     observability = {
       kubernetes_context = "k8s-observability"
@@ -594,26 +505,16 @@ variable "config" {
       argocd_ingress_enabled = false
       argocd_domain          = "dev.argocd.fullstack.pw"
       gateway_dns_names = [
-        "dev.ascii.fullstack.pw",
-        "dev.enqueuer.fullstack.pw",
-        "dev.memorizer.fullstack.pw",
-        "dev.writer.fullstack.pw",
         "dev.api.cks.fullstack.pw",
         "dev.cks.fullstack.pw",
         "dev.argocd.fullstack.pw",
       ]
       teleport = {
         apps = {
-          "dev-ascii" = "http://ascii-frontend.default.svc.cluster.local"
-          "dev-cks"   = "http://cks-frontend.default.svc.cluster.local:3000"
+          "dev-cks" = "http://cks-frontend.default.svc.cluster.local:3000"
         }
-        roles = "kube,app,db"
-        databases = {
-          "dev-postgres" = {
-            uri     = "postgres-rw.default.svc.cluster.local:5432"
-            ca_cert = "DEV_POSTGRES_CA"
-          }
-        }
+        databases = {}
+        roles     = "kube,app"
       }
       prometheus_namespaces     = []
       prometheus_memory_limit   = "1024Mi"
@@ -621,45 +522,6 @@ variable "config" {
       prometheus_storage_size   = "2Gi"
       metallb_create_ip_pool    = true
       metallb_ip_pool_addresses = ["192.168.1.60-192.168.1.69"]
-      freqtrade = {
-        domain          = "freqtrade.dev.fullstack.pw"
-        dry_run         = true
-        stake_amount    = 50
-        max_open_trades = 5
-        freqai          = true
-      }
-      oracle_backup = {
-        enable_s3_backup       = false
-        enable_postgres_backup = true
-
-        postgres_backups = {
-          "postgres" = {
-            namespace   = "default"
-            host        = "postgres-rw.default.svc.cluster.local"
-            port        = 5432
-            database    = "postgres"
-            username    = "postgres"
-            ssl_enabled = false
-            schedule    = "0 4 * * *"
-            backup_path = "postgres-backup/dev"
-          }
-        }
-      }
-      postgres_cnpg = {
-        enable_superuser_access = true
-        crds_installed          = true
-        managed_roles = [
-          { name = "root", login = true, replication = true }
-        ]
-        databases = []
-
-        persistence_size               = "1Gi"
-        ingress_host                   = "dev.postgres.fullstack.pw"
-        use_istio                      = true
-        export_credentials_secret_name = "dev-postgres-credentials"                     # pragma: allowlist secret
-        vault_ca_secret_path           = "cluster-secret-store/secrets/DEV_POSTGRES_CA" # pragma: allowlist secret
-        vault_ca_secret_key            = "DEV_POSTGRES_CA"                              # pragma: allowlist secret
-      }
     }
     prod = {
       kubernetes_context     = "prod"
@@ -669,26 +531,16 @@ variable "config" {
       argocd_ingress_enabled = false
       argocd_domain          = "argocd.fullstack.pw"
       gateway_dns_names = [
-        "ascii.fullstack.pw",
-        "enqueuer.fullstack.pw",
-        "memorizer.fullstack.pw",
-        "writer.fullstack.pw",
         "api.cks.fullstack.pw",
         "cks.fullstack.pw",
         "argocd.fullstack.pw",
       ]
       teleport = {
         apps = {
-          "ascii" = "http://ascii-frontend.default.svc.cluster.local"
-          "cks"   = "http://cks-frontend.default.svc.cluster.local:3000"
+          "cks" = "http://cks-frontend.default.svc.cluster.local:3000"
         }
-        roles = "kube,app,db"
-        databases = {
-          "postgres" = {
-            uri     = "postgres-rw.default.svc.cluster.local:5432"
-            ca_cert = "POSTGRES_CA"
-          }
-        }
+        databases = {}
+        roles     = "kube,app"
       }
       prometheus_namespaces     = []
       prometheus_memory_limit   = "1024Mi"
@@ -696,38 +548,6 @@ variable "config" {
       prometheus_storage_size   = "2Gi"
       metallb_create_ip_pool    = true
       metallb_ip_pool_addresses = ["192.168.1.81-192.168.1.90"]
-      oracle_backup = {
-        enable_s3_backup       = false
-        enable_postgres_backup = true
-
-        postgres_backups = {
-          "postgres" = {
-            namespace   = "default"
-            host        = "postgres-rw.default.svc.cluster.local"
-            port        = 5432
-            database    = "postgres"
-            username    = "postgres"
-            ssl_enabled = false
-            schedule    = "0 4 * * *"
-            backup_path = "postgres-backup/prod"
-          }
-        }
-      }
-      postgres_cnpg = {
-        crds_installed          = true
-        enable_superuser_access = true
-        managed_roles = [
-          { name = "root", login = true, replication = true }
-        ]
-        databases = []
-
-        persistence_size               = "1Gi"
-        ingress_host                   = "postgres.fullstack.pw"
-        use_istio                      = true
-        export_credentials_secret_name = "postgres-credentials"                     # pragma: allowlist secret
-        vault_ca_secret_path           = "cluster-secret-store/secrets/POSTGRES_CA" # pragma: allowlist secret
-        vault_ca_secret_key            = "POSTGRES_CA"                              # pragma: allowlist secret
-      }
     }
   }
 }
