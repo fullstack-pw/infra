@@ -69,7 +69,7 @@ Utilities:
 
 Examples:
   make plan ENV=dev             - Plan changes for dev environment
-  make apply ENV=sandboxy       - Apply changes to sandboxy environment
+  make apply ENV=toolz          - Apply changes to toolz environment
   make init-apply               - Apply init changes
 endef
 export HELP_MESSAGE

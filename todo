@@ -2,7 +2,7 @@
 * build remote images to harbor to not loose like bitnami event
 * when budget allows, buy new node and install OpenStack Sunbeam (also known as MicroStack)
 * create pipeline and playbook to CRUD proxmox vm templates to cluster-api using image builder
-* migrate teleport, observability and sandboxy to cluster-api
+* migrate teleport and observability to cluster-api
 * minimize runners images
 * enable pod to pod encryption
 * prevent pods escalation

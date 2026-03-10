@@ -123,7 +123,7 @@ generators:
 **Application Repositories**:
 - [cks-backend](https://github.com/homelabz-eu/cks-backend) - Backend APIs with Kustomize overlays
 - [cks-frontend](https://github.com/homelabz-eu/cks-frontend) - Web UI with Kustomize overlays
-- [cks-terminal-mgmt](https://github.com/homelabz-eu/cks-terminal-mgmt) - Terminal management microservice (sandboxy)
+- [cks-terminal-mgmt](https://github.com/homelabz-eu/cks-terminal-mgmt) - Terminal management microservice (toolz)
 
 Key components:
 - Per-app AnalysisTemplates for Cypress test execution (e.g., `cypress-tests-cks-backend`)
@@ -256,7 +256,7 @@ Edge collectors on all workload clusters:
 
 ### Legacy Proxmox/Ansible Provisioning
 
-The `[ansible PLAYBOOK]` pattern remains supported for existing K3s clusters (clustermgmt, home, observability, sandboxy):
+The `[ansible PLAYBOOK]` pattern remains supported for existing K3s clusters (clustermgmt, home, observability):
 
 ```bash
 git commit -m "feat(proxmox): add k8s-observability VM [ansible k8s-observability]"
@@ -300,7 +300,7 @@ OpenTofu automatically deploys platform services to clusters based on workspace 
 
 **Storage**:
 - Local Path Provisioner for dynamic local storage (dev, prod)
-- Longhorn distributed storage (sandboxy for snapshot capability)
+- Longhorn distributed storage (toolz for snapshot capability)
 
 **Data Services** (toolz cluster):
 - CloudNativePG for PostgreSQL
@@ -333,7 +333,7 @@ Configuration is workspace-specific via `workload` variable - modules only deplo
 ### High Availability
 
 **Multi-Cluster Architecture**
-- 7 environment-isolated Kubernetes clusters (dev, prod, clustermgmt, toolz, home, sandboxy, observability)
+- 6 environment-isolated Kubernetes clusters (dev, prod, clustermgmt, toolz, home, observability)
 - Production workloads distributed across multiple replicas via Kustomize overlays
 - HAProxy load balancer for vanilla Kubernetes traffic distribution
 - MetalLB for LoadBalancer service type support on bare metal
@@ -462,7 +462,7 @@ infra/
 │   └── scripts/         # Automation scripts (Talos, kubeconfig management)
 ├── argocd-apps/         # GitOps application manifests
 │   ├── cks-apps-applicationset.yaml   # CKS platform apps (matrix + cluster generator)
-│   ├── cks-terminal-mgmt-sandboxy.yaml # Standalone sandboxy application
+│   ├── cks-terminal-mgmt-toolz.yaml    # Standalone toolz application
 │   └── clusters/        # Cluster registration and repo secrets
 ├── secrets/             # SOPS-encrypted secrets (age encryption)
 │   └── common/cluster-secret-store/secrets/  # Cluster-wide secrets synced via External Secrets
@@ -485,12 +485,11 @@ infra/
 | Cluster | Type | Provisioning | Purpose | Node(s) | Key Workloads |
 |---------|------|--------------|---------|---------|---------------|
 | clustermgmt | K3s | Legacy Ansible | Cluster API management cluster (management plane only) | k8s-tools (single node, NODE02) | Cluster API operator, Cluster Autoscaler |
-| toolz | RKE2 | Cluster API | Platform services & workloads cluster | 1 CP + 2 workers (NODE03) | CloudNativePG, Redis, NATS, CI/CD runners (GitHub/GitLab), Vault, Harbor, MinIO, ArgoCD, Falco |
+| toolz | RKE2 | Cluster API | Platform services, workloads & CKS platform | 1 CP + 2 workers (NODE03) | CloudNativePG, Redis, NATS, CI/CD runners (GitHub/GitLab), Vault, Harbor, MinIO, ArgoCD, Falco, KubeVirt, Longhorn, cks-terminal-mgmt |
 | dev | Talos | Cluster API | Development environment | 1 CP + 2 workers | Development services, Istio service mesh, ArgoCD |
 | prod | kubeadm | Cluster API | Production environment | 1 CP + 2 workers | Production services, Istio service mesh, ArgoCD |
 | home | K3s | Legacy Ansible | Home automation | k8s-home (single node) | Immich photo management, External Secrets |
 | observability | K3s | Legacy Ansible | Central monitoring hub | k8s-observability (single node) | Prometheus (kube-prometheus-stack), Grafana, Jaeger, Loki, OpenTelemetry Collector |
-| sandboxy | K3s | Legacy Ansible | CKS (Certified Kubernetes Security) platform | k8s-sandbox (single node) | KubeVirt for VM virtualization, Longhorn for snapshot-based storage, cks-terminal-mgmt for browser-based terminal access via ttyd, maintains pool of standby VMs for instant CKS scenario provisioning with rapid reset |
 
 ## Technology Stack
 
@@ -655,9 +654,9 @@ module "new_module" {
 ```
 4. Run `make plan ENV=dev` to preview, then `make apply ENV=dev` to deploy
 
-### What is sandboxy cluster used for?
+### What is the CKS platform?
 
-The sandboxy cluster serves mostly to **CKS (Certified Kubernetes Security) training platform**:
+The **CKS (Certified Kubernetes Security) training platform** runs on the toolz cluster:
 
 **Architecture**:
 - KubeVirt for VM virtualization on Kubernetes
@@ -675,7 +674,7 @@ The sandboxy cluster serves mostly to **CKS (Certified Kubernetes Security) trai
 8. Rapid reset enables high-throughput scenario execution
 
 **Terminal Access**:
-- [cks-terminal-mgmt](https://github.com/homelabz-eu/cks-terminal-mgmt) runs on sandboxy alongside KubeVirt VMs
+- [cks-terminal-mgmt](https://github.com/homelabz-eu/cks-terminal-mgmt) runs on toolz alongside KubeVirt VMs
 - Spawns ttyd processes on-demand for SSH connections to VMs
 - Frontend embeds terminals via iframe with multi-tab support (multiple terminals per VM)
 

@@ -1,6 +1,6 @@
 ---
 - name: Prepare Node for Longhorn Installation
-  hosts: "{{ target_hosts | default('sandboxy') }}"
+  hosts: "{{ target_hosts | default('toolz') }}"
   become: true
   gather_facts: yes
 

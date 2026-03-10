@@ -46,10 +46,10 @@ TBD
 | tools | K3s | Legacy Ansible | Platform infrastructure & Cluster API management cluster | k8s-tools (single node) | Cluster API operator, CloudNativePG, Redis, NATS, Vault, Harbor, MinIO, CI/CD runners (GitHub/GitLab), ArgoCD, Falco |
 | home | K3s | Legacy Ansible | Home automation | k8s-home (single node) | Immich photo management, External Secrets |
 | observability | K3s | Legacy Ansible | Central telemetry hub | k8s-observability (single node) | Prometheus, Grafana, Jaeger, Loki, OpenTelemetry Collector |
-| sandboxy | K3s | Legacy Ansible | CKS training platform | k8s-sandbox (single node) | KubeVirt for VM virtualization, Longhorn for snapshot-based storage, cks-terminal-mgmt for browser-based terminal access, pool of standby VMs for instant CKS scenario provisioning |
+| toolz | RKE2 | Cluster API | Platform workloads + CKS platform | 1 CP + 2 workers | Vault, Harbor, ArgoCD, PostgreSQL, runners, KubeVirt, Longhorn, cks-terminal-mgmt |
 | pr-* (ephemeral) | K3s | Cluster API | Temporary PR test environments | Single node per PR (dynamic, 5 max concurrent) | cert-manager, external-dns, external-secrets, CloudNativePG, application under test |
 
-**Note**: dev and prod clusters are managed by Cluster API operator running on tools cluster. Talos provides immutable infrastructure, while kubeadm offers standard Kubernetes. Legacy clusters (tools, home, observability, sandboxy) provisioned via Proxmox/Ansible workflow. Ephemeral clusters are automatically created per PR in application repositories and destroyed when PR closes.
+**Note**: dev and prod clusters are managed by Cluster API operator running on tools cluster. Talos provides immutable infrastructure, while kubeadm offers standard Kubernetes. Legacy clusters (clustermgmt, home, observability) provisioned via Proxmox/Ansible workflow. Ephemeral clusters are automatically created per PR in application repositories and destroyed when PR closes.
 
 ## Repository Organization
 
@@ -84,7 +84,7 @@ TBD
 - Admin dashboard for cluster pool and session management
 
 **[cks-terminal-mgmt](https://github.com/homelabz-eu/cks-terminal-mgmt)**: Terminal management microservice
-- Go-based service running on sandboxy cluster alongside KubeVirt VMs
+- Go-based service running on toolz cluster alongside KubeVirt VMs
 - Spawns ttyd processes on-demand for SSH connections to VMs
 - Browser-based terminal access via iframe with multi-tab support
 
@@ -110,7 +110,7 @@ TBD
 | Istio | Service mesh for dev cluster | mTLS, traffic management, observability | Gateway at dev cluster |
 | NGINX Ingress | Ingress controller for other clusters | HTTP/HTTPS routing with TLS termination | Multiple clusters |
 | MetalLB | LoadBalancer for bare metal | Layer 2 mode for service exposure | Vanilla K8s clusters |
-| KubeVirt | Virtual machine orchestration | Nested VMs on Kubernetes | sandboxy cluster |
+| KubeVirt | Virtual machine orchestration | Nested VMs on Kubernetes | toolz cluster |
 
 ### Storage & Registry Infrastructure
 
@@ -118,7 +118,7 @@ TBD
 |---------|-----------|---------|-----|
 | MinIO | S3-compatible object storage | Terraform state backend, backups | [s3.toolz.homelabz.eu](https://s3.toolz.homelabz.eu) |
 | Harbor | Enterprise container registry | Multi-tenant registry with security scanning, image replication | [registry.toolz.homelabz.eu](https://registry.toolz.homelabz.eu) |
-| Longhorn | Distributed block storage | Persistent volumes for KubeVirt VMs on sandboxy cluster | [longhorn.homelabz.eu](https://longhorn.homelabz.eu) |
+| Longhorn | Distributed block storage | Persistent volumes for KubeVirt VMs on toolz cluster | [longhorn.toolz.homelabz.eu](https://longhorn.toolz.homelabz.eu) |
 
 ### Secrets & Security
 
