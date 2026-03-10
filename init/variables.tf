@@ -1,6 +1,60 @@
-// proxmox/variables.tf
+# GitHub
+variable "github_token" {
+  description = "GitHub personal access token with admin permissions"
+  type        = string
+  sensitive   = true
+}
 
-# Required variables
+variable "github_org" {
+  description = "GitHub organization name"
+  type        = string
+  default     = "homelabz-eu"
+}
+
+variable "repositories" {
+  description = "GitHub repositories to manage"
+  type = map(object({
+    description = string
+    visibility  = optional(string, "public")
+  }))
+  default = {
+    infra = {
+      description = "Infrastructure as Code for homelabz.eu homelab"
+    }
+    pipelines = {
+      description = "Reusable CI/CD workflows"
+    }
+    cks-backend = {
+      description = "CKS training platform backend"
+    }
+    cks-frontend = {
+      description = "CKS training platform frontend"
+    }
+    cks-terminal-mgmt = {
+      description = "Terminal management microservice"
+    }
+  }
+}
+
+# Cloudflare
+variable "cloudflare_api_token" {
+  description = "Cloudflare API token"
+  type        = string
+  sensitive   = true
+}
+
+variable "cloudflare_account_id" {
+  description = "Cloudflare account ID"
+  type        = string
+}
+
+variable "cloudflare_zone_name" {
+  description = "Cloudflare DNS zone name"
+  type        = string
+  default     = "homelabz.eu"
+}
+
+# Proxmox
 variable "PROXMOX_PASSWORD" {
   description = "Password for Proxmox API authentication"
   type        = string

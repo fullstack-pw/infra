@@ -19,7 +19,7 @@ variable "github_token" {
 variable "github_owner" {
   description = "GitHub organization or user name"
   type        = string
-  default     = "fullstack-pw"
+  default     = "homelabz-eu"
 }
 
 variable "controller_chart_version" {
@@ -43,7 +43,7 @@ variable "runner_name" {
 variable "runner_image" {
   description = "Docker image for GitHub runner"
   type        = string
-  default     = "registry.toolz.fullstack.pw/library/github-runner:latest"
+  default     = "registry.toolz.homelabz.eu/library/github-runner:latest"
 }
 
 variable "registry_server" {

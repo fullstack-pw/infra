@@ -17,7 +17,7 @@ echo "Repository: $REPOSITORY"
 echo ""
 
 # Setup Vault credentials
-export VAULT_ADDR=https://vault.toolz.fullstack.pw
+export VAULT_ADDR=https://vault.toolz.homelabz.eu
 if [ -z "${VAULT_TOKEN:-}" ]; then
     echo "Reading VAULT_TOKEN from clusters/tmp/common_secrets.json..."
     export VAULT_TOKEN=$(jq -r '."kv/cluster-secret-store/secrets/VAULT_TOKEN".VAULT_TOKEN' clusters/tmp/common_secrets.json)
@@ -152,7 +152,7 @@ echo ""
 
 # Step 12: Install Phase 2 resources
 echo "Step 12: Installing Phase 2 resources..."
-DNS_NAME="pr-${PR_NUMBER}-${REPOSITORY}.ephemeral.fullstack.pw"
+DNS_NAME="pr-${PR_NUMBER}-${REPOSITORY}.ephemeral.homelabz.eu"
 export DNS_NAME
 
 # Apply ClusterIssuer

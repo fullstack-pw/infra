@@ -1,4 +1,4 @@
-# fullstack.pw Infrastructure
+# homelabz.eu Infrastructure
 
 Production-grade infrastructure-as-code repository demonstrating enterprise DevOps practices, GitOps workflows, and cloud-native architectures implemented in a homelab environment.
 
@@ -8,7 +8,7 @@ Production-grade infrastructure-as-code repository demonstrating enterprise DevO
 
 **OpenTofu-Driven Infrastructure**
 - Modular two-tier architecture: base modules and application modules promoting composability and reusability
-- S3-compatible remote state backend ([s3.toolz.fullstack.pw](https://s3.toolz.fullstack.pw)) with workspace isolation per environment
+- S3-compatible remote state backend ([s3.toolz.homelabz.eu](https://s3.toolz.homelabz.eu)) with workspace isolation per environment
 - Automated state backup to Oracle Cloud Object Storage via CronJob for disaster recovery
 - YAML-driven VM provisioning using dynamic `for_each` loops for declarative infrastructure definitions
 
@@ -81,7 +81,7 @@ Production-grade infrastructure-as-code repository demonstrating enterprise DevO
 
 Blue-Green deployment strategy with automated E2E testing and production promotion:
 
-1. **Build Phase**: GitHub Actions ([build.yml](.github/workflows/build.yml)) builds and pushes container image to Harbor registry (`registry.toolz.fullstack.pw`)
+1. **Build Phase**: GitHub Actions ([build.yml](.github/workflows/build.yml)) builds and pushes container image to Harbor registry (`registry.toolz.homelabz.eu`)
 2. **Dev Deployment**: Pipeline updates dev kustomization with new image tag, ArgoCD syncs to dev cluster
 3. **E2E Testing**: Argo Rollouts triggers prePromotionAnalysis running Cypress tests against dev environment
 4. **Auto-Promotion**: On test success, postPromotionAnalysis job automatically promotes to prod by updating prod kustomization
@@ -102,9 +102,9 @@ generators:
         - list:  # Applications
             elements:
               - app: cks-backend
-                repoURL: https://github.com/fullstack-pw/cks-backend
+                repoURL: https://github.com/homelabz-eu/cks-backend
               - app: cks-frontend
-                repoURL: https://github.com/fullstack-pw/cks-frontend
+                repoURL: https://github.com/homelabz-eu/cks-frontend
         - clusters:  # Environments resolved from registered clusters
             selector:
               matchExpressions:
@@ -121,9 +121,9 @@ generators:
 - Retry policy: 5 attempts with exponential backoff
 
 **Application Repositories**:
-- [cks-backend](https://github.com/fullstack-pw/cks-backend) - Backend APIs with Kustomize overlays
-- [cks-frontend](https://github.com/fullstack-pw/cks-frontend) - Web UI with Kustomize overlays
-- [cks-terminal-mgmt](https://github.com/fullstack-pw/cks-terminal-mgmt) - Terminal management microservice (sandboxy)
+- [cks-backend](https://github.com/homelabz-eu/cks-backend) - Backend APIs with Kustomize overlays
+- [cks-frontend](https://github.com/homelabz-eu/cks-frontend) - Web UI with Kustomize overlays
+- [cks-terminal-mgmt](https://github.com/homelabz-eu/cks-terminal-mgmt) - Terminal management microservice (sandboxy)
 
 Key components:
 - Per-app AnalysisTemplates for Cypress test execution (e.g., `cypress-tests-cks-backend`)
@@ -208,10 +208,10 @@ Edge collectors on all workload clusters:
 - **Cluster Provisioning**: K3s clusters via Cluster API on clustermgmt cluster
 - **Infrastructure**: OpenTofu with workspace-per-PR isolation ([ephemeral-clusters/opentofu/](ephemeral-clusters/opentofu/))
 - **IP Management**: Vault-based IP pool allocation (192.168.1.140-149, 2 IPs per cluster: VIP + node)
-- **DNS**: Pi-hole for internal resolution (`pr-<number>-<repo>.ephemeral.fullstack.pw`)
+- **DNS**: Pi-hole for internal resolution (`pr-<number>-<repo>.ephemeral.homelabz.eu`)
 - **Capacity**: 5 concurrent ephemeral clusters maximum
 
-**Workflow Lifecycle** (example: [cks-backend/.github/workflows/ephemeral.yml](https://github.com/fullstack-pw/cks-backend/blob/main/.github/workflows/ephemeral.yml)):
+**Workflow Lifecycle** (example: [cks-backend/.github/workflows/ephemeral.yml](https://github.com/homelabz-eu/cks-backend/blob/main/.github/workflows/ephemeral.yml)):
 
 1. **PR Opened**:
    - Check cluster existence via Cluster API
@@ -224,7 +224,7 @@ Edge collectors on all workload clusters:
      - Phase 2: Base operators with CRDs (ClusterIssuer, DNSEndpoint, ExternalSecret)
      - Phase 3: Apps without postgres CRDs
      - Phase 4: Apps with postgres CRDs
-   - Build and push Docker image (`registry.toolz.fullstack.pw/library/<app>:pr-<number>`)
+   - Build and push Docker image (`registry.toolz.homelabz.eu/library/<app>:pr-<number>`)
    - Deploy app with `kubectl apply -k kustomize/overlays/ephemeral/`
    - Run Cypress E2E tests in container
    - Post PR comment with environment URL
@@ -264,7 +264,7 @@ git commit -m "feat(proxmox): add k8s-observability VM [ansible k8s-observabilit
 
 **Automated Pipeline Chain**:
 1. Release workflow generates semantic version tag
-2. OpenTofu creates VM from YAML definition in [proxmox/vms/](proxmox/vms/)
+2. OpenTofu creates VM from YAML definition in [init/vms/](init/vms/)
 3. OpenTofu updates Ansible inventory, preserving `[ansible]` tag in commit message
 4. Ansible workflow triggers on tag detection
 5. Ansible installs and configures Kubernetes (K3s, kubeadm, vanilla, Talos)
@@ -357,7 +357,7 @@ Configuration is workspace-specific via `workload` variable - modules only deplo
    - KV v2 engine for versioned secrets
    - Kubernetes authentication backend
    - Dynamic policy creation via Terraform
-   - Accessible at [vault.toolz.fullstack.pw](https://vault.toolz.fullstack.pw)
+   - Accessible at [vault.toolz.homelabz.eu](https://vault.toolz.homelabz.eu)
 
 3. **Kubernetes Integration**: External Secrets Operator
    - ClusterSecretStore for multi-namespace secret distribution
@@ -378,8 +378,8 @@ Git (SOPS encrypted) → CI/CD (decrypt) → Vault (runtime) → External Secret
 - Istio Gateway integration for TLS termination
 - Certificate validation monitoring
 - Environment-specific gateway DNS names configured via OpenTofu variables:
-  - Dev: `dev.app.fullstack.pw` pattern
-  - Prod: `app.fullstack.pw` pattern (no prefix)
+  - Dev: `dev.app.homelabz.eu` pattern
+  - Prod: `app.homelabz.eu` pattern (no prefix)
 
 ### Network Security
 
@@ -456,7 +456,7 @@ infra/
 │       ├── Storage: longhorn, local-path-provisioner
 │       ├── Virtualization: kubevirt, kubevirt-operator
 │       └── Other: harbor, immich, registry, cluster-autoscaler, oracle-backup
-├── proxmox/
+├── init/
 │   ├── vms/             # YAML VM definitions for declarative provisioning (legacy)
 │   ├── playbooks/       # Ansible configuration playbooks (legacy K3s clusters)
 │   └── scripts/         # Automation scripts (Talos, kubeconfig management)
@@ -675,7 +675,7 @@ The sandboxy cluster serves mostly to **CKS (Certified Kubernetes Security) trai
 8. Rapid reset enables high-throughput scenario execution
 
 **Terminal Access**:
-- [cks-terminal-mgmt](https://github.com/fullstack-pw/cks-terminal-mgmt) runs on sandboxy alongside KubeVirt VMs
+- [cks-terminal-mgmt](https://github.com/homelabz-eu/cks-terminal-mgmt) runs on sandboxy alongside KubeVirt VMs
 - Spawns ttyd processes on-demand for SSH connections to VMs
 - Frontend embeds terminals via iframe with multi-tab support (multiple terminals per VM)
 

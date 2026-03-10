@@ -26,7 +26,7 @@ variable "vault_token" {
 variable "vault_addr" {
   description = "Vault address"
   type        = string
-  default     = "https://vault.toolz.fullstack.pw"
+  default     = "https://vault.toolz.homelabz.eu"
 }
 
 variable "vault_path" {

@@ -1,32 +1,32 @@
 ---
-- name: Install Single-Node K3s for Tools Cluster
-  hosts: "{{ target_hosts | default('tools') }}"
+- name: Install Single-Node K3s for Home Services
+  hosts: "{{ target_hosts | default('home') }}"
   become: true
   gather_facts: yes
   vars:
-    vault_addr: "{{ vault_addr | default('https://vault.toolz.fullstack.pw') }}"
+    vault_addr: "{{ vault_addr | default('https://vault.toolz.homelabz.eu') }}"
     adjectives:
-      - "swift"
-      - "bold"
-      - "calm"
-      - "wise"
-      - "bright"
-      - "proud"
-      - "brave"
-      - "kind"
-      - "quick"
-      - "clever"
+      - "cozy"
+      - "comfy"
+      - "homey"
+      - "snug"
+      - "warm"
+      - "secure"
+      - "smart"
+      - "connected"
+      - "peaceful"
+      - "tranquil"
     nouns:
-      - "falcon"
-      - "mountain"
-      - "river"
-      - "summit"
-      - "garden"
-      - "forest"
-      - "meadow"
-      - "harbor"
-      - "beacon"
-      - "horizon"
+      - "haven"
+      - "nest"
+      - "abode"
+      - "shelter"
+      - "dwelling"
+      - "retreat"
+      - "sanctuary"
+      - "hearth"
+      - "den"
+      - "cottage"
   tasks:
     - name: Set random cluster name if no explicit name provided
       set_fact:
@@ -55,9 +55,15 @@
           - python3-venv
         state: present
 
-    - name: Install K3s
+    - name: Create /mnt/home directory
+      file:
+        path: /mnt/home
+        state: directory
+        mode: '0755'
+
+    - name: Install K3s with custom local-path storage directory
       shell: |
-        curl -sfL https://get.k3s.io | sh -s -
+        curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--default-local-storage-path=/mnt/home" sh -s -
       args:
         executable: /bin/bash
       register: k3s_install

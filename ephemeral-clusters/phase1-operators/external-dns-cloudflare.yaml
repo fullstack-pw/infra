@@ -76,7 +76,7 @@ spec:
         - --txt-owner-id=ephemeral-cluster
         - --policy=sync
         - --provider=cloudflare
-        - --domain-filter=ephemeral.fullstack.pw
+        - --domain-filter=ephemeral.homelabz.eu
         env:
         - name: CF_API_TOKEN
           valueFrom:

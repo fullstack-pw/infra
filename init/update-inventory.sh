@@ -6,8 +6,8 @@
 set -e
 
 # Directory where the inventory file is located
-INVENTORY_FILE="proxmox/k8s.ini"
-NEW_HOSTS_FILE="proxmox/new_hosts.txt"
+INVENTORY_FILE="init/k8s.ini"
+NEW_HOSTS_FILE="init/new_hosts.txt"
 
 # Check if INVENTORY_FILE exists
 if [ ! -f "$INVENTORY_FILE" ]; then
@@ -20,7 +20,7 @@ cp "$INVENTORY_FILE" "${INVENTORY_FILE}.backup"
 
 # Parse OpenTofu output
 echo "Getting OpenTofu outputs..."
-cd proxmox
+cd init
 tofu output -json > ../tf_output.json
 cd ..
 

@@ -25,13 +25,13 @@ variable "timeout" {
 variable "domain" {
   description = "Domain for Gitea"
   type        = string
-  default     = "git.fullstack.pw"
+  default     = "git.homelabz.eu"
 }
 
 variable "ssh_domain" {
   description = "Domain for Gitea SSH access"
   type        = string
-  default     = "git.fullstack.pw"
+  default     = "git.homelabz.eu"
 }
 
 variable "ssh_port" {
@@ -55,7 +55,7 @@ variable "admin_password" {
 variable "admin_email" {
   description = "Gitea admin email"
   type        = string
-  default     = "admin@fullstack.pw"
+  default     = "admin@homelabz.eu"
 }
 
 variable "secret_key" {
@@ -140,7 +140,7 @@ variable "ingress_annotations" {
   description = "Annotations for Gitea ingress"
   type        = map(string)
   default = {
-    "external-dns.alpha.kubernetes.io/hostname" = "git.fullstack.pw"
+    "external-dns.alpha.kubernetes.io/hostname" = "git.homelabz.eu"
     "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
   }
 }
@@ -160,7 +160,7 @@ variable "storage_size" {
 variable "default_actions_url" {
   description = "Default URL for Gitea Actions (set to self for full air-gap)"
   type        = string
-  default     = "https://git.fullstack.pw"
+  default     = "https://git.homelabz.eu"
 }
 
 variable "additional_set_values" {

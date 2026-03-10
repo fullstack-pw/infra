@@ -11,7 +11,7 @@ metadata:
 spec:
   provider:
     vault:
-      server: "https://vault.toolz.fullstack.pw"
+      server: "https://vault.toolz.homelabz.eu"
       path: "kv"
       version: "v2"
       auth:

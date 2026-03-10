@@ -4,7 +4,7 @@
   become: true
   gather_facts: yes
   vars:
-    vault_addr: "{{ vault_addr | default('https://vault.toolz.fullstack.pw') }}"
+    vault_addr: "{{ vault_addr | default('https://vault.toolz.homelabz.eu') }}"
     adjectives:
       - "cozy"
       - "comfy"
@@ -119,17 +119,25 @@
           - "Inventory hostname: {{ inventory_hostname }}"
           - "Using cluster name: {{ cluster_name }}"
 
+    - name: Create local temp directory
+      delegate_to: localhost
+      become: false
+      file:
+        path: ./tmp
+        state: directory
+      run_once: true
+
     - name: Set host IP variable
       set_fact:
         host_ip: "{{ ansible_eth0.ipv4.address }}"
       run_once: true
 
-    - name: Create kubeconfig with server address and names substituted
+    - name: Create kubeconfig with server address substituted
       delegate_to: localhost
       become: false
       copy:
-        content: "{{ kubeconfig_content.stdout | replace('127.0.0.1', host_ip) | replace('name: default', 'name: ' + inventory_hostname) | replace('current-context: default', 'current-context: ' + inventory_hostname) | replace('cluster: default', 'cluster: ' + inventory_hostname) | replace('user: default', 'user: ' + inventory_hostname) }}"
-        dest: "/tmp/{{ cluster_name }}-kubeconfig"
+        content: "{{ kubeconfig_content.stdout | replace('127.0.0.1', host_ip) | replace('default', cluster_name) }}"
+        dest: "./tmp/{{ cluster_name }}-kubeconfig"
       run_once: true
 
     - name: Copy kubeconfig update script to controller
@@ -137,7 +145,7 @@
       become: false
       copy:
         src: "{{ playbook_dir }}/../scripts/update_kubeconfig.py"
-        dest: "/tmp/update_kubeconfig.py"
+        dest: "./tmp/update_kubeconfig.py"
         mode: '0755'
       run_once: true
       register: script_copy
@@ -153,9 +161,9 @@
       delegate_to: localhost
       become: false
       command: >
-        python3 /tmp/update_kubeconfig.py
+        python3 ./tmp/update_kubeconfig.py
         --cluster-name "{{ cluster_name }}"
-        --kubeconfig-file "/tmp/{{ cluster_name }}-kubeconfig"
+        --kubeconfig-file "./tmp/{{ cluster_name }}-kubeconfig"
         --vault-addr "{{ vault_addr }}"
         --inventory-name "{{ inventory_hostname }}"
         --vault-path "kv/cluster-secret-store/secrets/KUBECONFIG"
@@ -165,69 +173,3 @@
       run_once: true
       when: script_copy is succeeded and vault_token is defined and vault_token != ""
       ignore_errors: yes
-
-    - name: Download clusterctl binary
-      delegate_to: localhost
-      get_url:
-        url: "https://github.com/kubernetes-sigs/cluster-api/releases/latest/download/clusterctl-linux-amd64"
-        dest: "/usr/local/bin/clusterctl"
-        mode: '0755'
-        owner: root
-        group: root
-      become: true
-
-    - name: Verify clusterctl installation
-      delegate_to: localhost
-      command: clusterctl version
-      register: clusterctl_version
-      changed_when: false
-
-    - name: Display clusterctl version
-      debug:
-        msg: "Installed clusterctl version: {{ clusterctl_version.stdout }}"
-
-    - name: Extract Proxmox URL (remove /api2/json suffix)
-      set_fact:
-        proxmox_url_clean: "{{ lookup('env', 'PROXMOX_URL') | regex_replace('/api2.*$', '') }}"
-      delegate_to: localhost
-      become: false
-      run_once: true
-
-    - name: Initialize cluster-api with providers
-      shell: |
-        unset KUBECONFIG
-        export KUBECONFIG="/tmp/{{ cluster_name }}-kubeconfig"
-        export PROXMOX_URL="{{ proxmox_url_clean }}"
-        export PROXMOX_TOKEN="{{ lookup('env', 'PROXMOX_TOKEN_ID') }}"
-        export PROXMOX_SECRET="{{ lookup('env', 'PROXMOX_SECRET') }}"
-
-        clusterctl init --infrastructure proxmox --ipam in-cluster --control-plane talos --bootstrap talos
-      args:
-        executable: /bin/bash
-      register: clusterctl_init
-      delegate_to: localhost
-      become: false
-      run_once: true
-
-    - name: Display cluster-api initialization result
-      debug:
-        msg: "Cluster-API initialization completed: {{ clusterctl_init.stdout }}"
-      when: clusterctl_init is defined
-
-    - name: Verify cluster-api installation
-      shell: |
-        export KUBECONFIG="/tmp/{{ cluster_name }}-kubeconfig"
-        kubectl get pods -A | grep -E "(capi|cluster-api|talos|proxmox)"
-      args:
-        executable: /bin/bash
-      register: capi_pods
-      changed_when: false
-      failed_when: false
-      delegate_to: localhost
-      become: false
-      run_once: true
-
-    - name: Display cluster-api pods status
-      debug:
-        msg: "Cluster-API pods: {{ capi_pods.stdout_lines }}"
-      when: capi_pods.stdout != ""

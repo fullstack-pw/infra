@@ -1,13 +1,13 @@
 {
-    "name": "fullstack-pw-infra",
+    "name": "homelabz-eu-infra",
     "version": "0.0.1",
-    "description": "Infrastructure as Code for fullstack.pw homelab",
+    "description": "Infrastructure as Code for homelabz.eu homelab",
     "private": true,
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/fullstack-pw/infra.git"
+        "url": "git+https://github.com/homelabz-eu/infra.git"
     },
-    "author": "fullstack-pw",
+    "author": "homelabz-eu",
     "devDependencies": {
         "@semantic-release/changelog": "^6.0.3",
         "@semantic-release/git": "^10.0.1",
@@ -24,7 +24,7 @@
     },
     "license": "ISC",
     "bugs": {
-        "url": "https://github.com/fullstack-pw/infra/issues"
+        "url": "https://github.com/homelabz-eu/infra/issues"
     },
-    "homepage": "https://github.com/fullstack-pw/infra#readme"
+    "homepage": "https://github.com/homelabz-eu/infra#readme"
 }

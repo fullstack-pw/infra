@@ -1,4 +1,4 @@
-// proxmox/outputs.tf
+// init/outputs.tf
 
 # Output information about provisioned VMs
 output "vm_ips" {

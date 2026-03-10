@@ -215,8 +215,8 @@
           [global]
           keyboard = "pt"
           country = "us"
-          fqdn = "node02.fullstack.pw"
-          mailto = "admin@fullstack.pw"
+          fqdn = "node02.homelabz.eu"
+          mailto = "admin@homelabz.eu"
           timezone = "UTC"
           root_password = "supersecurepassword"
           root_ssh_keys = [

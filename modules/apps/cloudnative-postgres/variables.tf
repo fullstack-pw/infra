@@ -225,7 +225,7 @@ variable "create_lb_service" {
 }
 
 variable "ingress_host" {
-  description = "Hostname for ingress (e.g., tools.postgres.fullstack.pw)"
+  description = "Hostname for ingress (e.g., tools.postgres.homelabz.eu)"
   type        = string
   default     = ""
 }

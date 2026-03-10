@@ -37,13 +37,13 @@ variable "enable_cdi_uploadproxy_ingress" {
 variable "cdi_uploadproxy_host" {
   description = "Hostname for CDI upload proxy ingress"
   type        = string
-  default     = "cdi-uploadproxy.fullstack.pw"
+  default     = "cdi-uploadproxy.homelabz.eu"
 }
 
 variable "virt_exportproxy_host" {
   description = "Hostname for kubevirt export proxy ingress"
   type        = string
-  default     = "kubevirt-exportproxy.fullstack.pw"
+  default     = "kubevirt-exportproxy.homelabz.eu"
 }
 
 variable "ingress_class_name" {

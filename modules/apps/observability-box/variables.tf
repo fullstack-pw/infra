@@ -55,7 +55,7 @@ variable "otel_collector_otlp_http_port" {
 
 variable "otel_collector_exporters_endpoint" {
   type    = string
-  default = "https://otel-collector.fullstack.pw"
+  default = "https://otel-collector.homelabz.eu"
 }
 
 variable "otel_collector_tls_insecure" {
@@ -137,7 +137,7 @@ variable "prometheus_chart_version" {
 
 variable "prometheus_remote_write_url" {
   type    = string
-  default = "https://prometheus.fullstack.pw/api/v1/write"
+  default = "https://prometheus.homelabz.eu/api/v1/write"
 }
 
 variable "prometheus_force_update" {

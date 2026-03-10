@@ -13,10 +13,10 @@ spec:
               elements:
                 - app: cks-backend
                   namespace: default
-                  repoURL: https://github.com/fullstack-pw/cks-backend
+                  repoURL: https://github.com/homelabz-eu/cks-backend
                 - app: cks-frontend
                   namespace: default
-                  repoURL: https://github.com/fullstack-pw/cks-frontend
+                  repoURL: https://github.com/homelabz-eu/cks-frontend
           - clusters:
               selector:
                 matchExpressions:

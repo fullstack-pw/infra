@@ -61,7 +61,7 @@ variable "ingress_enabled" {
 variable "ingress_host" {
   description = "Hostname for Longhorn UI ingress"
   type        = string
-  default     = "longhorn.fullstack.pw"
+  default     = "longhorn.homelabz.eu"
 }
 
 variable "ingress_class_name" {
@@ -86,7 +86,7 @@ variable "ingress_annotations" {
   description = "Additional annotations for Longhorn ingress"
   type        = map(string)
   default = {
-    "external-dns.alpha.kubernetes.io/hostname" = "longhorn.fullstack.pw"
+    "external-dns.alpha.kubernetes.io/hostname" = "longhorn.homelabz.eu"
     "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
   }
 }

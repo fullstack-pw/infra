@@ -23,7 +23,7 @@ spec:
           restartPolicy: OnFailure
           containers:
           - name: postgres-backup
-            image: alpine:3.20
+            image: alpine:3.21
             imagePullPolicy: IfNotPresent
             command:
             - /bin/sh
@@ -41,7 +41,7 @@ spec:
               echo ""
 
               echo "Installing PostgreSQL client and OCI CLI..."
-              apk add --no-cache postgresql16-client python3 py3-pip bash
+              apk add --no-cache postgresql17-client python3 py3-pip bash
 
               mkdir -p /tmp/venv
               python3 -m venv /tmp/venv

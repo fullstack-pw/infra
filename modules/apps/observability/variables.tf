@@ -59,7 +59,7 @@ variable "elasticsearch_url" {
 variable "jaeger_domain" {
   description = "Domain name for Jaeger UI ingress"
   type        = string
-  default     = "jaeger.fullstack.pw"
+  default     = "jaeger.homelabz.eu"
 }
 
 variable "jaeger_ingress_annotations" {
@@ -83,7 +83,7 @@ variable "otel_collector_replicas" {
 variable "otel_collector_domain" {
   description = "Domain name for OpenTelemetry Collector ingress"
   type        = string
-  default     = "otel-collector.fullstack.pw"
+  default     = "otel-collector.homelabz.eu"
 }
 
 variable "otel_collector_ingress_annotations" {
@@ -125,7 +125,7 @@ variable "prometheus_values_file" {
 variable "prometheus_domain" {
   description = "Domain name for Prometheus UI ingress"
   type        = string
-  default     = "prometheus.fullstack.pw"
+  default     = "prometheus.homelabz.eu"
 }
 
 variable "prometheus_ingress_annotations" {
@@ -137,7 +137,7 @@ variable "prometheus_ingress_annotations" {
 variable "grafana_domain" {
   description = "Domain name for Grafana UI ingress"
   type        = string
-  default     = "grafana.fullstack.pw"
+  default     = "grafana.homelabz.eu"
 }
 
 variable "grafana_ingress_annotations" {
@@ -161,7 +161,7 @@ variable "loki_chart_version" {
 variable "loki_domain" {
   description = "Domain name for Loki ingress"
   type        = string
-  default     = "loki.fullstack.pw"
+  default     = "loki.homelabz.eu"
 }
 
 variable "loki_storage_type" {
@@ -260,5 +260,5 @@ variable "minio_rootPassword" {
 }
 variable "minio_address" {
   type    = string
-  default = "s3.toolz.fullstack.pw"
+  default = "s3.toolz.homelabz.eu"
 }

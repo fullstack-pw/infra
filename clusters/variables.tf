@@ -2,7 +2,7 @@ variable "kubeconfig_path" {
   default = "~/.kube/config"
 }
 variable "vault_addr" {
-  default = "https://vault.toolz.fullstack.pw"
+  default = "https://vault.toolz.homelabz.eu"
 }
 variable "VAULT_TOKEN" {}
 

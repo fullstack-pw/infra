@@ -41,7 +41,7 @@ The automation uses a special commit message tag `[ansible PLAYBOOK_NAME]` that 
 
 - `PROXMOX_*` - Proxmox API credentials
 - `VAULT_TOKEN` - Vault authentication token
-- `VAULT_ADDR` - Vault server URL (e.g., `https://vault.toolz.fullstack.pw`)
+- `VAULT_ADDR` - Vault server URL (e.g., `https://vault.toolz.homelabz.eu`)
 - `SSH_PRIVATE_KEY` - SSH key for Ansible connections
 
 ### Required Infrastructure
@@ -69,9 +69,9 @@ This is the complete procedure for creating and provisioning a new VM, from init
 
 ### Step 1: Create VM Definition
 
-Create a new YAML file in `proxmox/vms/` with your VM configuration.
+Create a new YAML file in `init/vms/` with your VM configuration.
 
-**File:** `proxmox/vms/k8s-observability.yaml`
+**File:** `init/vms/k8s-observability.yaml`
 
 ```yaml
 name: k8s-observability
@@ -129,7 +129,7 @@ VM names determine their inventory categorization:
 Create a commit with the special `[ansible PLAYBOOK_NAME]` tag in the commit message:
 
 ```bash
-git add proxmox/vms/k8s-observability.yaml
+git add init/vms/k8s-observability.yaml
 git commit -m "feat(proxmox): add k8s-observability VM [ansible k8s-observability]"
 git push origin feature/add-observability-cluster
 ```
@@ -147,12 +147,12 @@ git push origin feature/add-observability-cluster
 For **K8s VMs** (pattern `k8s-*`):
 - Use the VM name as the playbook name
 - Example: VM `k8s-observability` → tag `[ansible k8s-observability]`
-- This will execute `proxmox/playbooks/k8s.yml` with the VM as target
+- This will execute `init/playbooks/k8s.yml` with the VM as target
 
 For **other VM types**:
 - Use the playbook name without `.yml` extension
 - Example: HAProxy VM → tag `[ansible haproxy]`
-- This will execute `proxmox/playbooks/haproxy.yml`
+- This will execute `init/playbooks/haproxy.yml`
 
 #### Examples
 
@@ -191,9 +191,9 @@ After your PR is merged to main, the following automated sequence occurs:
 
 2. **Apply Terraform** (Lines 93-131)
    - Working directory: `./proxmox`
-   - Reads all `*.yaml` files from `proxmox/vms/` (excluding `k8s-home.yaml` and `boot-server.yaml`)
+   - Reads all `*.yaml` files from `init/vms/` (excluding `k8s-home.yaml` and `boot-server.yaml`)
    - Creates VM in Proxmox using `proxmox_vm_qemu` resource
-   - See [`proxmox/main.tf`](main.tf) for implementation details
+   - See [`init/proxmox.tf`](main.tf) for implementation details
 
 3. **Extract Ansible Tag** (Lines 132-148)
    ```bash
@@ -205,18 +205,18 @@ After your PR is merged to main, the following automated sequence occurs:
    ```
 
 4. **Update Ansible Inventory** (Lines 157-163)
-   - Executes [`proxmox/update-inventory.sh`](update-inventory.sh)
+   - Executes [`init/update-inventory.sh`](update-inventory.sh)
    - **Line 24 of script:** Reads Terraform outputs
      ```bash
      terraform output -json > ../tf_output.json
      ```
    - Parses VM information (IPs, hostnames)
-   - Updates [`proxmox/k8s.ini`](k8s.ini) with new VM
-   - Creates [`proxmox/new_hosts.txt`](new_hosts.txt) with format: `IP,hostname`
+   - Updates [`init/k8s.ini`](k8s.ini) with new VM
+   - Creates [`init/new_hosts.txt`](new_hosts.txt) with format: `IP,hostname`
    - Categorizes VMs into inventory groups based on naming patterns
 
 5. **Commit Inventory Changes** (Lines 165-195)
-   - Commits `proxmox/k8s.ini` and `proxmox/new_hosts.txt`
+   - Commits `init/k8s.ini` and `init/new_hosts.txt`
    - **Preserves the ansible tag** in the commit message:
      ```
      Auto-update Ansible inventory [ansible k8s-observability]
@@ -239,8 +239,8 @@ After your PR is merged to main, the following automated sequence occurs:
    ```
 
 2. **Determine Playbook** (Lines 53-80)
-   - **K3s Pattern** (Lines 59-64): If playbook matches `k8s-*`, uses `proxmox/playbooks/k8s.yml`
-   - **Direct Playbook** (Lines 66-77): Uses `proxmox/playbooks/${PLAYBOOK}.yml`
+   - **K3s Pattern** (Lines 59-64): If playbook matches `k8s-*`, uses `init/playbooks/k8s.yml`
+   - **Direct Playbook** (Lines 66-77): Uses `init/playbooks/${PLAYBOOK}.yml`
 
 3. **Prepare SSH** (Lines 119-141)
    - Reads `new_hosts.txt` to get new VM IPs
@@ -251,11 +251,11 @@ After your PR is merged to main, the following automated sequence occurs:
 
    **For K3s clusters:**
    ```bash
-   ansible-playbook proxmox/playbooks/k8s.yml \
-     -i proxmox/k8s.ini \
+   ansible-playbook init/playbooks/k8s.yml \
+     -i init/k8s.ini \
      -e "target_hosts=k8s-observability" \
      -e "vault_token=${VAULT_TOKEN}" \
-     -e "vault_addr=https://vault.toolz.fullstack.pw"
+     -e "vault_addr=https://vault.toolz.homelabz.eu"
    ```
 
    **For other playbooks:**
@@ -264,7 +264,7 @@ After your PR is merged to main, the following automated sequence occurs:
 
 #### 3.4 Kubernetes Cluster Setup (K3s Playbook)
 
-**Playbook:** [`proxmox/playbooks/k8s.yml`](playbooks/k8s.yml)
+**Playbook:** [`init/playbooks/k8s.yml`](playbooks/k8s.yml)
 
 For K8s VMs, the playbook performs the following:
 
@@ -280,7 +280,7 @@ For K8s VMs, the playbook performs the following:
    - Updates context name to match VM hostname
 
 3. **Update Vault Kubeconfig** (Lines 160-174)
-   - Uses [`proxmox/scripts/update_kubeconfig.py`](scripts/update_kubeconfig.py)
+   - Uses [`init/scripts/update_kubeconfig.py`](scripts/update_kubeconfig.py)
    - Reads existing kubeconfig from Vault path: `kv/cluster-secret-store/secrets/KUBECONFIG`
    - Merges new cluster configuration:
      - **Context name:** VM hostname (e.g., `k8s-observability`)
@@ -354,7 +354,7 @@ See [`clusters/modules.tf`](../clusters/modules.tf) for available workload modul
 
 ### Terraform Components
 
-#### [`proxmox/main.tf`](main.tf)
+#### [`init/proxmox.tf`](main.tf)
 
 **Lines 1-4:** Reads all VM YAML definitions
 ```hcl
@@ -377,7 +377,7 @@ locals {
 
 **Lines 13-153:** Creates VMs using `proxmox_vm_qemu` resource
 
-#### [`proxmox/outputs.tf`](outputs.tf)
+#### [`init/outputs.tf`](outputs.tf)
 
 Defines outputs for Ansible inventory:
 - `vm_ips` - All VM IPs mapped by name
@@ -386,7 +386,7 @@ Defines outputs for Ansible inventory:
 
 ### Ansible Components
 
-#### [`proxmox/k8s.ini`](k8s.ini)
+#### [`init/k8s.ini`](k8s.ini)
 
 Ansible inventory file with groups:
 - `[haproxy]` - HAProxy VMs
@@ -395,7 +395,7 @@ Ansible inventory file with groups:
 - `[k3s]` - K3s cluster VMs
 - `# Individual hosts` - All VMs with their IPs
 
-#### [`proxmox/new_hosts.txt`](new_hosts.txt)
+#### [`init/new_hosts.txt`](new_hosts.txt)
 
 Tracks newly created VMs in format: `192.168.1.20,k8s-observability`
 
@@ -403,7 +403,7 @@ Used by Ansible workflow to:
 - Scan SSH host keys
 - Limit playbook execution to only new VMs
 
-#### [`proxmox/update-inventory.sh`](update-inventory.sh)
+#### [`init/update-inventory.sh`](update-inventory.sh)
 
 Automation script that:
 
@@ -428,7 +428,7 @@ Automation script that:
 
 6. **Lines 326-351:** Validates inventory syntax
 
-#### [`proxmox/playbooks/`](playbooks/)
+#### [`init/playbooks/`](playbooks/)
 
 Ansible playbooks for VM provisioning:
 - `k8s.yml` - K3s single-node cluster installation
@@ -436,7 +436,7 @@ Ansible playbooks for VM provisioning:
 - `talos.yml` - Talos Linux cluster setup
 - And more...
 
-#### [`proxmox/scripts/update_kubeconfig.py`](scripts/update_kubeconfig.py)
+#### [`init/scripts/update_kubeconfig.py`](scripts/update_kubeconfig.py)
 
 Python script for Vault kubeconfig management:
 
@@ -523,7 +523,7 @@ The automation faces a timing challenge:
    Result: "Auto-update Ansible inventory [ansible k8s-observability]"
 
 4. Ansible workflow triggers:
-   - Line 10: on.push.paths includes "proxmox/new_hosts.txt"
+   - Line 10: on.push.paths includes "init/new_hosts.txt"
    - Line 29-30: Parses commit message, extracts playbook name
    - Runs playbook against new VM
 ```
@@ -562,7 +562,7 @@ For K8s clusters provisioned by `k8s.yml` playbook:
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ STEP 1: Developer Creates VM Definition                         │
-│ File: proxmox/vms/k8s-observability.yaml                        │
+│ File: init/vms/k8s-observability.yaml                        │
 │ Commit: "feat(proxmox): add k8s-observability VM                │
 │          [ansible k8s-observability]"                           │
 └────────────────────────┬────────────────────────────────────────┘
@@ -583,7 +583,7 @@ For K8s clusters provisioned by `k8s.yml` playbook:
 │                                                                  │
 │ ┌──────────────────────────────────────────────────────────┐   │
 │ │ 3.1: Apply Terraform (Lines 93-131)                      │   │
-│ │ - Reads proxmox/vms/*.yaml                               │   │
+│ │ - Reads init/vms/*.yaml                               │   │
 │ │ - Creates VM in Proxmox                                  │   │
 │ │ - VM now exists at 192.168.1.20                          │   │
 │ └──────────────────────────────────────────────────────────┘   │
@@ -596,18 +596,18 @@ For K8s clusters provisioned by `k8s.yml` playbook:
 │                         │                                        │
 │ ┌──────────────────────────────────────────────────────────┐   │
 │ │ 3.3: Update Inventory (Lines 157-163)                    │   │
-│ │ Script: proxmox/update-inventory.sh                      │   │
+│ │ Script: init/update-inventory.sh                      │   │
 │ │                                                           │   │
 │ │ - Line 24: terraform output -json                        │   │
 │ │ - Detects new VM: k8s-observability (192.168.1.20)       │   │
-│ │ - Updates proxmox/k8s.ini (adds to [k3s] group)          │   │
-│ │ - Writes proxmox/new_hosts.txt:                          │   │
+│ │ - Updates init/k8s.ini (adds to [k3s] group)          │   │
+│ │ - Writes init/new_hosts.txt:                          │   │
 │ │   "192.168.1.20,k8s-observability"                       │   │
 │ └──────────────────────────────────────────────────────────┘   │
 │                         │                                        │
 │ ┌──────────────────────────────────────────────────────────┐   │
 │ │ 3.4: Commit Changes (Lines 165-195)                      │   │
-│ │ Files: proxmox/k8s.ini, proxmox/new_hosts.txt            │   │
+│ │ Files: init/k8s.ini, init/new_hosts.txt            │   │
 │ │ Message: "Auto-update Ansible inventory                  │   │
 │ │           [ansible k8s-observability]"                   │   │
 │ │ *** TAG PRESERVED ***                                    │   │
@@ -629,7 +629,7 @@ For K8s clusters provisioned by `k8s.yml` playbook:
 │ ┌──────────────────────────────────────────────────────────┐   │
 │ │ 4.2: Determine Playbook (Lines 59-64)                    │   │
 │ │ - Pattern matches "k8s-*"                                │   │
-│ │ - Uses: proxmox/playbooks/k8s.yml                        │   │
+│ │ - Uses: init/playbooks/k8s.yml                        │   │
 │ └──────────────────────────────────────────────────────────┘   │
 │                         │                                        │
 │ ┌──────────────────────────────────────────────────────────┐   │
@@ -641,8 +641,8 @@ For K8s clusters provisioned by `k8s.yml` playbook:
 │ ┌──────────────────────────────────────────────────────────┐   │
 │ │ 4.4: Execute Playbook (Lines 153-157)                    │   │
 │ │ Command:                                                 │   │
-│ │   ansible-playbook proxmox/playbooks/k8s.yml \           │   │
-│ │     -i proxmox/k8s.ini \                                 │   │
+│ │   ansible-playbook init/playbooks/k8s.yml \           │   │
+│ │     -i init/k8s.ini \                                 │   │
 │ │     -e "target_hosts=k8s-observability"                  │   │
 │ └──────────────────────────────────────────────────────────┘   │
 └────────────────────────┬────────────────────────────────────────┘
@@ -650,7 +650,7 @@ For K8s clusters provisioned by `k8s.yml` playbook:
                          ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │ STEP 5: K3s Playbook Execution                                  │
-│ Playbook: proxmox/playbooks/k8s.yml                             │
+│ Playbook: init/playbooks/k8s.yml                             │
 │                                                                  │
 │ ┌──────────────────────────────────────────────────────────┐   │
 │ │ 5.1: Install K3s (Lines 64-70)                           │   │
@@ -667,7 +667,7 @@ For K8s clusters provisioned by `k8s.yml` playbook:
 │                         │                                        │
 │ ┌──────────────────────────────────────────────────────────┐   │
 │ │ 5.3: Update Vault (Lines 160-174)                        │   │
-│ │ Script: proxmox/scripts/update_kubeconfig.py             │   │
+│ │ Script: init/scripts/update_kubeconfig.py             │   │
 │ │                                                           │   │
 │ │ - Reads from Vault:                                      │   │
 │ │   kv/cluster-secret-store/secrets/KUBECONFIG             │   │
@@ -706,13 +706,13 @@ For K8s clusters provisioned by `k8s.yml` playbook:
 |------|---------|----------------|
 | `.github/workflows/terraform-apply.yml` | VM creation orchestration | 139 (tag extraction), 162 (inventory update) |
 | `.github/workflows/ansible.yml` | VM provisioning | 29-30 (commit parsing), 153-157 (playbook execution) |
-| `proxmox/update-inventory.sh` | Inventory automation | 24 (terraform output), 294 (new_hosts.txt) |
-| `proxmox/main.tf` | VM resource definitions | 1-11 (YAML parsing), 13-153 (VM creation) |
-| `proxmox/outputs.tf` | Terraform outputs | 4-10 (vm_ips), 13-22 (k8s_nodes) |
-| `proxmox/k8s.ini` | Ansible inventory | All - host and group definitions |
-| `proxmox/new_hosts.txt` | New VM tracker | All - IP,hostname format |
-| `proxmox/playbooks/k8s.yml` | K3s installation | 64-70 (install), 160-174 (Vault update) |
-| `proxmox/scripts/update_kubeconfig.py` | Vault kubeconfig merger | 94-147 (merge logic) |
+| `init/update-inventory.sh` | Inventory automation | 24 (terraform output), 294 (new_hosts.txt) |
+| `init/proxmox.tf` | VM resource definitions | 1-11 (YAML parsing), 13-153 (VM creation) |
+| `init/outputs.tf` | Terraform outputs | 4-10 (vm_ips), 13-22 (k8s_nodes) |
+| `init/k8s.ini` | Ansible inventory | All - host and group definitions |
+| `init/new_hosts.txt` | New VM tracker | All - IP,hostname format |
+| `init/playbooks/k8s.yml` | K3s installation | 64-70 (install), 160-174 (Vault update) |
+| `init/scripts/update_kubeconfig.py` | Vault kubeconfig merger | 94-147 (merge logic) |
 | `clusters/variables.tf` | Cluster workload config | 58-63 (workloads), 140-144 (context) |
 | `clusters/modules.tf` | Workload modules | 149-155 (observability module) |
 
@@ -738,7 +738,7 @@ For K8s clusters provisioned by `k8s.yml` playbook:
 2. Check if `new_hosts.txt` was committed:
    ```bash
    git log -1 --stat
-   # Should include: proxmox/new_hosts.txt
+   # Should include: init/new_hosts.txt
    ```
 
 3. Check Ansible workflow runs:
@@ -785,7 +785,7 @@ ansible-playbook playbooks/k8s.yml \
   -i k8s.ini \
   -e "target_hosts=k8s-observability" \
   -e "vault_token=$VAULT_TOKEN" \
-  -e "vault_addr=https://vault.toolz.fullstack.pw" \
+  -e "vault_addr=https://vault.toolz.homelabz.eu" \
   -vvv  # Verbose output
 ```
 
@@ -849,7 +849,7 @@ python3 scripts/update_kubeconfig.py \
   --cluster-name k8s-observability \
   --inventory-name k8s-observability \
   --vault-token $VAULT_TOKEN \
-  --vault-addr https://vault.toolz.fullstack.pw
+  --vault-addr https://vault.toolz.homelabz.eu
 ```
 
 ### Workload Deployment Failed
@@ -948,7 +948,7 @@ ansible-inventory -i k8s.ini --list
 
 To create a custom playbook for a specific VM type:
 
-1. **Create playbook:** `proxmox/playbooks/myapp.yml`
+1. **Create playbook:** `init/playbooks/myapp.yml`
 
 2. **Add tasks:**
    ```yaml
@@ -977,7 +977,7 @@ For multi-node K8s clusters (not single-node K3s):
    - `k8s-prod-w01`, `k8s-prod-w02` (workers)
 
 2. **Use a different playbook** (not `k8s.yml`):
-   - Create `proxmox/playbooks/k8s-ha.yml` for HA cluster setup
+   - Create `init/playbooks/k8s-ha.yml` for HA cluster setup
 
 3. **Commit with custom tag:**
    ```bash
@@ -1005,7 +1005,7 @@ For Talos Linux clusters:
 
 ### Excluded VMs
 
-Some VMs are excluded from Terraform automation (see [`proxmox/main.tf` Line 2](main.tf)):
+Some VMs are excluded from Terraform automation (see [`init/proxmox.tf` Line 2](main.tf)):
 
 - `k8s-home.yaml` - Manually managed home cluster
 - `boot-server.yaml` - Special boot/PXE server

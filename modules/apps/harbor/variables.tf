@@ -32,13 +32,13 @@ variable "timeout" {
 variable "harbor_domain" {
   description = "Domain for Harbor"
   type        = string
-  default     = "registry.toolz.fullstack.pw"
+  default     = "registry.toolz.homelabz.eu"
 }
 
 variable "notary_domain" {
   description = "Domain for Notary service"
   type        = string
-  default     = "notary.fullstack.pw"
+  default     = "notary.homelabz.eu"
 }
 
 # Storage
@@ -76,7 +76,7 @@ variable "use_external_database" {
 variable "external_database_host" {
   description = "External PostgreSQL host"
   type        = string
-  default     = "postgres.fullstack.pw"
+  default     = "postgres.homelabz.eu"
 }
 
 variable "external_database_port" {
@@ -120,7 +120,7 @@ variable "use_external_redis" {
 variable "external_redis_host" {
   description = "External Redis host"
   type        = string
-  default     = "redis.fullstack.pw"
+  default     = "redis.homelabz.eu"
 }
 
 variable "external_redis_port" {
@@ -173,7 +173,7 @@ variable "ingress_annotations" {
   description = "Annotations for Harbor ingress"
   type        = map(string)
   default = {
-    "external-dns.alpha.kubernetes.io/hostname"   = "registry.toolz.fullstack.pw"
+    "external-dns.alpha.kubernetes.io/hostname"   = "registry.toolz.homelabz.eu"
     "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
     "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
     "nginx.org/client-max-body-size"              = "0"

@@ -22,5 +22,5 @@ permissions:
 
 jobs:
   opentofu:
-    uses: fullstack-pw/pipelines/.github/workflows/opentofu-infra.yml@main
+    uses: homelabz-eu/pipelines/.github/workflows/opentofu-infra.yml@main
     secrets: inherit # pragma: allowlist secret

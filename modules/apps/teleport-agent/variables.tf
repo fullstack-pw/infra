@@ -50,7 +50,7 @@ variable "timeout" {
 variable "cluster_name" {
   description = "Name of the Teleport cluster"
   type        = string
-  default     = "fullstack-pw"
+  default     = "homelabz-eu"
 }
 
 variable "teleport_version" {
@@ -62,7 +62,7 @@ variable "teleport_version" {
 variable "proxy_server" {
   description = "Teleport proxy server address"
   type        = string
-  default     = "teleport.fullstack.pw:3080"
+  default     = "teleport.homelabz.eu:3080"
 }
 
 variable "join_token" {

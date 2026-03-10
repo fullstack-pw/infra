@@ -1,10 +1,10 @@
-# fullstack-pw: Cloud-Native DevOps Portfolio
+# homelabz-eu: Cloud-Native DevOps Portfolio
 
 Production-grade homelab platform demonstrating enterprise DevOps practices, cloud-native architectures, and infrastructure automation. Built as a comprehensive portfolio showcasing modern software engineering, SRE, and platform engineering capabilities.
 
 ## Platform Overview
 
-The fullstack.pw organization encompasses a complete infrastructure and application ecosystem built on Kubernetes, implementing:
+The homelabz.eu organization encompasses a complete infrastructure and application ecosystem built on Kubernetes, implementing:
 
 - **Multi-environment Kubernetes clusters** with Cluster API-based automated provisioning and lifecycle management
 - **Ephemeral PR-based test environments** with automatic cluster provisioning, deployment, testing, and cleanup per pull request
@@ -55,14 +55,14 @@ TBD
 
 ### Infrastructure & Platform
 
-**[infra](https://github.com/fullstack-pw/infra)**: Complete infrastructure-as-code repository
+**[infra](https://github.com/homelabz-eu/infra)**: Complete infrastructure-as-code repository
 - OpenTofu modules for Kubernetes workload deployment
 - Cluster API integration for automated cluster provisioning (Talos Linux, kubeadm)
 - Ansible playbooks for legacy cluster bootstrapping (K3s clusters)
 - GitHub Actions workflows for automated infrastructure lifecycle with kubeconfig management
 - SOPS-encrypted secrets management with age encryption and Vault synchronization
 
-**[pipelines](https://github.com/fullstack-pw/pipelines)**: Centralized CI/CD workflows
+**[pipelines](https://github.com/homelabz-eu/pipelines)**: Centralized CI/CD workflows
 - Reusable GitHub Actions workflows for application deployment
 - Multi-environment Kustomize-based deployment pipelines
 - Security scanning and validation workflows
@@ -70,20 +70,20 @@ TBD
 
 ### Application Repositories
 
-**[cks-backend](https://github.com/fullstack-pw/cks-backend)**: CKS training platform backend
+**[cks-backend](https://github.com/homelabz-eu/cks-backend)**: CKS training platform backend
 - Go-based backend implementing cluster pool management for Kubernetes security training
 - KubeVirt integration for VM-based Kubernetes cluster provisioning
 - Snapshot-based restoration achieving sub-second session allocation
 - Unified validation engine supporting resource checks, script execution, and file content validation
 - WebSocket terminal access with deterministic terminal IDs for reconnection
 
-**[cks-frontend](https://github.com/fullstack-pw/cks-frontend)**: CKS training platform frontend
+**[cks-frontend](https://github.com/homelabz-eu/cks-frontend)**: CKS training platform frontend
 - Next.js 14 application with browser-based terminal emulation using xterm.js
 - SWR-based state management with optimistic updates
 - Multi-stage Docker build achieving 70% image size reduction via standalone output
 - Admin dashboard for cluster pool and session management
 
-**[cks-terminal-mgmt](https://github.com/fullstack-pw/cks-terminal-mgmt)**: Terminal management microservice
+**[cks-terminal-mgmt](https://github.com/homelabz-eu/cks-terminal-mgmt)**: Terminal management microservice
 - Go-based service running on sandboxy cluster alongside KubeVirt VMs
 - Spawns ttyd processes on-demand for SSH connections to VMs
 - Browser-based terminal access via iframe with multi-tab support
@@ -116,15 +116,15 @@ TBD
 
 | Service | Technology | Purpose | URL |
 |---------|-----------|---------|-----|
-| MinIO | S3-compatible object storage | Terraform state backend, backups | [s3.toolz.fullstack.pw](https://s3.toolz.fullstack.pw) |
-| Harbor | Enterprise container registry | Multi-tenant registry with security scanning, image replication | [registry.toolz.fullstack.pw](https://registry.toolz.fullstack.pw) |
-| Longhorn | Distributed block storage | Persistent volumes for KubeVirt VMs on sandboxy cluster | [longhorn.fullstack.pw](https://longhorn.fullstack.pw) |
+| MinIO | S3-compatible object storage | Terraform state backend, backups | [s3.toolz.homelabz.eu](https://s3.toolz.homelabz.eu) |
+| Harbor | Enterprise container registry | Multi-tenant registry with security scanning, image replication | [registry.toolz.homelabz.eu](https://registry.toolz.homelabz.eu) |
+| Longhorn | Distributed block storage | Persistent volumes for KubeVirt VMs on sandboxy cluster | [longhorn.homelabz.eu](https://longhorn.homelabz.eu) |
 
 ### Secrets & Security
 
 | Component | Implementation | Purpose | Location |
 |-----------|---------------|---------|----------|
-| HashiCorp Vault | KV v2 engine with K8s auth | Runtime secret storage and distribution | [vault.toolz.fullstack.pw](https://vault.toolz.fullstack.pw) |
+| HashiCorp Vault | KV v2 engine with K8s auth | Runtime secret storage and distribution | [vault.toolz.homelabz.eu](https://vault.toolz.homelabz.eu) |
 | External Secrets Operator | ClusterSecretStore | Vault to Kubernetes secret synchronization | All clusters |
 | SOPS + age | Encrypted YAML in Git | Secrets at rest in version control | infra repository |
 | cert-manager | Let's Encrypt automation | TLS certificate lifecycle management | All clusters |
@@ -137,7 +137,7 @@ TBD
 | GitHub Actions Runners | Actions Runner Controller (ARC) | tools cluster |
 | GitLab Runners | GitLab Runner with Docker executor | tools cluster |
 | Custom Runner Image | Docker image with kubectl, Helm, Terraform, SOPS | Harbor registry |
-| Reusable Workflows | Shared GitHub Actions workflows | [pipelines](https://github.com/fullstack-pw/pipelines) |
+| Reusable Workflows | Shared GitHub Actions workflows | [pipelines](https://github.com/homelabz-eu/pipelines) |
 
 ### Observability Stack
 
@@ -145,10 +145,10 @@ TBD
 
 | Component | Version | Purpose | Access |
 |-----------|---------|---------|--------|
-| Prometheus | kube-prometheus-stack v79.0.1 | Multi-cluster metrics aggregation | [prometheus.fullstack.pw](https://prometheus.fullstack.pw) |
-| Grafana | Bundled with kube-prometheus-stack | Unified dashboards and visualization | [grafana.fullstack.pw](https://grafana.fullstack.pw) |
-| Jaeger | v2.57.0 | Distributed tracing backend | [jaeger.fullstack.pw](https://jaeger.fullstack.pw) |
-| Loki | v6.28.0 | Centralized log aggregation | [loki.fullstack.pw](https://loki.fullstack.pw) |
+| Prometheus | kube-prometheus-stack v79.0.1 | Multi-cluster metrics aggregation | [prometheus.homelabz.eu](https://prometheus.homelabz.eu) |
+| Grafana | Bundled with kube-prometheus-stack | Unified dashboards and visualization | [grafana.homelabz.eu](https://grafana.homelabz.eu) |
+| Jaeger | v2.57.0 | Distributed tracing backend | [jaeger.homelabz.eu](https://jaeger.homelabz.eu) |
+| Loki | v6.28.0 | Centralized log aggregation | [loki.homelabz.eu](https://loki.homelabz.eu) |
 | OpenTelemetry Collector | v0.33.0 | Central telemetry ingestion and processing | Cluster-internal |
 
 **Edge Collectors (All Other Clusters)**
@@ -180,7 +180,7 @@ Edge Prometheus → Remote Write → Central Prometheus → Grafana
 
 | Service | Purpose | Technology | Access |
 |---------|---------|-----------|--------|
-| Immich | Self-hosted photo and video management | Container deployment with external storage | [immich.fullstack.pw](https://immich.fullstack.pw) |
+| Immich | Self-hosted photo and video management | Container deployment with external storage | [immich.homelabz.eu](https://immich.homelabz.eu) |
 
 ## CI/CD Pipeline Architecture
 
@@ -364,9 +364,9 @@ Other:
 ## Documentation & Resources
 
 **Infrastructure Documentation**
-- [Infrastructure README](https://github.com/fullstack-pw/infra): Complete infrastructure overview
+- [Infrastructure README](https://github.com/homelabz-eu/infra): Complete infrastructure overview
 
 **Application Documentation**
-- [Pipelines Documentation](https://github.com/fullstack-pw/pipelines): Reusable workflow specifications
-- [CKS Backend](https://github.com/fullstack-pw/cks-backend): CKS training platform backend implementation
-- [CKS Frontend](https://github.com/fullstack-pw/cks-frontend): CKS training platform web interface
+- [Pipelines Documentation](https://github.com/homelabz-eu/pipelines): Reusable workflow specifications
+- [CKS Backend](https://github.com/homelabz-eu/cks-backend): CKS training platform backend implementation
+- [CKS Frontend](https://github.com/homelabz-eu/cks-frontend): CKS training platform web interface

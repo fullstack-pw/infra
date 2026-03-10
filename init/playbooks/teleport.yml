@@ -5,12 +5,12 @@
   vars:
     teleport_version: "17.7.1"
     teleport_edition: "oss"  # Community Edition
-    teleport_domain: "teleport.fullstack.pw"
-    teleport_cluster_name: "fullstack-pw"
-    github_org: "fullstack-pw"
-    minio_endpoint: "s3.toolz.fullstack.pw"
+    teleport_domain: "teleport.homelabz.eu"
+    teleport_cluster_name: "homelabz-eu"
+    github_org: "homelabz-eu"
+    minio_endpoint: "s3.toolz.homelabz.eu"
     minio_bucket: "teleport-recordings"
-    authentik_domain: "auth.fullstack.pw"
+    authentik_domain: "auth.homelabz.eu"
     teleport_saml_enabled: false
 
   tasks:

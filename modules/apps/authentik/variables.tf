@@ -31,7 +31,7 @@ variable "timeout" {
 variable "domain" {
   description = "Domain for Authentik"
   type        = string
-  default     = "auth.fullstack.pw"
+  default     = "auth.homelabz.eu"
 }
 
 variable "ingress_class_name" {
@@ -55,7 +55,7 @@ variable "admin_password" {
 variable "admin_email" {
   description = "Admin email address"
   type        = string
-  default     = "admin@fullstack.pw"
+  default     = "admin@homelabz.eu"
 }
 
 variable "postgres_host" {

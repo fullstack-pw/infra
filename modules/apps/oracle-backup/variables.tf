@@ -70,7 +70,7 @@ variable "backoff_limit" {
 
 # MinIO Configuration
 variable "minio_endpoint" {
-  description = "MinIO S3 endpoint (e.g., https://s3.fullstack.pw)"
+  description = "MinIO S3 endpoint (e.g., https://s3.homelabz.eu)"
   type        = string
   default     = ""
 }

@@ -1,4 +1,4 @@
-name: boot.fullstack.pw
+name: boot.homelabz.eu
 target_node: node01
 cores: 1
 sockets: 2
@@ -21,5 +21,4 @@ network:
   firewall: true
 ipconfig0: "ip=192.168.1.10/23,gw=192.168.1.1,ip6=dhcp"
 ciuser: suporte
-cipassword: sistema
 template: null

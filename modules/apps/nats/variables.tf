@@ -203,7 +203,7 @@ variable "ingress_class_name" {
 variable "ingress_host" {
   description = "Hostname for NATS monitoring ingress"
   type        = string
-  default     = "nats.fullstack.pw"
+  default     = "nats.homelabz.eu"
 }
 
 variable "ingress_tls_enabled" {
@@ -222,7 +222,7 @@ variable "ingress_annotations" {
   description = "Additional annotations for NATS ingress"
   type        = map(string)
   default = {
-    "external-dns.alpha.kubernetes.io/hostname" = "nats.fullstack.pw"
+    "external-dns.alpha.kubernetes.io/hostname" = "nats.homelabz.eu"
     "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
     "kubernetes.io/ingress.class"               = "traefik"
   }

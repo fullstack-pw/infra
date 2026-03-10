@@ -8,7 +8,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/fullstack-pw/cks-terminal-mgmt.git
+    repoURL: https://github.com/homelabz-eu/cks-terminal-mgmt.git
     targetRevision: HEAD
     path: kustomize/overlays/sandboxy
   destination:

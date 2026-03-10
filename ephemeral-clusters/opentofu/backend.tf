@@ -2,7 +2,7 @@ terraform {
   backend "s3" {
     bucket                      = "terraform"
     key                         = "ephemeral.tfstate"
-    endpoints                   = { s3 = "https://s3.toolz.fullstack.pw" }
+    endpoints                   = { s3 = "https://s3.toolz.homelabz.eu" }
     region                      = "main"
     skip_credentials_validation = true
     skip_requesting_account_id  = true

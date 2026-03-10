@@ -119,7 +119,7 @@ variable "ingress_annotations" {
   description = "Annotations for the MinIO API ingress"
   type        = map(string)
   default = {
-    "external-dns.alpha.kubernetes.io/hostname"   = "s3.toolz.fullstack.pw"
+    "external-dns.alpha.kubernetes.io/hostname"   = "s3.toolz.homelabz.eu"
     "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
     "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
     "nginx.org/client-max-body-size"              = "0"
@@ -135,7 +135,7 @@ variable "ingress_class_name" {
 variable "ingress_host" {
   description = "Hostname for MinIO API ingress"
   type        = string
-  default     = "s3.toolz.fullstack.pw"
+  default     = "s3.toolz.homelabz.eu"
 }
 
 variable "ingress_tls_enabled" {
@@ -161,7 +161,7 @@ variable "console_ingress_annotations" {
   description = "Annotations for the MinIO Console ingress"
   type        = map(string)
   default = {
-    "external-dns.alpha.kubernetes.io/hostname" = "minio.toolz.fullstack.pw"
+    "external-dns.alpha.kubernetes.io/hostname" = "minio.toolz.homelabz.eu"
     "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
   }
 }
@@ -175,7 +175,7 @@ variable "console_ingress_class_name" {
 variable "console_ingress_host" {
   description = "Hostname for MinIO Console ingress"
   type        = string
-  default     = "minio.toolz.fullstack.pw"
+  default     = "minio.toolz.homelabz.eu"
 }
 
 variable "console_ingress_tls_enabled" {

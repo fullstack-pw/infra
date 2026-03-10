@@ -9,5 +9,5 @@ permissions: {}
 
 jobs:
   check:
-    uses: fullstack-pw/pipelines/.github/workflows/conventional-commits.yml@main
+    uses: homelabz-eu/pipelines/.github/workflows/conventional-commits.yml@main
     secrets: inherit # pragma: allowlist secret

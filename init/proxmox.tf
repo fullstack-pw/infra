@@ -147,7 +147,9 @@ resource "proxmox_vm_qemu" "vm" {
     ignore_changes = [
       network[0].macaddr,
       bootdisk,
-      smbios
+      smbios,
+      clone,
+      full_clone,
     ]
   }
 }

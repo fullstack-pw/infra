@@ -13,5 +13,5 @@ permissions: {}
 
 jobs:
   build:
-    uses: fullstack-pw/pipelines/.github/workflows/build-changed-dockerfiles.yml@main
+    uses: homelabz-eu/pipelines/.github/workflows/build-changed-dockerfiles.yml@main
     secrets: inherit # pragma: allowlist secret

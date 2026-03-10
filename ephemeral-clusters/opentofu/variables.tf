@@ -21,7 +21,7 @@ variable "config" {
       kubernetes_context        = "pr-cks-backend-1"
       crds_installed            = true
       argocd_ingress_class      = "traefik"
-      argocd_domain             = "pr-cks-backend-1.argocd.fullstack.pw"
+      argocd_domain             = "pr-cks-backend-1.argocd.homelabz.eu"
       prometheus_namespaces     = []
       prometheus_memory_limit   = "1024Mi"
       prometheus_memory_request = "256Mi"
@@ -35,7 +35,7 @@ variable "config" {
         databases = []
 
         persistence_size               = "1Gi"
-        ingress_host                   = "pr-cks-backend-1.postgres.fullstack.pw"
+        ingress_host                   = "pr-cks-backend-1.postgres.homelabz.eu"
         use_istio                      = false
         export_credentials_secret_name = "pr-cks-backend-1-postgres-credentials"
       }
@@ -47,7 +47,7 @@ variable "kubeconfig_path" {
   default = "~/.kube/config"
 }
 variable "vault_addr" {
-  default = "https://vault.toolz.fullstack.pw"
+  default = "https://vault.toolz.homelabz.eu"
 }
 variable "VAULT_TOKEN" {}
 

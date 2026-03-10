@@ -97,6 +97,7 @@ module "cert_manager" {
   source = "../modules/apps/certmanager"
 
   install_crd       = var.config[terraform.workspace].crds_installed
+  issuer_type       = "acme"
   cloudflare_secret = local.secrets_json["kv/cloudflare"]["api-token"]
 }
 
@@ -106,7 +107,7 @@ module "external_secrets" {
 
   install_crd = var.config[terraform.workspace].crds_installed
   secret_data = local.secret_data
-  vault_addr  = try(var.config[terraform.workspace].vault_addr, "https://vault.toolz.fullstack.pw")
+  vault_addr  = try(var.config[terraform.workspace].vault_addr, "https://vault.toolz.homelabz.eu")
   vault_token = var.VAULT_TOKEN
 
   namespace_selector_type = "label"
@@ -140,8 +141,8 @@ module "gitea" {
   count  = contains(local.workload, "gitea") ? 1 : 0
   source = "../modules/git/gitea"
 
-  domain     = try(var.config[terraform.workspace].gitea.domain, "git.fullstack.pw")
-  ssh_domain = try(var.config[terraform.workspace].gitea.ssh_domain, "git.fullstack.pw")
+  domain     = try(var.config[terraform.workspace].gitea.domain, "git.homelabz.eu")
+  ssh_domain = try(var.config[terraform.workspace].gitea.ssh_domain, "git.homelabz.eu")
   ssh_port   = try(var.config[terraform.workspace].gitea.ssh_port, 2222)
 
   admin_username = "gitea-admin"
@@ -149,7 +150,7 @@ module "gitea" {
   secret_key     = try(local.secrets_json["kv/cluster-secret-store/secrets/GITEA"]["SECRET_KEY"], "")
   internal_token = try(local.secrets_json["kv/cluster-secret-store/secrets/GITEA"]["INTERNAL_TOKEN"], "")
 
-  external_database_host     = "postgres.fullstack.pw"
+  external_database_host     = "postgres.homelabz.eu"
   external_database_name     = "gitea"
   external_database_username = "postgres"
   external_database_password = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
@@ -159,11 +160,11 @@ module "gitea" {
 
   ingress_class_name = try(var.config[terraform.workspace].gitea.ingress_class, "traefik")
   ingress_annotations = {
-    "external-dns.alpha.kubernetes.io/hostname" = try(var.config[terraform.workspace].gitea.domain, "git.fullstack.pw")
+    "external-dns.alpha.kubernetes.io/hostname" = try(var.config[terraform.workspace].gitea.domain, "git.homelabz.eu")
     "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
   }
 
-  default_actions_url = try(var.config[terraform.workspace].gitea.default_actions_url, "https://git.fullstack.pw")
+  default_actions_url = try(var.config[terraform.workspace].gitea.default_actions_url, "https://git.homelabz.eu")
 
   depends_on = [module.redis]
 }
@@ -172,7 +173,7 @@ module "gitea_runner" {
   count  = contains(local.workload, "gitea_runner") ? 1 : 0
   source = "../modules/cicd/gitea-runner"
 
-  gitea_url    = try(var.config[terraform.workspace].gitea.url, "https://git.fullstack.pw")
+  gitea_url    = try(var.config[terraform.workspace].gitea.url, "https://git.homelabz.eu")
   runner_token = try(local.secrets_json["kv/cluster-secret-store/secrets/GITEA"]["RUNNER_TOKEN"], "")
   runner_name  = "k8s-runner-${terraform.workspace}"
 
@@ -256,7 +257,7 @@ module "oracle_backup" {
 
   s3_backup_name    = "terraform-state-backup"
   s3_schedule       = "0 2 * * *"
-  minio_endpoint    = "https://s3.toolz.fullstack.pw"
+  minio_endpoint    = "https://s3.toolz.homelabz.eu"
   minio_bucket_path = "terraform"
   s3_backup_path    = "terraform-state-backup"
 
@@ -301,10 +302,10 @@ module "vault" {
   ingress_class_name         = try(var.config[terraform.workspace].argocd_ingress_class, "traefik")
   data_storage_storage_class = try(var.config[terraform.workspace].vault_storage_class, "local-path")
   ingress_annotations = try(var.config[terraform.workspace].vault_ingress_annotations, {
-    "external-dns.alpha.kubernetes.io/hostname" = "vault.toolz.fullstack.pw"
+    "external-dns.alpha.kubernetes.io/hostname" = "vault.toolz.homelabz.eu"
     "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
   })
-  ingress_host   = try(var.config[terraform.workspace].vault_ingress_host, "vault.toolz.fullstack.pw")
+  ingress_host   = try(var.config[terraform.workspace].vault_ingress_host, "vault.toolz.homelabz.eu")
   memory_request = try(var.config[terraform.workspace].vault_memory_request, "256Mi")
   cpu_request    = try(var.config[terraform.workspace].vault_cpu_request, "100m")
   memory_limit   = try(var.config[terraform.workspace].vault_memory_limit, "512Mi")
@@ -355,7 +356,7 @@ module "harbor" {
   count  = contains(local.workload, "harbor") ? 1 : 0
   source = "../modules/apps/harbor"
 
-  external_database_host     = "postgres.fullstack.pw"
+  external_database_host     = "postgres.homelabz.eu"
   external_database_username = "postgres"
   external_database_password = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
   external_redis_host        = data.kubernetes_secret.redis_credentials[0].data["redis_host"]
@@ -374,13 +375,13 @@ module "immich" {
   count  = contains(local.workload, "immich") ? 1 : 0
   source = "../modules/apps/immich"
 
-  redis         = "redis.toolz.fullstack.pw"
+  redis         = "redis.toolz.homelabz.eu"
   redis_pass    = local.secrets_json["kv/cluster-secret-store/secrets/REDIS"]["REDIS_PASSWORD"]
   db_hostname   = "192.168.1.100"
   db_user       = "postgres"
   db_name       = "immich"
   db_pass       = local.secrets_json["kv/cluster-secret-store/secrets/POSTGRES"]["POSTGRES_PASSWORD"]
-  immich_domain = "immich.fullstack.pw"
+  immich_domain = "immich.homelabz.eu"
 
 }
 
@@ -402,8 +403,8 @@ module "kubevirt" {
   cdi_feature_gates      = ["HonorWaitForFirstConsumer"]
 
   enable_cdi_uploadproxy_ingress = true
-  cdi_uploadproxy_host           = try(var.config[terraform.workspace].kubevirt.cdi_uploadproxy_host, "cdi-uploadproxy.fullstack.pw")
-  virt_exportproxy_host          = try(var.config[terraform.workspace].kubevirt.virt_exportproxy_host, "kubevirt-exportproxy.fullstack.pw")
+  cdi_uploadproxy_host           = try(var.config[terraform.workspace].kubevirt.cdi_uploadproxy_host, "cdi-uploadproxy.homelabz.eu")
+  virt_exportproxy_host          = try(var.config[terraform.workspace].kubevirt.virt_exportproxy_host, "kubevirt-exportproxy.homelabz.eu")
   ingress_class_name             = try(var.config[terraform.workspace].kubevirt.ingress_class_name, "traefik")
 
   depends_on = [module.kubevirt_operator]
@@ -414,10 +415,10 @@ module "longhorn" {
   source = "../modules/apps/longhorn"
 
   replica_count      = 1
-  ingress_host       = try(var.config[terraform.workspace].longhorn.ingress_host, "longhorn.fullstack.pw")
+  ingress_host       = try(var.config[terraform.workspace].longhorn.ingress_host, "longhorn.homelabz.eu")
   ingress_class_name = try(var.config[terraform.workspace].longhorn.ingress_class_name, "traefik")
   ingress_annotations = try(var.config[terraform.workspace].longhorn.ingress_annotations, {
-    "external-dns.alpha.kubernetes.io/hostname" = "longhorn.fullstack.pw"
+    "external-dns.alpha.kubernetes.io/hostname" = "longhorn.homelabz.eu"
     "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
   })
 }
@@ -535,7 +536,7 @@ module "postgres_cnpg" {
   create_namespace = false
   create_cluster   = try(var.config[terraform.workspace].postgres_cnpg.crds_installed, false)
 
-  registry   = "registry.toolz.fullstack.pw"
+  registry   = "registry.toolz.homelabz.eu"
   repository = "library/cloudnative-postgres"
   pg_version = "15-latest"
 
@@ -614,7 +615,7 @@ module "postgres_databases" {
 #   telegram_token     = local.secrets_json["kv/cluster-secret-store/secrets/FREQTRADE"]["TELEGRAM_TOKEN"]
 #   telegram_chat_id   = local.secrets_json["kv/cluster-secret-store/secrets/FREQTRADE"]["TELEGRAM_CHAT_ID"]
 
-#   minio_endpoint   = "minio.fullstack.pw"
+#   minio_endpoint   = "minio.homelabz.eu"
 #   minio_bucket     = "freqtrade"
 #   minio_access_key = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootUser"]
 #   minio_secret_key = local.secrets_json["kv/cluster-secret-store/secrets/MINIO"]["rootPassword"]
@@ -650,7 +651,7 @@ module "authentik" {
 
   domain = var.config[terraform.workspace].authentik.domain
 
-  postgres_host        = "postgres.fullstack.pw"
+  postgres_host        = "postgres.homelabz.eu"
   postgres_name        = "authentik"
   postgres_user        = "postgres"
   postgres_secret_name = "postgres-superuser"

@@ -4,7 +4,7 @@
   become: true
   gather_facts: yes
   vars:
-    vault_addr: "https://vault.toolz.fullstack.pw"
+    vault_addr: "https://vault.toolz.homelabz.eu"
     pgvecto_rs_version: "0.3.0"
     pg_version: "17"
     pg_data_dir: "/var/lib/postgresql/{{ pg_version }}/main"

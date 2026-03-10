@@ -68,7 +68,7 @@ variable "ingress_annotations" {
   description = "Annotations for Vault ingress"
   type        = map(string)
   default = {
-    "external-dns.alpha.kubernetes.io/hostname" = "vault.toolz.fullstack.pw"
+    "external-dns.alpha.kubernetes.io/hostname" = "vault.toolz.homelabz.eu"
     "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
   }
 }
@@ -76,7 +76,7 @@ variable "ingress_annotations" {
 variable "ingress_host" {
   description = "Host for Vault ingress"
   type        = string
-  default     = "vault.toolz.fullstack.pw"
+  default     = "vault.toolz.homelabz.eu"
 }
 
 variable "tls_secret_name" {

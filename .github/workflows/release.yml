@@ -12,5 +12,5 @@ permissions:
 
 jobs:
   release:
-    uses: fullstack-pw/pipelines/.github/workflows/release.yml@main
+    uses: homelabz-eu/pipelines/.github/workflows/release.yml@main
     secrets: inherit # pragma: allowlist secret

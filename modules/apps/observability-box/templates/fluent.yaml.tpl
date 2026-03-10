@@ -71,7 +71,7 @@ config:
     [OUTPUT]
         Name                   loki
         Match                  *
-        Host                   loki.fullstack.pw
+        Host                   loki.homelabz.eu
         Port                   443
         TLS                    On
         Labels                 job=fluentbit,cluster=${CLUSTER}

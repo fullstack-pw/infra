@@ -33,7 +33,7 @@ variable "create_namespace" {
 variable "ingress_annotations" {
   type = map(string)
   default = {
-    "external-dns.alpha.kubernetes.io/hostname"   = "immich.fullstack.pw"
+    "external-dns.alpha.kubernetes.io/hostname"   = "immich.homelabz.eu"
     "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
     "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
     "nginx.org/client-max-body-size"              = "0"

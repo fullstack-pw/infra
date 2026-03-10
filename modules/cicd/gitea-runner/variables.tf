@@ -25,7 +25,7 @@ variable "timeout" {
 variable "gitea_url" {
   description = "URL of the Gitea instance"
   type        = string
-  default     = "https://git.fullstack.pw"
+  default     = "https://git.homelabz.eu"
 }
 
 variable "runner_token" {
@@ -43,7 +43,7 @@ variable "runner_name" {
 variable "runner_labels" {
   description = "Labels (tags) for the runner"
   type        = string
-  default     = "ubuntu-latest:docker://registry.toolz.fullstack.pw/library/runner-base:latest,self-hosted:docker://registry.toolz.fullstack.pw/library/runner-base:latest"
+  default     = "ubuntu-latest:docker://registry.toolz.homelabz.eu/library/runner-base:latest,self-hosted:docker://registry.toolz.homelabz.eu/library/runner-base:latest"
 }
 
 variable "replicas" {

@@ -112,14 +112,6 @@ resource "kubernetes_deployment" "externaldns" {
           name  = "external-dns"
           image = var.image
 
-          env_from {
-            prefix = null
-            secret_ref {
-              name     = "cluster-secrets"
-              optional = true
-            }
-          }
-
           # PiHole-specific environment
           dynamic "env" {
             for_each = var.dns_provider == "pihole" ? [1] : []

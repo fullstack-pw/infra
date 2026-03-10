@@ -6,5 +6,5 @@ permissions: {}
 
 jobs:
   scan:
-    uses: fullstack-pw/pipelines/.github/workflows/sec-trufflehog.yml@main
+    uses: homelabz-eu/pipelines/.github/workflows/sec-trufflehog.yml@main
     secrets: inherit # pragma: allowlist secret

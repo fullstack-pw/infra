@@ -22,7 +22,7 @@ nats:
             user: "${nats_user}"
             password: "${nats_password}"
             useFQDN: true
-            k8sClusterDomain: fullstack.pw
+            k8sClusterDomain: homelabz.eu
   %{endif}
   %{endif}
 

@@ -103,7 +103,7 @@ resource "kubernetes_manifest" "argocd_bootstrap" {
     spec = {
       project = "default"
       source = {
-        repoURL        = "https://github.com/fullstack-pw/infra.git"
+        repoURL        = "https://github.com/homelabz-eu/infra.git"
         targetRevision = "HEAD"
         path           = "argocd-apps"
         directory = {

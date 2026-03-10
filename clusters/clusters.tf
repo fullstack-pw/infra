@@ -81,7 +81,7 @@ variable "config" {
       istio_CRDs             = false
       argocd_ingress_class   = "traefik"
       argocd_ingress_enabled = true
-      argocd_domain          = "tools.argocd.fullstack.pw"
+      argocd_domain          = "tools.argocd.homelabz.eu"
       teleport = {
         apps = {
           "harbor" = "http://harbor-portal.harbor.svc.cluster.local"
@@ -90,10 +90,10 @@ variable "config" {
         roles = "kube,app"
       }
       harbor = {
-        harbor_domain      = "registry.toolz.fullstack.pw"
+        harbor_domain      = "registry.toolz.homelabz.eu"
         ingress_class_name = "traefik"
         ingress_annotations = {
-          "external-dns.alpha.kubernetes.io/hostname"   = "registry.toolz.fullstack.pw"
+          "external-dns.alpha.kubernetes.io/hostname"   = "registry.toolz.homelabz.eu"
           "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
           "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
           "nginx.org/client-max-body-size"              = "0"
@@ -104,14 +104,14 @@ variable "config" {
       prometheus_memory_request = "512Mi"
       redis = {
         ingress_annotations = {
-          "external-dns.alpha.kubernetes.io/hostname"         = "redis.fullstack.pw"
+          "external-dns.alpha.kubernetes.io/hostname"         = "redis.homelabz.eu"
           "nginx.ingress.kubernetes.io/proxy-body-size"       = "10m"
           "nginx.ingress.kubernetes.io/proxy-connect-timeout" = "60"
           "nginx.ingress.kubernetes.io/proxy-read-timeout"    = "60"
           "nginx.ingress.kubernetes.io/proxy-send-timeout"    = "60"
           "nginx.ingress.kubernetes.io/service-upstream"      = "true"
         }
-        ingress_host       = "redis.fullstack.pw"
+        ingress_host       = "redis.homelabz.eu"
         ingress_class_name = "traefik"
       }
       oracle_backup = {
@@ -119,16 +119,16 @@ variable "config" {
         enable_postgres_backup = true
         postgres_backups = {
           "postgres" = {
-            namespace   = "default"
-            host        = "postgres.fullstack.pw"
+            namespace   = "oracle-backup"
+            host        = "postgres.homelabz.eu"
             port        = 5432
             database    = "postgres"
             username    = "postgres"
             ssl_enabled = false
             schedule    = "0 3 * * *"
             backup_path = "postgres-backup/tools"
-            secret_name = "cluster-secrets"       #pragma: allowlist secret
-            secret_key  = "POSTGRES_ROOTPASSWORD" #pragma: allowlist secret
+            secret_name = "cluster-secrets"   #pragma: allowlist secret
+            secret_key  = "POSTGRES_PASSWORD" #pragma: allowlist secret
           }
         }
       }
@@ -147,7 +147,7 @@ variable "config" {
       cluster_autoscaler_replicas           = 1
 
       authentik = {
-        domain   = "auth.fullstack.pw"
+        domain   = "auth.homelabz.eu"
         redis_db = 1
       }
       kubernetes-cluster = [
@@ -363,71 +363,71 @@ variable "config" {
       kubernetes_context  = "toolz"
       crds_installed      = true
       istio_CRDs          = false
-      vault_addr          = "https://vault.toolz.fullstack.pw"
+      vault_addr          = "https://vault.toolz.homelabz.eu"
       vault_storage_class = "local-path"
       vault_ingress_annotations = {
-        "external-dns.alpha.kubernetes.io/hostname" = "vault.toolz.fullstack.pw"
+        "external-dns.alpha.kubernetes.io/hostname" = "vault.toolz.homelabz.eu"
         "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
       }
       minio = {
         ingress_annotations = {
-          "external-dns.alpha.kubernetes.io/hostname"   = "s3.toolz.fullstack.pw"
+          "external-dns.alpha.kubernetes.io/hostname"   = "s3.toolz.homelabz.eu"
           "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
           "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
           "nginx.org/client-max-body-size"              = "0"
         }
         ingress_class_name = "nginx"
-        ingress_host       = "s3.toolz.fullstack.pw"
+        ingress_host       = "s3.toolz.homelabz.eu"
         console_ingress_annotations = {
-          "external-dns.alpha.kubernetes.io/hostname" = "minio.toolz.fullstack.pw"
+          "external-dns.alpha.kubernetes.io/hostname" = "minio.toolz.homelabz.eu"
           "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
         }
         console_ingress_class_name = "nginx"
-        console_ingress_host       = "minio.toolz.fullstack.pw"
+        console_ingress_host       = "minio.toolz.homelabz.eu"
       }
       redis = {
         ingress_enabled    = false
         ingress_class_name = "nginx"
         ingress_annotations = {
-          "external-dns.alpha.kubernetes.io/hostname"         = "redis.toolz.fullstack.pw"
+          "external-dns.alpha.kubernetes.io/hostname"         = "redis.toolz.homelabz.eu"
           "nginx.ingress.kubernetes.io/proxy-body-size"       = "10m"
           "nginx.ingress.kubernetes.io/proxy-connect-timeout" = "60"
           "nginx.ingress.kubernetes.io/proxy-read-timeout"    = "60"
           "nginx.ingress.kubernetes.io/proxy-send-timeout"    = "60"
           "nginx.ingress.kubernetes.io/service-upstream"      = "true"
         }
-        ingress_host = "redis.toolz.fullstack.pw"
+        ingress_host = "redis.toolz.homelabz.eu"
         service_type = "LoadBalancer"
         service_annotations = {
-          "external-dns.alpha.kubernetes.io/hostname" = "redis.toolz.fullstack.pw"
+          "external-dns.alpha.kubernetes.io/hostname" = "redis.toolz.homelabz.eu"
         }
       }
       harbor = {
-        harbor_domain           = "registry.toolz.fullstack.pw"
+        harbor_domain           = "registry.toolz.homelabz.eu"
         ingress_class_name      = "nginx"
         registry_existing_claim = "harbor-registry-migration"
         ingress_annotations = {
-          "external-dns.alpha.kubernetes.io/hostname"   = "registry.toolz.fullstack.pw"
+          "external-dns.alpha.kubernetes.io/hostname"   = "registry.toolz.homelabz.eu"
           "cert-manager.io/cluster-issuer"              = "letsencrypt-prod"
           "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
           "nginx.org/client-max-body-size"              = "0"
         }
       }
       gitea = {
-        domain              = "git.fullstack.pw"
-        ssh_domain          = "git.fullstack.pw"
+        domain              = "git.homelabz.eu"
+        ssh_domain          = "git.homelabz.eu"
         ssh_port            = 2222
         ingress_class       = "traefik"
-        url                 = "https://git.fullstack.pw"
-        default_actions_url = "https://git.fullstack.pw"
+        url                 = "https://git.homelabz.eu"
+        default_actions_url = "https://git.homelabz.eu"
       }
       github_runner = {
-        registry_server = "registry.toolz.fullstack.pw"
+        registry_server = "registry.toolz.homelabz.eu"
       }
-      vault_ingress_host       = "vault.toolz.fullstack.pw"
+      vault_ingress_host       = "vault.toolz.homelabz.eu"
       argocd_ingress_class     = "nginx"
       argocd_ingress_enabled   = true
-      argocd_domain            = "argocd.toolz.fullstack.pw"
+      argocd_domain            = "argocd.toolz.homelabz.eu"
       argocd_install_bootstrap = true
       teleport = {
         apps = {
@@ -440,17 +440,17 @@ variable "config" {
         roles     = "kube,app"
       }
       longhorn = {
-        ingress_host       = "longhorn.toolz.fullstack.pw"
+        ingress_host       = "longhorn.toolz.homelabz.eu"
         ingress_class_name = "nginx"
         ingress_annotations = {
-          "external-dns.alpha.kubernetes.io/hostname" = "longhorn.toolz.fullstack.pw"
+          "external-dns.alpha.kubernetes.io/hostname" = "longhorn.toolz.homelabz.eu"
           "cert-manager.io/cluster-issuer"            = "letsencrypt-prod"
         }
       }
       kubevirt = {
         ingress_class_name    = "nginx"
-        cdi_uploadproxy_host  = "cdi-uploadproxy.toolz.fullstack.pw"
-        virt_exportproxy_host = "kubevirt-exportproxy.toolz.fullstack.pw"
+        cdi_uploadproxy_host  = "cdi-uploadproxy.toolz.homelabz.eu"
+        virt_exportproxy_host = "kubevirt-exportproxy.toolz.homelabz.eu"
       }
       prometheus_namespaces = [
         # "cluster1",
@@ -503,11 +503,11 @@ variable "config" {
       istio_CRDs             = true
       argocd_ingress_class   = "istio"
       argocd_ingress_enabled = false
-      argocd_domain          = "dev.argocd.fullstack.pw"
+      argocd_domain          = "dev.argocd.homelabz.eu"
       gateway_dns_names = [
-        "dev.api.cks.fullstack.pw",
-        "dev.cks.fullstack.pw",
-        "dev.argocd.fullstack.pw",
+        "dev.api.cks.homelabz.eu",
+        "dev.cks.homelabz.eu",
+        "dev.argocd.homelabz.eu",
       ]
       teleport = {
         apps = {
@@ -529,11 +529,11 @@ variable "config" {
       istio_CRDs             = true
       argocd_ingress_class   = "istio"
       argocd_ingress_enabled = false
-      argocd_domain          = "argocd.fullstack.pw"
+      argocd_domain          = "argocd.homelabz.eu"
       gateway_dns_names = [
-        "api.cks.fullstack.pw",
-        "cks.fullstack.pw",
-        "argocd.fullstack.pw",
+        "api.cks.homelabz.eu",
+        "cks.homelabz.eu",
+        "argocd.homelabz.eu",
       ]
       teleport = {
         apps = {
